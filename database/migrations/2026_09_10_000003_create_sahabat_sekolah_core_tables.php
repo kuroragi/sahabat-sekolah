@@ -12,6 +12,7 @@ return new class extends Migration
             $table->id();
             $table->string('name');
             $table->string('education_level', 20);
+            $table->boolean('status')->default(true);
             $table->timestamps();
         });
 
