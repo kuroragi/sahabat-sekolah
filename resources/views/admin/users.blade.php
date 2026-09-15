@@ -1,1 +1,57 @@
-<!DOCTYPE html><html lang="id"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><title>Pengguna | Sahabat Sekolah</title>@vite(['resources/css/app.css','resources/js/app.js'])<script src="https://unpkg.com/lucide@latest"></script></head><body><div class="admin-shell"><header class="case-topbar"><a class="brand-link" href="{{ route('admin.index') }}"><span class="brand-mark">✦</span><strong>Sahabat Sekolah</strong></a><a class="back-link" href="{{ route('admin.index') }}"><i data-lucide="arrow-left"></i> Administrator</a></header><main class="admin-main">@if(session('success'))<div class="channel-success"><i data-lucide="circle-check"></i>{{ session('success') }}</div>@endif<div class="admin-heading"><span class="eyebrow">USER MANAGEMENT</span><h1>Pengguna platform</h1><p>Edit role, school assignment, dan status pengguna.</p></div><section class="panel admin-table-panel"><table class="admin-crud-table"><thead><tr><th>Pengguna</th><th>Email</th><th>Role</th><th>Sekolah</th><th>Status</th><th>Aksi</th></tr></thead><tbody>@foreach($users as $user)<tr><form method="POST" action="{{ route('admin.users.update',$user->id) }}">@csrf<td><input name="name" value="{{ $user->name }}" required></td><td><strong>{{ $user->email }}</strong></td><td><select name="role"><option value="COUNSELOR" @selected($user->role==='COUNSELOR')>Guru BK</option><option value="PRINCIPAL" @selected($user->role==='PRINCIPAL')>Kepala Sekolah</option><option value="ADMIN" @selected($user->role==='ADMIN')>Administrator</option></select></td><td><select name="school_id"><option value="">Platform</option>@foreach($schools as $school)<option value="{{ $school->id }}" @selected($user->school_id===$school->id)>{{ $school->name }}</option>@endforeach</select></td><td><select name="status"><option value="ACTIVE" @selected(($user->status ?? 'ACTIVE')==='ACTIVE')>Aktif</option><option value="INACTIVE" @selected(($user->status ?? '')==='INACTIVE')>Nonaktif</option></select></td><td><button class="secondary-button" type="submit">Simpan</button></td></form></tr>@endforeach</tbody></table></section></main></div><script>lucide.createIcons();</script></body></html>
+@extends('layouts.app', [
+    'title' => 'Pengguna | Sahabat Sekolah',
+    'activeNav' => 'admin-users',
+    'eyebrow' => 'USER MANAGEMENT',
+    'pageTitle' => 'Manajemen Pengguna Platform',
+    'pageSubtitle' => 'Edit role, penugasan sekolah, dan status pengguna.'
+])
+
+@section('content')
+<section class="panel admin-table-panel">
+    <table class="admin-crud-table">
+        <thead>
+            <tr>
+                <th>Pengguna</th>
+                <th>Email</th>
+                <th>Role</th>
+                <th>Sekolah</th>
+                <th>Status</th>
+                <th>Aksi</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach($users as $user)
+                <tr>
+                    <form method="POST" action="{{ route('admin.users.update', $user->id) }}">
+                        @csrf
+                        <td><input name="name" value="{{ $user->name }}" required></td>
+                        <td><strong>{{ $user->email }}</strong></td>
+                        <td>
+                            <select name="role">
+                                <option value="COUNSELOR" @selected($user->role==='COUNSELOR')>Guru BK</option>
+                                <option value="PRINCIPAL" @selected($user->role==='PRINCIPAL')>Kepala Sekolah</option>
+                                <option value="ADMIN" @selected($user->role==='ADMIN')>Administrator</option>
+                            </select>
+                        </td>
+                        <td>
+                            <select name="school_id">
+                                <option value="">Platform</option>
+                                @foreach($schools as $school)
+                                    <option value="{{ $school->id }}" @selected($user->school_id===$school->id)>{{ $school->name }}</option>
+                                @endforeach
+                            </select>
+                        </td>
+                        <td>
+                            <select name="status">
+                                <option value="ACTIVE" @selected(($user->status ?? 'ACTIVE')==='ACTIVE')>Aktif</option>
+                                <option value="INACTIVE" @selected(($user->status ?? '')==='INACTIVE')>Nonaktif</option>
+                            </select>
+                        </td>
+                        <td><button class="secondary-button" type="submit">Simpan</button></td>
+                    </form>
+                </tr>
+            @endforeach
+        </tbody>
+    </table>
+</section>
+@endsection

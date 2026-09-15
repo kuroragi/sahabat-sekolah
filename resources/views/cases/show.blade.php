@@ -1,137 +1,387 @@
-<!DOCTYPE html>
-<html lang="id">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{{ $case->case_number }} | Sahabat Sekolah</title>
-    @vite(['resources/css/app.css', 'resources/js/app.js'])
-    <script src="https://unpkg.com/lucide@latest"></script>
-</head>
-<body>
-<div class="case-shell">
-    <header class="case-topbar">
-        <a class="brand-link" href="{{ url('/') }}"><span class="brand-mark">✦</span><strong>Sahabat Sekolah</strong></a>
-        <a class="back-link" href="{{ url('/') }}"><i data-lucide="arrow-left"></i> Dashboard</a>
-    </header>
+@extends('layouts.app', [
+    'title' => $case->case_number . ' | Sahabat Sekolah',
+    'activeNav' => 'inbox',
+    'eyebrow' => 'DETAIL LAPORAN KASUS',
+    'pageTitle' => 'Kasus ' . $case->case_number,
+    'pageSubtitle' => 'Dibuka ' . \Illuminate\Support\Carbon::parse($case->opened_at)->format('d M Y, H:i') . ' · ' . $case->school_name
+])
 
-    @if (session('success'))
-        <div class="success-banner"><i data-lucide="circle-check"></i>{{ session('success') }}</div>
-    @endif
-    @if ($errors->any())
-        <div class="success-banner error-banner"><i data-lucide="circle-alert"></i>{{ $errors->first() }}</div>
-    @endif
-
-    <div class="case-heading">
-        <div>
-            <span class="eyebrow">DETAIL LAPORAN</span>
-            <h1>{{ $case->case_number }}</h1>
-            <p>Dibuka {{ \Illuminate\Support\Carbon::parse($case->opened_at)->format('d M Y, H:i') }} · {{ $case->school_name }}</p>
-        </div>
-        <div class="case-heading-actions">
-            <span class="status {{ strtolower($case->status) }}">{{ str_replace('_', ' ', $case->status) }}</span>
-            <span class="priority {{ strtolower($case->risk_level) }}">Risiko {{ $case->risk_level }}</span>
-        </div>
+@section('content')
+<div class="case-header-nav">
+    <a class="back-link" href="{{ route('reports.inbox') }}">
+        <i data-lucide="arrow-left"></i> Kembali ke Inbox Laporan
+    </a>
+    <div class="case-heading-actions">
+        <span class="status {{ strtolower($case->status) }}">{{ str_replace('_', ' ', $case->status) }}</span>
+        <span class="priority {{ strtolower($case->risk_level) }}">Risiko {{ $case->risk_level }}</span>
     </div>
+</div>
 
-    <main class="case-grid">
-        <section class="case-main">
-            <div class="case-panel">
-                <div class="case-panel-heading"><h2>Informasi laporan</h2><span class="confidential"><i data-lucide="lock-keyhole"></i>{{ $case->identity_mode === 'ANONYMOUS' ? 'Pelapor anonim' : 'Identitas terbatas' }}</span></div>
+<main class="case-grid">
+    <section class="case-main">
+        <div class="case-panel">
+            <div class="case-panel-heading">
+                <h2>Informasi laporan</h2>
+                <span class="confidential">
+                    <i data-lucide="lock-keyhole"></i>
+                    {{ $case->identity_mode === 'ANONYMOUS' ? 'Pelapor anonim' : 'Identitas terbatas' }}
+                </span>
+            </div>
+            <div class="detail-grid">
+                <div>
+                    <small>Peran pelapor</small>
+                    <strong>{{ match($case->reporter_role) { 'VICTIM' => 'Saya korban', 'WITNESS' => 'Saya saksi', default => 'Mengetahui kejadian' } }}</strong>
+                </div>
+                <div>
+                    <small>Kategori</small>
+                    <strong>{{ $case->category }}</strong>
+                </div>
+                <div>
+                    <small>Status SLA</small>
+                    <strong class="sla-{{ strtolower($case->sla_status) }}">{{ $case->sla_status }}</strong>
+                </div>
+                <div>
+                    <small>Batas respons awal</small>
+                    <strong>{{ \Illuminate\Support\Carbon::parse($case->response_deadline)->format('d M Y, H:i') }}</strong>
+                </div>
+            </div>
+            <div class="description-block">
+                <small>Kronologi laporan</small>
+                <p>{{ $case->description }}</p>
+            </div>
+        </div>
+
+        @if (session('user_role') === 'COUNSELOR' && $case->reporter_name)
+            <div class="case-panel identity-panel">
+                <div class="case-panel-heading">
+                    <h2>Identitas pelapor</h2>
+                    <span class="confidential"><i data-lucide="lock-keyhole"></i>{{ $case->reporter_access_level }}</span>
+                </div>
                 <div class="detail-grid">
-                    <div><small>Peran pelapor</small><strong>{{ match($case->reporter_role) { 'VICTIM' => 'Saya korban', 'WITNESS' => 'Saya saksi', default => 'Mengetahui kejadian' } }}</strong></div>
-                    <div><small>Kategori</small><strong>{{ $case->category }}</strong></div>
-                    <div><small>Status SLA</small><strong class="sla-{{ strtolower($case->sla_status) }}">{{ $case->sla_status }}</strong></div>
-                    <div><small>Batas respons awal</small><strong>{{ \Illuminate\Support\Carbon::parse($case->response_deadline)->format('d M Y, H:i') }}</strong></div>
+                    <div>
+                        <small>Nama lengkap</small>
+                        <strong>{{ $case->reporter_name }}</strong>
+                    </div>
+                    <div>
+                        <small>Kontak</small>
+                        <strong>{{ $case->reporter_contact ?: 'Tidak diberikan' }}</strong>
+                    </div>
                 </div>
-                <div class="description-block"><small>Kronologi</small><p>{{ $case->description }}</p></div>
             </div>
-            @if (session('user_role') === 'COUNSELOR' && $case->reporter_name)
-                <div class="case-panel identity-panel"><div class="case-panel-heading"><h2>Identitas pelapor</h2><span class="confidential"><i data-lucide="lock-keyhole"></i>{{ $case->reporter_access_level }}</span></div><div class="detail-grid"><div><small>Nama</small><strong>{{ $case->reporter_name }}</strong></div><div><small>Kontak</small><strong>{{ $case->reporter_contact ?: 'Tidak diberikan' }}</strong></div></div></div>
+        @endif
+
+        <div class="case-panel">
+            <div class="case-panel-heading">
+                <h2>Pihak terkait</h2>
+                <span class="case-count">{{ $participants->count() }} pihak</span>
+            </div>
+            @forelse ($participants as $participant)
+                <div class="participant-row">
+                    <span class="participant-type">{{ $participant->participant_type }}</span>
+                    <div>
+                        <strong>{{ session('user_role') === 'COUNSELOR' ? $participant->display_name : 'Identitas dibatasi' }}</strong>
+                        <small>{{ $participant->identity_visibility }}</small>
+                    </div>
+                </div>
+            @empty
+                <p class="empty-state">Belum ada pihak terkait tercatat.</p>
+            @endforelse
+
+            @if (session('user_role') === 'COUNSELOR')
+                <form class="participant-form" method="POST" action="{{ route('cases.participants', $case->case_number) }}">
+                    @csrf
+                    <select name="participant_type">
+                        <option value="VICTIM">Korban</option>
+                        <option value="REPORTER">Pelapor</option>
+                        <option value="WITNESS">Saksi</option>
+                        <option value="ALLEGED_PERPETRATOR">Terduga pelaku</option>
+                        <option value="OTHER">Lainnya</option>
+                    </select>
+                    <input name="display_name" required placeholder="Nama pihak terkait">
+                    <select name="identity_visibility">
+                        <option value="CASE_RESTRICTED">Terbatas</option>
+                        <option value="CASE_FULL">Penuh</option>
+                        <option value="CASE_SENSITIVE">Sangat sensitif</option>
+                    </select>
+                    <button class="secondary-button" type="submit">
+                        <i data-lucide="user-plus"></i> Tambah pihak
+                    </button>
+                </form>
             @endif
-            <div class="case-panel"><div class="case-panel-heading"><h2>Pihak terkait</h2><span class="case-count">{{ $participants->count() }} pihak</span></div>@forelse ($participants as $participant)<div class="participant-row"><span class="participant-type">{{ $participant->participant_type }}</span><div><strong>{{ session('user_role') === 'COUNSELOR' ? $participant->display_name : 'Identitas dibatasi' }}</strong><small>{{ $participant->identity_visibility }}</small></div></div>@empty<p class="empty-state">Belum ada pihak terkait.</p>@endforelse @if (session('user_role') === 'COUNSELOR')<form class="participant-form" method="POST" action="{{ route('cases.participants', $case->case_number) }}">@csrf<select name="participant_type"><option value="VICTIM">Korban</option><option value="REPORTER">Pelapor</option><option value="WITNESS">Saksi</option><option value="ALLEGED_PERPETRATOR">Terduga pelaku</option><option value="OTHER">Lainnya</option></select><input name="display_name" required placeholder="Nama pihak terkait"><select name="identity_visibility"><option value="CASE_RESTRICTED">Terbatas</option><option value="CASE_FULL">Penuh</option><option value="CASE_SENSITIVE">Sangat sensitif</option></select><button class="secondary-button" type="submit"><i data-lucide="user-plus"></i> Tambah pihak</button></form>@endif</div>
+        </div>
 
-            <div class="case-panel risk-panel">
-                <div class="case-panel-heading"><div><h2>Penilaian risiko</h2><p class="panel-subtitle">Skor tersimpan sebagai bagian dari histori kasus.</p></div>@if ($riskAssessment)<strong class="risk-score">{{ $riskAssessment->final_score }} / 100</strong>@endif</div>
-                <form class="risk-form" method="POST" action="{{ route('cases.risk', $case->case_number) }}">
-                    @csrf
-                    <label>Kategori <input type="number" name="category_score" min="0" max="25" value="{{ $riskAssessment->category_score ?? 0 }}" required><small>0–25</small></label>
-                    <label>Keselamatan <input type="number" name="safety_score" min="0" max="25" value="{{ $riskAssessment->safety_score ?? 0 }}" required><small>0–25</small></label>
-                    <label>Pengulangan <input type="number" name="repetition_score" min="0" max="25" value="{{ $riskAssessment->repetition_score ?? 0 }}" required><small>0–25</small></label>
-                    <label>Dampak <input type="number" name="impact_score" min="0" max="25" value="{{ $riskAssessment->impact_score ?? 0 }}" required><small>0–25</small></label>
-                    <input class="risk-reason" type="text" name="reason" placeholder="Catatan penilaian (opsional)">
-                    <button class="secondary-button" type="submit"><i data-lucide="shield-check"></i> Simpan penilaian</button>
-                </form>
-            </div>
-
-            <div class="case-panel">
-                <div class="case-panel-heading"><h2>Alur penanganan</h2><span class="case-count">{{ $history->count() }} aktivitas tercatat</span></div>
-                <div class="timeline">
-                    <div class="timeline-item current"><span class="timeline-dot"></span><div><strong>Laporan masuk</strong><small>{{ \Illuminate\Support\Carbon::parse($case->submitted_at)->format('d M Y, H:i') }}</small><p>Laporan diterima oleh sistem dan masuk ke antrean Guru BK.</p></div></div>
-                    @foreach ($history as $item)
-                        <div class="timeline-item"><span class="timeline-dot"></span><div><strong>{{ str_replace('_', ' ', $item->new_status) }}</strong><small>{{ \Illuminate\Support\Carbon::parse($item->created_at)->format('d M Y, H:i') }} · {{ $item->changed_by }}</small><p>{{ $item->reason ?: 'Status kasus diperbarui.' }}</p></div></div>
-                    @endforeach
+        <div class="case-panel risk-panel">
+            <div class="case-panel-heading">
+                <div>
+                    <h2>Penilaian risiko</h2>
+                    <p class="panel-subtitle">Skor tersimpan sebagai bagian dari histori kasus.</p>
                 </div>
-            </div>
-
-            <div class="case-panel">
-                <div class="case-panel-heading"><h2>Aktivitas terakhir</h2><span class="case-count">Audit trail</span></div>
-                @forelse ($actions as $action)
-                    <div class="activity-row"><span class="activity-icon"><i data-lucide="check-check"></i></span><div><strong>{{ $action->action_type }}</strong><p>{{ $action->description }}</p><small>{{ \Illuminate\Support\Carbon::parse($action->created_at)->format('d M Y, H:i') }} · {{ $action->performed_by }}</small></div></div>
-                @empty
-                    <p class="empty-state">Belum ada tindakan tercatat.</p>
-                @endforelse
-            </div>
-
-            <div class="case-panel notes-panel">
-                <div class="case-panel-heading"><h2>Catatan kasus</h2><span class="case-count">Internal Guru BK</span></div>
-                <form class="note-form" method="POST" action="{{ route('cases.notes', $case->case_number) }}">
-                    @csrf
-                    <select name="note_type"><option value="VERIFICATION">Verifikasi</option><option value="HANDLING">Penanganan</option><option value="COUNSELING">Konseling</option><option value="FOLLOW_UP">Tindak lanjut</option><option value="INTERNAL">Internal</option></select>
-                    <textarea name="content" rows="3" minlength="5" required placeholder="Tulis catatan internal untuk tim penanganan..."></textarea>
-                    <button class="secondary-button" type="submit"><i data-lucide="notebook-pen"></i> Simpan catatan</button>
-                </form>
-                @forelse ($notes as $note)
-                    <div class="note-row"><span class="activity-icon"><i data-lucide="notebook-tabs"></i></span><div><strong>{{ $note->note_type }}</strong><p>{{ $note->content }}</p><small>{{ \Illuminate\Support\Carbon::parse($note->created_at)->format('d M Y, H:i') }} · {{ $note->created_by }}</small></div></div>
-                @empty
-                    <p class="empty-state">Belum ada catatan internal.</p>
-                @endforelse
-            </div>
-
-            <div class="case-panel">
-                <div class="case-panel-heading"><h2>Bukti & dokumen</h2><span class="case-count">{{ $evidences->count() + $resolutionDocuments->count() }} file</span></div>
-                <div class="document-columns">
-                    <div><small class="document-label">Bukti kasus</small>@forelse ($evidences as $evidence)<div class="document-row"><i data-lucide="paperclip"></i><div><a href="{{ route('cases.documents.download', [$case->case_number, 'evidence', $evidence->id]) }}"><strong>{{ $evidence->file_name }}</strong></a><small>{{ number_format(($evidence->file_size ?? 0) / 1024, 0) }} KB</small></div></div>@empty<p class="empty-state">Belum ada bukti.</p>@endforelse</div>
-                    <div><small class="document-label">Dokumen penyelesaian</small>@forelse ($resolutionDocuments as $document)<div class="document-row"><i data-lucide="file-check-2"></i><div><a href="{{ route('cases.documents.download', [$case->case_number, 'resolution', $document->id]) }}"><strong>{{ $document->file_name }}</strong></a><small>Valid · {{ $document->uploaded_by }}</small></div></div>@empty<p class="empty-state">Belum ada dokumen.</p>@endforelse</div>
-                </div>
-            </div>
-            <div class="case-panel"><div class="case-panel-heading"><h2>Riwayat eskalasi</h2><span class="case-count">{{ $escalations->count() }} eskalasi</span></div>@forelse ($escalations as $escalation)<div class="activity-row"><span class="activity-icon"><i data-lucide="arrow-up-right"></i></span><div><strong>{{ $escalation->escalation_type }} · {{ $escalation->notified_to }}</strong><p>{{ $escalation->reason }}</p><small>{{ \Illuminate\Support\Carbon::parse($escalation->created_at)->format('d M Y, H:i') }} · {{ $escalation->escalated_by }}</small></div></div>@empty<p class="empty-state">Belum ada eskalasi.</p>@endforelse</div>
-            <div class="case-panel"><div class="case-panel-heading"><h2>Pelibatan orang tua</h2><span class="case-count">{{ $parentInvolvements->count() }} pihak</span></div>@forelse ($parentInvolvements as $involvement)<div class="participant-row"><span class="participant-type">{{ $involvement->status }}</span><div><strong>{{ session('user_role') === 'COUNSELOR' ? $involvement->parent_name : 'Identitas dibatasi' }}</strong><small>{{ $involvement->reason ?: 'Tidak ada catatan alasan.' }}</small></div></div>@empty<p class="empty-state">Belum ada keputusan pelibatan orang tua.</p>@endforelse @if (session('user_role') === 'COUNSELOR')<form class="participant-form" method="POST" action="{{ route('cases.parent-involvement', $case->case_number) }}">@csrf<input name="parent_name" required placeholder="Nama orang tua"><input name="parent_contact" placeholder="Kontak opsional"><select name="status"><option value="NOT_REQUIRED">Tidak diperlukan</option><option value="PENDING">Menunggu keputusan</option><option value="APPROVED">Disetujui</option><option value="CONTACTED">Sudah dihubungi</option><option value="COMPLETED">Selesai</option></select><input name="reason" placeholder="Alasan/catatan"><button class="secondary-button" type="submit"><i data-lucide="users"></i> Simpan keputusan</button></form>@endif</div>
-        </section>
-
-        <aside class="case-aside">
-            <div class="case-panel quick-panel">
-                <h2>Perbarui status</h2>
-                <p class="quick-help">Pilih langkah berikutnya sesuai proses penanganan kasus.</p>
-                @if ($case->status === 'PENDING_RESPONSE')
-                    <form method="POST" action="{{ route('cases.status', $case->case_number) }}">@csrf<input type="hidden" name="status" value="UNDER_VERIFICATION"><textarea name="reason" rows="2" placeholder="Catatan respons awal (opsional)"></textarea><button class="primary-button" type="submit"><i data-lucide="message-circle"></i> Beri respons awal</button></form>
-                @elseif ($case->status === 'UNDER_VERIFICATION')
-                    <form method="POST" action="{{ route('cases.status', $case->case_number) }}">@csrf<input type="hidden" name="status" value="IN_HANDLING"><textarea name="reason" rows="2" placeholder="Catatan hasil verifikasi (opsional)"></textarea><button class="primary-button" type="submit"><i data-lucide="clipboard-check"></i> Mulai penanganan</button></form>
-                    <form method="POST" action="{{ route('cases.status', $case->case_number) }}">@csrf<input type="hidden" name="status" value="RESOLVED"><textarea name="reason" rows="2" placeholder="Alasan penyelesaian"></textarea><button class="secondary-button" type="submit"><i data-lucide="circle-check"></i> Tandai selesai</button></form>
-                @elseif ($case->status === 'IN_HANDLING')
-                    <form method="POST" action="{{ route('cases.status', $case->case_number) }}">@csrf<input type="hidden" name="status" value="RESOLVED"><textarea name="reason" rows="2" placeholder="Ringkasan penyelesaian"></textarea><button class="primary-button" type="submit"><i data-lucide="circle-check"></i> Tandai selesai</button></form>
-                @elseif ($case->status === 'RESOLVED')
-                    <form method="POST" action="{{ route('cases.status', $case->case_number) }}">@csrf<input type="hidden" name="status" value="CLOSED"><button class="primary-button" type="submit"><i data-lucide="lock"></i> Tutup kasus</button></form>
-                @else
-                    <div class="done-state"><i data-lucide="shield-check"></i><strong>Kasus sudah ditutup</strong><p>Seluruh proses penanganan dan dokumentasi telah selesai.</p></div>
+                @if ($riskAssessment)
+                    <strong class="risk-score">{{ $riskAssessment->final_score }} / 100</strong>
                 @endif
             </div>
+            <form class="risk-form" method="POST" action="{{ route('cases.risk', $case->case_number) }}">
+                @csrf
+                <label>Kategori <input type="number" name="category_score" min="0" max="25" value="{{ $riskAssessment->category_score ?? 0 }}" required><small>0–25</small></label>
+                <label>Keselamatan <input type="number" name="safety_score" min="0" max="25" value="{{ $riskAssessment->safety_score ?? 0 }}" required><small>0–25</small></label>
+                <label>Pengulangan <input type="number" name="repetition_score" min="0" max="25" value="{{ $riskAssessment->repetition_score ?? 0 }}" required><small>0–25</small></label>
+                <label>Dampak <input type="number" name="impact_score" min="0" max="25" value="{{ $riskAssessment->impact_score ?? 0 }}" required><small>0–25</small></label>
+                <input class="risk-reason" type="text" name="reason" placeholder="Catatan penilaian (opsional)">
+                <button class="secondary-button" type="submit"><i data-lucide="shield-check"></i> Simpan penilaian</button>
+            </form>
+        </div>
 
-            <div class="case-panel upload-panel"><h2>Unggah dokumen</h2><form method="POST" action="{{ route('cases.documents', $case->case_number) }}" enctype="multipart/form-data">@csrf<select name="document_type"><option value="EVIDENCE">Bukti kasus</option><option value="RESOLUTION">Dokumen penyelesaian</option></select><input type="file" name="file" required><button class="secondary-button" type="submit"><i data-lucide="upload"></i> Unggah file</button></form><small>JPG, PNG, PDF, DOC, audio, atau video. Maksimal 10 MB.</small></div>
-            @if (session('user_role') === 'COUNSELOR')<div class="case-panel escalation-panel"><h2>Eskalasi manual</h2><p>Kirim notifikasi prioritas kepada Kepala Sekolah untuk kasus yang membutuhkan perhatian.</p><form method="POST" action="{{ route('cases.escalate', $case->case_number) }}">@csrf<textarea name="reason" rows="3" minlength="5" required placeholder="Jelaskan alasan eskalasi..."></textarea><button class="secondary-button" type="submit"><i data-lucide="arrow-up-right"></i> Eskalasikan kasus</button></form></div>@endif
-            <div class="case-panel privacy-panel"><i data-lucide="shield-check"></i><div><strong>Perlindungan identitas aktif</strong><p>Akses kasus ini tercatat dalam audit log dan hanya tersedia untuk pihak berwenang.</p></div></div>
-        </aside>
-    </main>
-</div>
-<script>lucide.createIcons();</script>
-</body>
-</html>
+        <div class="case-panel">
+            <div class="case-panel-heading">
+                <h2>Alur penanganan</h2>
+                <span class="case-count">{{ $history->count() }} aktivitas tercatat</span>
+            </div>
+            <div class="timeline">
+                <div class="timeline-item current">
+                    <span class="timeline-dot"></span>
+                    <div>
+                        <strong>Laporan masuk</strong>
+                        <small>{{ \Illuminate\Support\Carbon::parse($case->submitted_at)->format('d M Y, H:i') }}</small>
+                        <p>Laporan diterima oleh sistem dan masuk ke antrean Guru BK.</p>
+                    </div>
+                </div>
+                @foreach ($history as $item)
+                    <div class="timeline-item">
+                        <span class="timeline-dot"></span>
+                        <div>
+                            <strong>{{ str_replace('_', ' ', $item->new_status) }}</strong>
+                            <small>{{ \Illuminate\Support\Carbon::parse($item->created_at)->format('d M Y, H:i') }} · {{ $item->changed_by }}</small>
+                            <p>{{ $item->reason ?: 'Status kasus diperbarui.' }}</p>
+                        </div>
+                    </div>
+                @endforeach
+            </div>
+        </div>
+
+        <div class="case-panel">
+            <div class="case-panel-heading">
+                <h2>Aktivitas terakhir</h2>
+                <span class="case-count">Audit trail</span>
+            </div>
+            @forelse ($actions as $action)
+                <div class="activity-row">
+                    <span class="activity-icon"><i data-lucide="check-check"></i></span>
+                    <div>
+                        <strong>{{ $action->action_type }}</strong>
+                        <p>{{ $action->description }}</p>
+                        <small>{{ \Illuminate\Support\Carbon::parse($action->created_at)->format('d M Y, H:i') }} · {{ $action->performed_by }}</small>
+                    </div>
+                </div>
+            @empty
+                <p class="empty-state">Belum ada tindakan tercatat.</p>
+            @endforelse
+        </div>
+
+        <div class="case-panel notes-panel">
+            <div class="case-panel-heading">
+                <h2>Catatan kasus</h2>
+                <span class="case-count">Internal Guru BK</span>
+            </div>
+            <form class="note-form" method="POST" action="{{ route('cases.notes', $case->case_number) }}">
+                @csrf
+                <select name="note_type">
+                    <option value="VERIFICATION">Verifikasi</option>
+                    <option value="HANDLING">Penanganan</option>
+                    <option value="COUNSELING">Konseling</option>
+                    <option value="FOLLOW_UP">Tindak lanjut</option>
+                    <option value="INTERNAL">Internal</option>
+                </select>
+                <textarea name="content" rows="3" minlength="5" required placeholder="Tulis catatan internal untuk tim penanganan..."></textarea>
+                <button class="secondary-button" type="submit"><i data-lucide="notebook-pen"></i> Simpan catatan</button>
+            </form>
+            @forelse ($notes as $note)
+                <div class="note-row">
+                    <span class="activity-icon"><i data-lucide="notebook-tabs"></i></span>
+                    <div>
+                        <strong>{{ $note->note_type }}</strong>
+                        <p>{{ $note->content }}</p>
+                        <small>{{ \Illuminate\Support\Carbon::parse($note->created_at)->format('d M Y, H:i') }} · {{ $note->created_by }}</small>
+                    </div>
+                </div>
+            @empty
+                <p class="empty-state">Belum ada catatan internal.</p>
+            @endforelse
+        </div>
+
+        <div class="case-panel">
+            <div class="case-panel-heading">
+                <h2>Bukti & dokumen</h2>
+                <span class="case-count">{{ $evidences->count() + $resolutionDocuments->count() }} file</span>
+            </div>
+            <div class="document-columns">
+                <div>
+                    <small class="document-label">Bukti kasus</small>
+                    @forelse ($evidences as $evidence)
+                        <div class="document-row">
+                            <i data-lucide="paperclip"></i>
+                            <div>
+                                <a href="{{ route('cases.documents.download', [$case->case_number, 'evidence', $evidence->id]) }}">
+                                    <strong>{{ $evidence->file_name }}</strong>
+                                </a>
+                                <small>{{ number_format(($evidence->file_size ?? 0) / 1024, 0) }} KB</small>
+                            </div>
+                        </div>
+                    @empty
+                        <p class="empty-state">Belum ada bukti.</p>
+                    @endforelse
+                </div>
+                <div>
+                    <small class="document-label">Dokumen penyelesaian</small>
+                    @forelse ($resolutionDocuments as $document)
+                        <div class="document-row">
+                            <i data-lucide="file-check-2"></i>
+                            <div>
+                                <a href="{{ route('cases.documents.download', [$case->case_number, 'resolution', $document->id]) }}">
+                                    <strong>{{ $document->file_name }}</strong>
+                                </a>
+                                <small>Valid · {{ $document->uploaded_by }}</small>
+                            </div>
+                        </div>
+                    @empty
+                        <p class="empty-state">Belum ada dokumen.</p>
+                    @endforelse
+                </div>
+            </div>
+        </div>
+
+        <div class="case-panel">
+            <div class="case-panel-heading">
+                <h2>Riwayat eskalasi</h2>
+                <span class="case-count">{{ $escalations->count() }} eskalasi</span>
+            </div>
+            @forelse ($escalations as $escalation)
+                <div class="activity-row">
+                    <span class="activity-icon"><i data-lucide="arrow-up-right"></i></span>
+                    <div>
+                        <strong>{{ $escalation->escalation_type }} · {{ $escalation->notified_to }}</strong>
+                        <p>{{ $escalation->reason }}</p>
+                        <small>{{ \Illuminate\Support\Carbon::parse($escalation->created_at)->format('d M Y, H:i') }} · {{ $escalation->escalated_by }}</small>
+                    </div>
+                </div>
+            @empty
+                <p class="empty-state">Belum ada eskalasi.</p>
+            @endforelse
+        </div>
+
+        <div class="case-panel">
+            <div class="case-panel-heading">
+                <h2>Pelibatan orang tua</h2>
+                <span class="case-count">{{ $parentInvolvements->count() }} pihak</span>
+            </div>
+            @forelse ($parentInvolvements as $involvement)
+                <div class="participant-row">
+                    <span class="participant-type">{{ $involvement->status }}</span>
+                    <div>
+                        <strong>{{ session('user_role') === 'COUNSELOR' ? $involvement->parent_name : 'Identitas dibatasi' }}</strong>
+                        <small>{{ $involvement->reason ?: 'Tidak ada catatan alasan.' }}</small>
+                    </div>
+                </div>
+            @empty
+                <p class="empty-state">Belum ada keputusan pelibatan orang tua.</p>
+            @endforelse
+            @if (session('user_role') === 'COUNSELOR')
+                <form class="participant-form" method="POST" action="{{ route('cases.parent-involvement', $case->case_number) }}">
+                    @csrf
+                    <input name="parent_name" required placeholder="Nama orang tua">
+                    <input name="parent_contact" placeholder="Kontak opsional">
+                    <select name="status">
+                        <option value="NOT_REQUIRED">Tidak diperlukan</option>
+                        <option value="PENDING">Menunggu keputusan</option>
+                        <option value="APPROVED">Disetujui</option>
+                        <option value="CONTACTED">Sudah dihubungi</option>
+                        <option value="COMPLETED">Selesai</option>
+                    </select>
+                    <input name="reason" placeholder="Alasan/catatan">
+                    <button class="secondary-button" type="submit"><i data-lucide="users"></i> Simpan keputusan</button>
+                </form>
+            @endif
+        </div>
+    </section>
+
+    <aside class="case-aside">
+        <div class="case-panel quick-panel">
+            <h2>Perbarui status</h2>
+            <p class="quick-help">Pilih langkah berikutnya sesuai proses penanganan kasus.</p>
+            @if ($case->status === 'PENDING_RESPONSE')
+                <form method="POST" action="{{ route('cases.status', $case->case_number) }}">
+                    @csrf
+                    <input type="hidden" name="status" value="UNDER_VERIFICATION">
+                    <textarea name="reason" rows="2" placeholder="Catatan respons awal (opsional)"></textarea>
+                    <button class="primary-button" type="submit"><i data-lucide="message-circle"></i> Beri respons awal</button>
+                </form>
+            @elseif ($case->status === 'UNDER_VERIFICATION')
+                <form method="POST" action="{{ route('cases.status', $case->case_number) }}">
+                    @csrf
+                    <input type="hidden" name="status" value="IN_HANDLING">
+                    <textarea name="reason" rows="2" placeholder="Catatan hasil verifikasi (opsional)"></textarea>
+                    <button class="primary-button" type="submit"><i data-lucide="clipboard-check"></i> Mulai penanganan</button>
+                </form>
+                <form method="POST" action="{{ route('cases.status', $case->case_number) }}">
+                    @csrf
+                    <input type="hidden" name="status" value="RESOLVED">
+                    <textarea name="reason" rows="2" placeholder="Alasan penyelesaian"></textarea>
+                    <button class="secondary-button" type="submit"><i data-lucide="circle-check"></i> Tandai selesai</button>
+                </form>
+            @elseif ($case->status === 'IN_HANDLING')
+                <form method="POST" action="{{ route('cases.status', $case->case_number) }}">
+                    @csrf
+                    <input type="hidden" name="status" value="RESOLVED">
+                    <textarea name="reason" rows="2" placeholder="Ringkasan penyelesaian"></textarea>
+                    <button class="primary-button" type="submit"><i data-lucide="circle-check"></i> Tandai selesai</button>
+                </form>
+            @elseif ($case->status === 'RESOLVED')
+                <form method="POST" action="{{ route('cases.status', $case->case_number) }}">
+                    @csrf
+                    <input type="hidden" name="status" value="CLOSED">
+                    <button class="primary-button" type="submit"><i data-lucide="lock"></i> Tutup kasus</button>
+                </form>
+            @else
+                <div class="done-state">
+                    <i data-lucide="shield-check"></i>
+                    <strong>Kasus sudah ditutup</strong>
+                    <p>Seluruh proses penanganan dan dokumentasi telah selesai.</p>
+                </div>
+            @endif
+        </div>
+
+        <div class="case-panel upload-panel">
+            <h2>Unggah dokumen</h2>
+            <form method="POST" action="{{ route('cases.documents', $case->case_number) }}" enctype="multipart/form-data">
+                @csrf
+                <select name="document_type">
+                    <option value="EVIDENCE">Bukti kasus</option>
+                    <option value="RESOLUTION">Dokumen penyelesaian</option>
+                </select>
+                <input type="file" name="file" required>
+                <button class="secondary-button" type="submit"><i data-lucide="upload"></i> Unggah file</button>
+            </form>
+            <small>JPG, PNG, PDF, DOC, audio, atau video. Maksimal 10 MB.</small>
+        </div>
+
+        @if (session('user_role') === 'COUNSELOR')
+            <div class="case-panel escalation-panel">
+                <h2>Eskalasi manual</h2>
+                <p>Kirim notifikasi prioritas kepada Kepala Sekolah untuk kasus yang membutuhkan perhatian.</p>
+                <form method="POST" action="{{ route('cases.escalate', $case->case_number) }}">
+                    @csrf
+                    <textarea name="reason" rows="3" minlength="5" required placeholder="Jelaskan alasan eskalasi..."></textarea>
+                    <button class="secondary-button" type="submit"><i data-lucide="arrow-up-right"></i> Eskalasikan kasus</button>
+                </form>
+            </div>
+        @endif
+
+        <div class="case-panel privacy-panel">
+            <i data-lucide="shield-check"></i>
+            <div>
+                <strong>Perlindungan identitas aktif</strong>
+                <p>Akses kasus ini tercatat dalam audit log dan hanya tersedia untuk pihak berwenang.</p>
+            </div>
+        </div>
+    </aside>
+</main>
+@endsection
