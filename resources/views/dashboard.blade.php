@@ -1,19 +1,175 @@
-<!DOCTYPE html>
-<html lang="id">
-<head>
-    <meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Dashboard Guru BK | Sahabat Sekolah</title>
-    @vite(['resources/css/app.css', 'resources/js/app.js'])
-    <script src="https://unpkg.com/lucide@latest"></script>
-</head>
-<body>
-<div class="app-shell">
-<aside class="sidebar"><div class="brand"><div class="brand-mark">✦</div><div><strong>Sahabat<br>Sekolah</strong><small>Dashboard Guru BK</small></div></div><nav>
-<a class="nav-item active" href="#"><i data-lucide="layout-dashboard"></i>Dashboard</a><a class="nav-item" href="#laporan"><i data-lucide="inbox"></i>Laporan Masuk <b>{{ $stats['reports'] }}</b></a><a class="nav-item" href="#kasus"><i data-lucide="briefcase-business"></i>Manajemen Kasus</a><a class="nav-item" href="#"><i data-lucide="bar-chart-3"></i>Statistik</a><a class="nav-item" href="#"><i data-lucide="messages-square"></i>Konseling</a><a class="nav-item" href="#"><i data-lucide="users"></i>Orang Tua</a><a class="nav-item" href="#"><i data-lucide="database"></i>Master Data</a><a class="nav-item" href="#"><i data-lucide="settings"></i>Pengaturan</a>
-</nav><div class="sidebar-footer"><span class="online-dot"></span><span>Semua sistem normal</span></div></aside>
-<main class="main-content"><header class="topbar"><div><span class="eyebrow">SELASA, 10 MEI 2026</span><h1>Selamat datang, {{ session('user_name', 'Bu Ratna Sari') }}</h1><p>Kelola laporan dan dampingi siswa dengan penuh kepedulian.</p></div><div class="profile"><a class="icon-button" href="{{ route('notifications.index') }}"><i data-lucide="bell"></i><span></span></a><div class="avatar">RS</div><div><strong>{{ session('user_name', 'Bu Ratna Sari') }}</strong><small>Guru BK · MIN Kota Bukittinggi</small></div><form method="POST" action="{{ route('logout') }}">@csrf<button class="logout-button" type="submit"><i data-lucide="log-out"></i></button></form></div></header>
-<section class="hero-strip"><div><span class="pill">RUANG AMAN SEKOLAH</span><h2>Setiap laporan adalah<br>langkah menuju sekolah aman.</h2><p>Terima kasih sudah hadir untuk mendengar, melindungi, dan mendampingi.</p></div><div class="hero-art"><div class="sun"></div><div class="hill hill-one"></div><div class="hill hill-two"></div><div class="school-shape">⌂</div></div></section>
-<section class="stat-grid"><div class="stat-card blue"><div class="stat-icon"><i data-lucide="file-text"></i></div><div><span>Total Laporan</span><strong>{{ $stats['reports'] }}</strong><small><em>↑ 12%</em> dari bulan lalu</small></div></div><div class="stat-card orange"><div class="stat-icon"><i data-lucide="activity"></i></div><div><span>Dalam Penanganan</span><strong>{{ $stats['handling'] }}</strong><small><em>↑ 8%</em> perlu perhatian</small></div></div><div class="stat-card red"><div class="stat-icon"><i data-lucide="triangle-alert"></i></div><div><span>Risiko Tinggi</span><strong>{{ $stats['highRisk'] }}</strong><small><em>2 baru</em> minggu ini</small></div></div><div class="stat-card pink"><div class="stat-icon"><i data-lucide="clock-3"></i></div><div><span>SLA Overdue</span><strong>{{ $stats['overdue'] }}</strong><small><em>Perlu segera</em> ditindaklanjuti</small></div></div></section>
-<section class="content-grid"><div class="panel chart-panel"><div class="panel-heading"><div><h3>Tren Laporan</h3><p>Jumlah laporan masuk selama 6 bulan terakhir</p></div><button class="select-button">6 Bulan <i data-lucide="chevron-down"></i></button></div><div class="chart"><div class="chart-labels"><span>20</span><span>15</span><span>10</span><span>5</span><span>0</span></div><svg viewBox="0 0 560 180" preserveAspectRatio="none"><path class="area" d="M0 152 C40 145 52 124 90 132 S150 150 185 110 S235 120 270 92 S330 108 365 74 S420 85 445 52 S500 60 560 22 L560 180 L0 180Z"></path><path class="line" d="M0 152 C40 145 52 124 90 132 S150 150 185 110 S235 120 270 92 S330 108 365 74 S420 85 445 52 S500 60 560 22"></path></svg><div class="months"><span>Jan</span><span>Feb</span><span>Mar</span><span>Apr</span><span>Mei</span><span>Jun</span></div></div></div><div class="panel category-panel"><div class="panel-heading"><div><h3>Kategori Laporan</h3><p>Distribusi berdasarkan kategori</p></div><i data-lucide="more-horizontal"></i></div><div class="donut-wrap"><div class="donut"></div><div class="legend"><span><i class="dot cyan"></i>Cyberbullying <b>35%</b></span><span><i class="dot blue-dot"></i>Verbal <b>25%</b></span><span><i class="dot yellow"></i>Sosial <b>15%</b></span><span><i class="dot coral"></i>Fisik <b>15%</b></span><span><i class="dot pink-dot"></i>Seksual <b>5%</b></span></div></div></div></section>
-<section class="lower-grid"><div class="panel reports-panel" id="laporan"><div class="panel-heading"><div><h3>Laporan Masuk Terbaru</h3><p>Perlu perhatian dan tindakan Anda</p></div><a class="text-link" href="#">Lihat semua <i data-lucide="arrow-up-right"></i></a></div><div class="table-wrap"><table><thead><tr><th>No. Laporan</th><th>Kategori</th><th>Ringkasan</th><th>Status</th><th>Prioritas</th><th></th></tr></thead><tbody>@foreach ($cases as $case)<tr><td><strong>{{ $case->case_number }}</strong><small>{{ \Illuminate\Support\Carbon::parse($case->opened_at)->format('d M Y') }}</small></td><td><span class="category-tag">{{ $case->category }}</span></td><td class="summary">{{ $case->description }}</td><td><span class="status {{ strtolower($case->status) }}">{{ str_replace('_', ' ', $case->status) }}</span></td><td><span class="priority {{ strtolower($case->risk_level) }}">{{ $case->risk_level }}</span></td><td><button class="view-button">Lihat <i data-lucide="arrow-right"></i></button></td></tr>@endforeach</tbody></table></div></div><div class="panel alert-panel" id="kasus"><div class="panel-heading"><div><h3>Perlu Perhatian</h3><p>Prioritas tindak lanjut hari ini</p></div></div><div class="alert-list"><div class="alert-item"><div class="alert-badge red-bg"><i data-lucide="clock-3"></i></div><div><strong>{{ $stats['overdue'] }} laporan melewati SLA</strong><p>Segera berikan respons awal</p></div><i data-lucide="chevron-right"></i></div><div class="alert-item"><div class="alert-badge orange-bg"><i data-lucide="shield-alert"></i></div><div><strong>{{ $stats['highRisk'] }} kasus risiko tinggi</strong><p>Perlu pemantauan khusus</p></div><i data-lucide="chevron-right"></i></div><div class="alert-item"><div class="alert-badge blue-bg"><i data-lucide="message-circle"></i></div><div><strong>2 pesan baru dari pelapor</strong><p>Menunggu balasan Anda</p></div><i data-lucide="chevron-right"></i></div></div></div></section>
-<footer><span>© 2026 Sahabat Sekolah</span><span>“Dengarkan, Lindungi, Dampingi”</span><span>Butuh bantuan? <a href="#">Pusat Bantuan</a></span></footer></main></div><script>lucide.createIcons();</script></body></html>
+@extends('layouts.app', [
+    'title' => 'Dashboard Guru BK | Sahabat Sekolah',
+    'activeNav' => 'dashboard',
+    'pageTitle' => 'Selamat datang, ' . session('user_name', 'Bu Ratna Sari'),
+    'pageSubtitle' => 'Kelola laporan dan dampingi siswa dengan penuh kepedulian.'
+])
+
+@section('content')
+<section class="hero-strip">
+    <div>
+        <span class="pill">RUANG AMAN SEKOLAH</span>
+        <h2>Setiap laporan adalah<br>langkah menuju sekolah aman.</h2>
+        <p>Terima kasih sudah hadir untuk mendengar, melindungi, dan mendampingi.</p>
+    </div>
+    <div class="hero-art">
+        <div class="sun"></div>
+        <div class="hill hill-one"></div>
+        <div class="hill hill-two"></div>
+        <div class="school-shape">⌂</div>
+    </div>
+</section>
+
+<section class="stat-grid">
+    <div class="stat-card blue">
+        <div class="stat-icon"><i data-lucide="file-text"></i></div>
+        <div>
+            <span>Total Laporan</span>
+            <strong>{{ $stats['reports'] }}</strong>
+            <small><em>↑ 12%</em> dari bulan lalu</small>
+        </div>
+    </div>
+    <div class="stat-card orange">
+        <div class="stat-icon"><i data-lucide="activity"></i></div>
+        <div>
+            <span>Dalam Penanganan</span>
+            <strong>{{ $stats['handling'] }}</strong>
+            <small><em>↑ 8%</em> perlu perhatian</small>
+        </div>
+    </div>
+    <div class="stat-card red">
+        <div class="stat-icon"><i data-lucide="triangle-alert"></i></div>
+        <div>
+            <span>Risiko Tinggi</span>
+            <strong>{{ $stats['highRisk'] }}</strong>
+            <small><em>2 baru</em> minggu ini</small>
+        </div>
+    </div>
+    <div class="stat-card pink">
+        <div class="stat-icon"><i data-lucide="clock-3"></i></div>
+        <div>
+            <span>SLA Overdue</span>
+            <strong>{{ $stats['overdue'] }}</strong>
+            <small><em>Perlu segera</em> ditindaklanjuti</small>
+        </div>
+    </div>
+</section>
+
+<section class="content-grid">
+    <div class="panel chart-panel">
+        <div class="panel-heading">
+            <div>
+                <h3>Tren Laporan</h3>
+                <p>Jumlah laporan masuk selama 6 bulan terakhir</p>
+            </div>
+            <button class="select-button">6 Bulan <i data-lucide="chevron-down"></i></button>
+        </div>
+        <div class="chart">
+            <div class="chart-labels">
+                <span>20</span><span>15</span><span>10</span><span>5</span><span>0</span>
+            </div>
+            <svg viewBox="0 0 560 180" preserveAspectRatio="none">
+                <path class="area" d="M0 152 C40 145 52 124 90 132 S150 150 185 110 S235 120 270 92 S330 108 365 74 S420 85 445 52 S500 60 560 22 L560 180 L0 180Z"></path>
+                <path class="line" d="M0 152 C40 145 52 124 90 132 S150 150 185 110 S235 120 270 92 S330 108 365 74 S420 85 445 52 S500 60 560 22"></path>
+            </svg>
+            <div class="months">
+                <span>Jan</span><span>Feb</span><span>Mar</span><span>Apr</span><span>Mei</span><span>Jun</span>
+            </div>
+        </div>
+    </div>
+    <div class="panel category-panel">
+        <div class="panel-heading">
+            <div>
+                <h3>Kategori Laporan</h3>
+                <p>Distribusi berdasarkan kategori</p>
+            </div>
+            <i data-lucide="more-horizontal"></i>
+        </div>
+        <div class="donut-wrap">
+            <div class="donut"></div>
+            <div class="legend">
+                <span><i class="dot cyan"></i>Cyberbullying <b>35%</b></span>
+                <span><i class="dot blue-dot"></i>Verbal <b>25%</b></span>
+                <span><i class="dot yellow"></i>Sosial <b>15%</b></span>
+                <span><i class="dot coral"></i>Fisik <b>15%</b></span>
+                <span><i class="dot pink-dot"></i>Seksual <b>5%</b></span>
+            </div>
+        </div>
+    </div>
+</section>
+
+<section class="lower-grid">
+    <div class="panel reports-panel" id="laporan">
+        <div class="panel-heading">
+            <div>
+                <h3>Laporan Masuk Terbaru</h3>
+                <p>Perlu perhatian dan tindakan Anda</p>
+            </div>
+            <a class="text-link" href="{{ route('reports.inbox') }}">Lihat semua <i data-lucide="arrow-up-right"></i></a>
+        </div>
+        <div class="table-wrap">
+            <table>
+                <thead>
+                    <tr>
+                        <th>No. Laporan</th>
+                        <th>Kategori</th>
+                        <th>Ringkasan</th>
+                        <th>Status</th>
+                        <th>Prioritas</th>
+                        <th></th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach ($cases as $case)
+                        <tr>
+                            <td>
+                                <strong>{{ $case->case_number }}</strong>
+                                <small>{{ \Illuminate\Support\Carbon::parse($case->opened_at)->format('d M Y') }}</small>
+                            </td>
+                            <td><span class="category-tag">{{ $case->category }}</span></td>
+                            <td class="summary">{{ $case->description }}</td>
+                            <td><span class="status {{ strtolower($case->status) }}">{{ str_replace('_', ' ', $case->status) }}</span></td>
+                            <td><span class="priority {{ strtolower($case->risk_level) }}">{{ $case->risk_level }}</span></td>
+                            <td><a class="view-button" href="{{ route('cases.show', $case->case_number) }}">Lihat <i data-lucide="arrow-right"></i></a></td>
+                        </tr>
+                    @endforeach
+                </tbody>
+            </table>
+        </div>
+    </div>
+    <div class="panel alert-panel" id="kasus">
+        <div class="panel-heading">
+            <div>
+                <h3>Perlu Perhatian</h3>
+                <p>Prioritas tindak lanjut hari ini</p>
+            </div>
+        </div>
+        <div class="alert-list">
+            <a class="alert-item" href="{{ route('reports.inbox', ['sla_status' => 'OVERDUE']) }}">
+                <div class="alert-badge red-bg"><i data-lucide="clock-3"></i></div>
+                <div>
+                    <strong>{{ $stats['overdue'] }} laporan melewati SLA</strong>
+                    <p>Segera berikan respons awal</p>
+                </div>
+                <i data-lucide="chevron-right"></i>
+            </a>
+            <a class="alert-item" href="{{ route('reports.inbox', ['risk_level' => 'HIGH']) }}">
+                <div class="alert-badge orange-bg"><i data-lucide="shield-alert"></i></div>
+                <div>
+                    <strong>{{ $stats['highRisk'] }} kasus risiko tinggi</strong>
+                    <p>Perlu pemantauan khusus</p>
+                </div>
+                <i data-lucide="chevron-right"></i>
+            </a>
+            <a class="alert-item" href="{{ route('notifications.index') }}">
+                <div class="alert-badge blue-bg"><i data-lucide="message-circle"></i></div>
+                <div>
+                    <strong>Notifikasi & Pesan Terbaru</strong>
+                    <p>Menunggu tanggapan Anda</p>
+                </div>
+                <i data-lucide="chevron-right"></i>
+            </a>
+        </div>
+    </div>
+</section>
+@endsection

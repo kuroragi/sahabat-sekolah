@@ -1,42 +1,42 @@
 <?php
 
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
-use Illuminate\Support\Facades\Hash;
 
 if (! function_exists('notifyCounselor')) {
-function notifyCounselor(string $type, string $title, string $message, ?string $caseNumber = null, string $priority = 'NORMAL'): void
-{
-    DB::table('notifications')->insert([
-        'recipient_name' => 'Bu Ratna Sari', 'type' => $type, 'title' => $title,
-        'message' => $message, 'priority' => $priority, 'case_number' => $caseNumber,
-        'created_at' => now(), 'updated_at' => now(),
-    ]);
-}
+    function notifyCounselor(string $type, string $title, string $message, ?string $caseNumber = null, string $priority = 'NORMAL'): void
+    {
+        DB::table('notifications')->insert([
+            'recipient_name' => 'Bu Ratna Sari', 'type' => $type, 'title' => $title,
+            'message' => $message, 'priority' => $priority, 'case_number' => $caseNumber,
+            'created_at' => now(), 'updated_at' => now(),
+        ]);
+    }
 }
 
 if (! function_exists('auditAction')) {
-function auditAction(string $action, string $resourceType, string|int|null $resourceId = null, ?array $newValues = null, ?array $oldValues = null): void
-{
-    DB::table('audit_logs')->insert([
-        'user_id' => session('user_id'), 'user_name' => session('user_name'), 'action' => $action,
-        'resource_type' => $resourceType, 'resource_id' => $resourceId === null ? null : (string) $resourceId,
-        'old_values' => $oldValues ? json_encode($oldValues) : null, 'new_values' => $newValues ? json_encode($newValues) : null,
-        'ip_address' => request()->ip(), 'user_agent' => request()->userAgent(), 'created_at' => now(), 'updated_at' => now(),
-    ]);
-}
+    function auditAction(string $action, string $resourceType, string|int|null $resourceId = null, ?array $newValues = null, ?array $oldValues = null): void
+    {
+        DB::table('audit_logs')->insert([
+            'user_id' => session('user_id'), 'user_name' => session('user_name'), 'action' => $action,
+            'resource_type' => $resourceType, 'resource_id' => $resourceId === null ? null : (string) $resourceId,
+            'old_values' => $oldValues ? json_encode($oldValues) : null, 'new_values' => $newValues ? json_encode($newValues) : null,
+            'ip_address' => request()->ip(), 'user_agent' => request()->userAgent(), 'created_at' => now(), 'updated_at' => now(),
+        ]);
+    }
 }
 
 if (! function_exists('scopedCase')) {
-function scopedCase(string $caseNumber): object
-{
-    return DB::table('cases')
-        ->where('case_number', $caseNumber)
-        ->where('school_id', session('school_id'))
-        ->firstOrFail();
-}
+    function scopedCase(string $caseNumber): object
+    {
+        return DB::table('cases')
+            ->where('case_number', $caseNumber)
+            ->where('school_id', session('school_id'))
+            ->firstOrFail();
+    }
 }
 
 Route::get('/login', fn () => view('auth.login'))->name('login');
@@ -61,6 +61,7 @@ Route::post('/login', function () {
 Route::post('/logout', function () {
     request()->session()->invalidate();
     request()->session()->regenerateToken();
+
     return redirect()->route('login');
 })->name('logout');
 
@@ -71,6 +72,7 @@ Route::get('/health/details', function () {
     } catch (Throwable) {
         $database = 'failed';
     }
+
     return response()->json(['status' => $database === 'ok' && is_writable(storage_path()) ? 'ok' : 'degraded', 'checks' => ['database' => $database, 'storage' => is_writable(storage_path()) ? 'ok' : 'failed'], 'timestamp' => now()->toIso8601String()], $database === 'ok' ? 200 : 503);
 })->name('health.details');
 
@@ -85,6 +87,7 @@ Route::post('/admin/schools', function () {
     $data = request()->validate(['name' => ['required', 'string', 'max:255'], 'education_level' => ['required', 'in:SD,SDI,MIN,SMP,MTS']]);
     DB::table('schools')->insert($data + ['created_at' => now(), 'updated_at' => now()]);
     auditAction('CREATE_SCHOOL', 'SCHOOL', null, $data);
+
     return back()->with('success', 'Sekolah berhasil ditambahkan.');
 })->middleware(['role:ADMIN', 'permission:SCHOOL_MANAGE'])->name('admin.schools.store');
 
@@ -92,6 +95,7 @@ Route::post('/admin/users', function () {
     $data = request()->validate(['name' => ['required', 'string', 'max:255'], 'email' => ['required', 'email', 'unique:users,email'], 'role' => ['required', 'in:COUNSELOR,PRINCIPAL,ADMIN'], 'school_id' => ['nullable', 'integer', 'exists:schools,id']]);
     DB::table('users')->insert($data + ['password' => Hash::make('password'), 'created_at' => now(), 'updated_at' => now()]);
     auditAction('CREATE_USER', 'USER', $data['email'], ['role' => $data['role'], 'school_id' => $data['school_id']]);
+
     return back()->with('success', 'Pengguna berhasil dibuat. Password awal: password.');
 })->middleware(['role:ADMIN', 'permission:USER_MANAGE'])->name('admin.users.store');
 
@@ -103,6 +107,7 @@ Route::post('/admin/users/{id}', function (int $id) {
     $data = request()->validate(['name' => ['required', 'string', 'max:255'], 'role' => ['required', 'in:COUNSELOR,PRINCIPAL,ADMIN'], 'school_id' => ['nullable', 'integer', 'exists:schools,id'], 'status' => ['required', 'in:ACTIVE,INACTIVE']]);
     DB::table('users')->where('id', $id)->update($data + ['updated_at' => now()]);
     auditAction('UPDATE_USER', 'USER', $id, $data);
+
     return back()->with('success', 'Pengguna berhasil diperbarui.');
 })->middleware(['role:ADMIN', 'permission:USER_MANAGE'])->name('admin.users.update');
 
@@ -114,6 +119,7 @@ Route::post('/admin/schools/{id}', function (int $id) {
     $data = request()->validate(['name' => ['required', 'string', 'max:255'], 'education_level' => ['required', 'in:SD,SDI,MIN,SMP,MTS'], 'status' => ['required', 'in:1,0']]);
     DB::table('schools')->where('id', $id)->update(['name' => $data['name'], 'education_level' => $data['education_level'], 'status' => (bool) $data['status'], 'updated_at' => now()]);
     auditAction('UPDATE_SCHOOL', 'SCHOOL', $id, $data);
+
     return back()->with('success', 'Sekolah berhasil diperbarui.');
 })->middleware(['role:ADMIN', 'permission:SCHOOL_MANAGE'])->name('admin.schools.update');
 
@@ -121,6 +127,7 @@ Route::get('/admin/master-data', function () {
     return view('admin.master-data', [
         'categories' => DB::table('bullying_categories')->orderBy('name')->get()->map(function ($category) {
             $category->subcategories = DB::table('bullying_subcategories')->where('category_id', $category->id)->orderBy('name')->get();
+
             return $category;
         }),
     ]);
@@ -130,6 +137,7 @@ Route::post('/admin/master-data/categories', function () {
     $data = request()->validate(['name' => ['required', 'string', 'max:255'], 'description' => ['nullable', 'string', 'max:500']]);
     DB::table('bullying_categories')->insert(['code' => strtoupper(str_replace(' ', '_', $data['name'])), 'name' => $data['name'], 'description' => $data['description'] ?? null, 'status' => true, 'created_at' => now(), 'updated_at' => now()]);
     auditAction('CREATE_CATEGORY', 'BULLYING_CATEGORY', null, $data);
+
     return back()->with('success', 'Kategori berhasil ditambahkan.');
 })->middleware(['role:ADMIN', 'permission:MASTER_DATA_MANAGE'])->name('admin.categories.store');
 
@@ -137,6 +145,7 @@ Route::post('/admin/master-data/subcategories', function () {
     $data = request()->validate(['category_id' => ['required', 'integer', 'exists:bullying_categories,id'], 'name' => ['required', 'string', 'max:255'], 'default_risk_level' => ['required', 'in:LOW,MEDIUM,HIGH,CRITICAL'], 'risk_score' => ['required', 'integer', 'min:0', 'max:100']]);
     DB::table('bullying_subcategories')->insert(['category_id' => $data['category_id'], 'code' => strtoupper(str_replace(' ', '_', $data['name'])), 'name' => $data['name'], 'default_risk_level' => $data['default_risk_level'], 'risk_score' => $data['risk_score'], 'status' => true, 'created_at' => now(), 'updated_at' => now()]);
     auditAction('CREATE_SUBCATEGORY', 'BULLYING_SUBCATEGORY', null, $data);
+
     return back()->with('success', 'Subkategori berhasil ditambahkan.');
 })->middleware(['role:ADMIN', 'permission:MASTER_DATA_MANAGE'])->name('admin.subcategories.store');
 
@@ -170,6 +179,7 @@ Route::get('/reports/create', function () {
         'schools' => DB::table('schools')->orderBy('name')->get(),
         'categories' => DB::table('bullying_categories')->where('status', true)->orderBy('name')->get()->map(function ($category) {
             $category->subcategories = DB::table('bullying_subcategories')->where('category_id', $category->id)->where('status', true)->orderBy('name')->get();
+
             return $category;
         }),
     ]);
@@ -181,10 +191,20 @@ Route::get('/reports/inbox', function () {
         ->leftJoin('case_slas', 'cases.id', '=', 'case_slas.case_id')
         ->where('cases.school_id', session('school_id'))
         ->select('cases.*', 'reports.description', 'reports.reporter_role', 'reports.identity_mode', 'case_slas.status as sla_status');
-    if ($status = request('status')) $query->where('cases.status', $status);
-    if ($risk = request('risk_level')) $query->where('cases.risk_level', $risk);
-    if ($sla = request('sla_status')) $query->where('case_slas.status', $sla);
-    if ($search = trim((string) request('search'))) $query->where(function ($builder) use ($search) { $builder->where('cases.case_number', 'like', '%' . $search . '%')->orWhere('cases.category', 'like', '%' . $search . '%')->orWhere('reports.description', 'like', '%' . $search . '%'); });
+    if ($status = request('status')) {
+        $query->where('cases.status', $status);
+    }
+    if ($risk = request('risk_level')) {
+        $query->where('cases.risk_level', $risk);
+    }
+    if ($sla = request('sla_status')) {
+        $query->where('case_slas.status', $sla);
+    }
+    if ($search = trim((string) request('search'))) {
+        $query->where(function ($builder) use ($search) {
+            $builder->where('cases.case_number', 'like', '%'.$search.'%')->orWhere('cases.category', 'like', '%'.$search.'%')->orWhere('reports.description', 'like', '%'.$search.'%');
+        });
+    }
 
     return view('reports.inbox', ['cases' => $query->orderByDesc('cases.updated_at')->get(), 'filters' => request()->only(['status', 'risk_level', 'sla_status', 'search'])]);
 })->middleware(['role:COUNSELOR,PRINCIPAL', 'permission:REPORT_VIEW'])->name('reports.inbox');
@@ -194,6 +214,7 @@ Route::get('/statistics', function () {
     $base = DB::table('cases')->where('school_id', $schoolId);
     $cases = $base->get();
     $sla = DB::table('case_slas')->join('cases', 'case_slas.case_id', '=', 'cases.id')->where('cases.school_id', $schoolId)->get();
+
     return view('statistics.index', [
         'stats' => ['total' => $cases->count(), 'resolved' => $cases->whereIn('status', ['RESOLVED', 'CLOSED'])->count(), 'active' => $cases->whereNotIn('status', ['RESOLVED', 'CLOSED'])->count(), 'highRisk' => $cases->whereIn('risk_level', ['HIGH', 'CRITICAL'])->count(), 'overdue' => $sla->where('status', 'OVERDUE')->count()],
         'categories' => $cases->groupBy('category')->map->count()->sortDesc(),
@@ -207,7 +228,14 @@ Route::get('/statistics/export', function () {
     $schoolId = session('school_id');
     $rows = DB::table('cases')->join('case_slas', 'cases.id', '=', 'case_slas.case_id')->where('cases.school_id', $schoolId)->select('cases.case_number', 'cases.category', 'cases.risk_level', 'cases.status', 'case_slas.status as sla_status', 'cases.opened_at', 'cases.resolved_at', 'cases.closed_at')->orderBy('cases.opened_at')->get();
     auditAction('EXPORT_STATISTICS', 'REPORT', null, ['row_count' => $rows->count()]);
-    return response()->streamDownload(function () use ($rows) { $handle = fopen('php://output', 'w'); fputcsv($handle, ['Case Number', 'Category', 'Risk Level', 'Case Status', 'SLA Status', 'Opened At', 'Resolved At', 'Closed At']); foreach ($rows as $row) fputcsv($handle, (array) $row); fclose($handle); }, 'sahabat-sekolah-statistics.csv', ['Content-Type' => 'text/csv']);
+
+    return response()->streamDownload(function () use ($rows) {
+        $handle = fopen('php://output', 'w');
+        fputcsv($handle, ['Case Number', 'Category', 'Risk Level', 'Case Status', 'SLA Status', 'Opened At', 'Resolved At', 'Closed At']);
+        foreach ($rows as $row) {
+            fputcsv($handle, (array) $row);
+        } fclose($handle);
+    }, 'sahabat-sekolah-statistics.csv', ['Content-Type' => 'text/csv']);
 })->middleware(['role:COUNSELOR,PRINCIPAL', 'permission:STATISTICS_VIEW'])->name('statistics.export');
 
 Route::post('/reports', function () {
@@ -220,10 +248,18 @@ Route::post('/reports', function () {
         'category' => ['required', 'string', 'max:255', 'exists:bullying_categories,name'],
         'subcategory' => ['nullable', 'string', 'max:255', 'exists:bullying_subcategories,name'],
         'description' => ['required', 'string', 'min:20'],
+    ], [
+        'school_id.required' => 'Pilih sekolah terlebih dahulu.',
+        'reporter_role.required' => 'Pilih peran pelapor (Saya korban, Saya saksi, atau Saya mengetahui kejadian).',
+        'identity_mode.required' => 'Pilih mode identitas laporan.',
+        'reporter_name.required_unless' => 'Nama pelapor wajib diisi jika mode identitas Rahasia atau Terbuka.',
+        'category.required' => 'Pilih kategori kejadian perundungan.',
+        'description.required' => 'Ceritakan kronologi kejadian perundungan.',
+        'description.min' => 'Cerita kejadian minimal 20 karakter agar informasi laporan cukup jelas.',
     ]);
 
     $caseNumber = DB::transaction(function () use ($data) {
-        $number = 'SS-' . now()->format('Y') . '-' . str_pad((string) ((DB::table('reports')->max('id') ?? 0) + 1), 6, '0', STR_PAD_LEFT);
+        $number = 'SS-'.now()->format('Y').'-'.str_pad((string) ((DB::table('reports')->max('id') ?? 0) + 1), 6, '0', STR_PAD_LEFT);
         $now = now();
         $reportData = $data;
         unset($reportData['reporter_name'], $reportData['reporter_contact']);
@@ -250,7 +286,7 @@ Route::post('/reports', function () {
                 'created_at' => $now, 'updated_at' => $now,
             ]);
         }
-        notifyCounselor('NEW_REPORT', 'Laporan baru masuk', $number . ' menunggu respons awal dalam 1 × 24 jam.', $number, 'HIGH');
+        notifyCounselor('NEW_REPORT', 'Laporan baru masuk', $number.' menunggu respons awal dalam 1 × 24 jam.', $number, 'HIGH');
 
         $anonymousToken = null;
         if ($data['identity_mode'] === 'ANONYMOUS') {
@@ -274,6 +310,7 @@ Route::post('/reports', function () {
 
 Route::get('/reports/receipt', function () {
     abort_unless(session()->has('anonymous_token'), 404);
+
     return view('reports.receipt', ['reportNumber' => session('report_number'), 'anonymousToken' => session('anonymous_token')]);
 })->name('reports.receipt');
 
@@ -296,15 +333,17 @@ Route::get('/anonymous-channel', function () {
             $messages = DB::table('anonymous_messages')->where('report_id', $report->id)->orderBy('created_at')->get();
         }
     }
+
     return view('anonymous.channel', compact('token', 'report', 'messages'));
 })->name('anonymous.channel');
 
 Route::post('/anonymous-channel/message', function () {
     $data = request()->validate(['token' => ['required', 'string', 'size:12'], 'message' => ['required', 'string', 'min:5', 'max:2000']]);
     $report = DB::table('anonymous_report_tokens')->where('token_hash', hash('sha256', strtoupper($data['token'])))->where('status', true)->first();
-    abort_unless($report && (!$report->expires_at || now()->lessThan($report->expires_at)), 403, 'Token anonim tidak valid atau sudah kedaluwarsa.');
+    abort_unless($report && (! $report->expires_at || now()->lessThan($report->expires_at)), 403, 'Token anonim tidak valid atau sudah kedaluwarsa.');
     DB::table('anonymous_messages')->insert(['report_id' => $report->report_id, 'sender_type' => 'REPORTER', 'message' => $data['message'], 'created_at' => now(), 'updated_at' => now()]);
     notifyCounselor('ANONYMOUS_MESSAGE', 'Pesan anonim baru', 'Pelapor mengirim informasi tambahan pada laporan.', null, 'HIGH');
+
     return redirect()->route('anonymous.channel', ['token' => strtoupper($data['token'])])->with('success', 'Pesan anonim berhasil dikirim.');
 })->middleware('throttle:5,1')->name('anonymous.message');
 
@@ -338,6 +377,7 @@ Route::get('/principal', function () {
 
 Route::post('/notifications/{id}/read', function (int $id) {
     DB::table('notifications')->where('id', $id)->update(['read_at' => now(), 'updated_at' => now()]);
+
     return back();
 })->middleware(['role:COUNSELOR,PRINCIPAL', 'permission:NOTIFICATION_VIEW'])->name('notifications.read');
 
@@ -391,9 +431,9 @@ Route::post('/cases/{caseNumber}/parent-involvement', function (string $caseNumb
     $now = now();
     DB::table('case_parent_involvements')->updateOrInsert(['case_id' => $case->id, 'parent_id' => $parentId], ['status' => $data['status'], 'reason' => $data['reason'] ?? null, 'contacted_at' => in_array($data['status'], ['CONTACTED', 'COMPLETED'], true) ? $now : null, 'completed_at' => $data['status'] === 'COMPLETED' ? $now : null, 'updated_at' => $now, 'created_at' => $now]);
     auditAction('UPDATE_PARENT_INVOLVEMENT', 'CASE', $case->case_number, ['parent' => $data['parent_name'], 'status' => $data['status']]);
-    notifyCounselor('PARENT_INVOLVEMENT', 'Pelibatan orang tua diperbarui', 'Status pelibatan orang tua pada ' . $case->case_number . ' menjadi ' . $data['status'] . '.', $case->case_number);
+    notifyCounselor('PARENT_INVOLVEMENT', 'Pelibatan orang tua diperbarui', 'Status pelibatan orang tua pada '.$case->case_number.' menjadi '.$data['status'].'.', $case->case_number);
 
-    return redirect()->route('cases.show', $caseNumber)->with('success', 'Pelibatan orang tua berhasil diperbarui.');
+    return back()->with('success', 'Pelibatan orang tua berhasil diperbarui.');
 })->middleware(['role:COUNSELOR', 'permission:CASE_UPDATE'])->name('cases.parent-involvement');
 
 Route::post('/cases/{caseNumber}/participants', function (string $caseNumber) {
@@ -409,7 +449,7 @@ Route::post('/cases/{caseNumber}/participants', function (string $caseNumber) {
     ]);
     auditAction('ADD_PARTICIPANT', 'CASE', $case->case_number, ['participant_type' => $data['participant_type'], 'visibility' => $data['identity_visibility']]);
 
-    return redirect()->route('cases.show', $caseNumber)->with('success', 'Pihak terkait berhasil ditambahkan.');
+    return back()->with('success', 'Pihak terkait berhasil ditambahkan.');
 })->middleware(['role:COUNSELOR', 'permission:CASE_UPDATE'])->name('cases.participants');
 
 Route::post('/cases/{caseNumber}/escalate', function (string $caseNumber) {
@@ -421,12 +461,12 @@ Route::post('/cases/{caseNumber}/escalate', function (string $caseNumber) {
     ]);
     DB::table('notifications')->insert([
         'recipient_name' => 'Kepala Sekolah', 'type' => 'MANUAL_ESCALATION',
-        'title' => 'Kasus dieskalasikan', 'message' => $case->case_number . ' membutuhkan perhatian Kepala Sekolah.',
+        'title' => 'Kasus dieskalasikan', 'message' => $case->case_number.' membutuhkan perhatian Kepala Sekolah.',
         'priority' => 'URGENT', 'case_number' => $case->case_number, 'created_at' => now(), 'updated_at' => now(),
     ]);
     auditAction('ESCALATE_CASE', 'CASE', $case->case_number, ['reason' => $data['reason']]);
 
-    return redirect()->route('cases.show', $caseNumber)->with('success', 'Kasus berhasil dieskalasikan kepada Kepala Sekolah.');
+    return back()->with('success', 'Kasus berhasil dieskalasikan kepada Kepala Sekolah.');
 })->middleware(['role:COUNSELOR', 'permission:CASE_ESCALATE'])->name('cases.escalate');
 
 Route::post('/cases/{caseNumber}/notes', function (string $caseNumber) {
@@ -440,9 +480,9 @@ Route::post('/cases/{caseNumber}/notes', function (string $caseNumber) {
         'visibility' => 'PRIVATE_BK', 'created_by' => 'Bu Ratna Sari', 'created_at' => now(), 'updated_at' => now(),
     ]);
     auditAction('CREATE_NOTE', 'CASE', $case->case_number, ['note_type' => $data['note_type']]);
-    notifyCounselor('NOTE_ADDED', 'Catatan kasus ditambahkan', 'Catatan ' . strtolower($data['note_type']) . ' ditambahkan ke ' . $caseNumber . '.', $caseNumber);
+    notifyCounselor('NOTE_ADDED', 'Catatan kasus ditambahkan', 'Catatan '.strtolower($data['note_type']).' ditambahkan ke '.$caseNumber.'.', $caseNumber);
 
-    return redirect()->route('cases.show', $caseNumber)->with('success', 'Catatan kasus berhasil disimpan.');
+    return back()->with('success', 'Catatan kasus berhasil disimpan.');
 })->middleware(['role:COUNSELOR', 'permission:CASE_NOTE_CREATE'])->name('cases.notes');
 
 Route::post('/cases/{caseNumber}/risk', function (string $caseNumber) {
@@ -471,10 +511,10 @@ Route::post('/cases/{caseNumber}/risk', function (string $caseNumber) {
         ]);
         DB::table('cases')->where('id', $case->id)->update(['risk_level' => $risk, 'updated_at' => $now]);
         auditAction('ASSESS_RISK', 'CASE', $case->case_number, ['risk_level' => $risk, 'score' => $score]);
-        notifyCounselor('RISK_ASSESSED', 'Penilaian risiko tersimpan', $case->case_number . ' memiliki level risiko ' . $risk . ' dengan skor ' . $score . '.', $case->case_number, in_array($risk, ['HIGH', 'CRITICAL'], true) ? 'URGENT' : 'NORMAL');
+        notifyCounselor('RISK_ASSESSED', 'Penilaian risiko tersimpan', $case->case_number.' memiliki level risiko '.$risk.' dengan skor '.$score.'.', $case->case_number, in_array($risk, ['HIGH', 'CRITICAL'], true) ? 'URGENT' : 'NORMAL');
     });
 
-    return redirect()->route('cases.show', $caseNumber)->with('success', 'Penilaian risiko berhasil disimpan.');
+    return back()->with('success', 'Penilaian risiko berhasil disimpan.');
 })->middleware(['role:COUNSELOR', 'permission:RISK_ASSESS'])->name('cases.risk');
 
 Route::post('/cases/{caseNumber}/documents', function (string $caseNumber) {
@@ -496,9 +536,9 @@ Route::post('/cases/{caseNumber}/documents', function (string $caseNumber) {
         DB::table('case_evidences')->insert($payload + ['mime_type' => $file->getMimeType(), 'file_size' => $file->getSize()]);
     }
     auditAction('UPLOAD_DOCUMENT', 'CASE', $case->case_number, ['file_name' => $file->getClientOriginalName(), 'document_type' => $data['document_type']]);
-    notifyCounselor('DOCUMENT_UPLOADED', 'Dokumen kasus diunggah', $file->getClientOriginalName() . ' ditambahkan ke ' . $caseNumber . '.', $caseNumber);
+    notifyCounselor('DOCUMENT_UPLOADED', 'Dokumen kasus diunggah', $file->getClientOriginalName().' ditambahkan ke '.$caseNumber.'.', $caseNumber);
 
-    return redirect()->route('cases.show', $caseNumber)->with('success', 'Dokumen berhasil diunggah.');
+    return back()->with('success', 'Dokumen berhasil diunggah.');
 })->middleware(['role:COUNSELOR', 'permission:EVIDENCE_UPLOAD'])->name('cases.documents');
 
 Route::get('/cases/{caseNumber}/documents/{documentType}/{id}', function (string $caseNumber, string $documentType, int $id) {
@@ -547,7 +587,7 @@ Route::post('/cases/{caseNumber}/status', function (string $caseNumber) {
         DB::table('case_actions')->insert([
             'case_id' => $case->id,
             'action_type' => $data['status'] === 'UNDER_VERIFICATION' ? 'VERIFICATION' : ($data['status'] === 'IN_HANDLING' ? 'HANDLING' : 'RESOLUTION'),
-            'description' => $data['reason'] ?: 'Status kasus diperbarui menjadi ' . str_replace('_', ' ', $data['status']),
+            'description' => $data['reason'] ?: 'Status kasus diperbarui menjadi '.str_replace('_', ' ', $data['status']),
             'performed_by' => 'Bu Ratna Sari', 'created_at' => $now, 'updated_at' => $now,
         ]);
         if ($case->status === 'PENDING_RESPONSE') {
@@ -555,9 +595,9 @@ Route::post('/cases/{caseNumber}/status', function (string $caseNumber) {
                 'status' => 'COMPLETED', 'initial_response_at' => $now, 'updated_at' => $now,
             ]);
         }
-        notifyCounselor('STATUS_CHANGED', 'Status kasus diperbarui', $case->case_number . ' sekarang ' . str_replace('_', ' ', $data['status']) . '.', $case->case_number, 'HIGH');
+        notifyCounselor('STATUS_CHANGED', 'Status kasus diperbarui', $case->case_number.' sekarang '.str_replace('_', ' ', $data['status']).'.', $case->case_number, 'HIGH');
         auditAction('CHANGE_STATUS', 'CASE', $case->case_number, ['status' => $data['status']], ['status' => $case->status]);
     });
 
-    return redirect()->route('cases.show', $caseNumber)->with('success', 'Status kasus berhasil diperbarui.');
+    return back()->with('success', 'Status kasus berhasil diperbarui.');
 })->middleware(['role:COUNSELOR', 'permission:CASE_UPDATE'])->name('cases.status');

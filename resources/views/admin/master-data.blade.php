@@ -1,4 +1,81 @@
-<!DOCTYPE html>
-<html lang="id">
-<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><title>Master Data | Sahabat Sekolah</title>@vite(['resources/css/app.css','resources/js/app.js'])<script src="https://unpkg.com/lucide@latest"></script></head>
-<body><div class="admin-shell"><header class="case-topbar"><a class="brand-link" href="{{ route('admin.index') }}"><span class="brand-mark">✦</span><strong>Sahabat Sekolah</strong></a><a class="back-link" href="{{ route('admin.index') }}"><i data-lucide="arrow-left"></i> Administrator</a></header><main class="admin-main">@if (session('success'))<div class="channel-success"><i data-lucide="circle-check"></i>{{ session('success') }}</div>@endif<div class="admin-heading"><span class="eyebrow">MASTER DATA</span><h1>Kategori perundungan</h1><p>Kelola kategori, subkategori, dan parameter risiko untuk seluruh sekolah.</p></div><section class="admin-grid"><div class="panel"><div class="panel-heading"><div><h3>Tambah kategori</h3><p>Kategori utama perundungan</p></div></div><form class="admin-form" method="POST" action="{{ route('admin.categories.store') }}">@csrf<input name="name" required placeholder="Contoh: Perundungan Verbal"><textarea name="description" rows="3" placeholder="Deskripsi kategori"></textarea><button class="primary-button" type="submit"><i data-lucide="plus"></i> Tambah kategori</button></form></div><div class="panel"><div class="panel-heading"><div><h3>Tambah subkategori</h3><p>Parameter default risk engine</p></div></div><form class="admin-form" method="POST" action="{{ route('admin.subcategories.store') }}">@csrf<select name="category_id" required><option value="">Pilih kategori</option>@foreach ($categories as $category)<option value="{{ $category->id }}">{{ $category->name }}</option>@endforeach</select><input name="name" required placeholder="Nama subkategori"><select name="default_risk_level"><option>LOW</option><option>MEDIUM</option><option>HIGH</option><option>CRITICAL</option></select><input type="number" name="risk_score" min="0" max="100" value="0" required placeholder="Risk score"><button class="primary-button" type="submit"><i data-lucide="plus"></i> Tambah subkategori</button></form></div></section><section class="panel master-category-list"><div class="panel-heading"><div><h3>Daftar kategori dan subkategori</h3><p>Data aktif yang digunakan pada form laporan.</p></div></div>@foreach ($categories as $category)<div class="master-category"><div><strong>{{ $category->name }}</strong><small>{{ $category->description }}</small></div><span>{{ $category->subcategories->count() }} subkategori</span></div>@foreach ($category->subcategories as $subcategory)<div class="master-subcategory"><span>{{ $subcategory->name }}</span><small>{{ $subcategory->default_risk_level }} · {{ $subcategory->risk_score }}</small></div>@endforeach @endforeach</section></main></div><script>lucide.createIcons();</script></body></html>
+@extends('layouts.app', [
+    'title' => 'Master Data | Sahabat Sekolah',
+    'activeNav' => 'admin-master-data',
+    'eyebrow' => 'MASTER DATA',
+    'pageTitle' => 'Kategori Perundungan & Parameter Risiko',
+    'pageSubtitle' => 'Kelola kategori, subkategori, dan parameter risiko untuk seluruh sekolah.'
+])
+
+@section('content')
+<section class="admin-grid">
+    <div class="panel">
+        <div class="panel-heading">
+            <div>
+                <h3>Tambah Kategori</h3>
+                <p>Kategori utama perundungan</p>
+            </div>
+        </div>
+        <form class="admin-form" method="POST" action="{{ route('admin.categories.store') }}">
+            @csrf
+            <input name="name" required placeholder="Contoh: Perundungan Verbal">
+            <textarea name="description" rows="3" placeholder="Deskripsi kategori"></textarea>
+            <button class="primary-button" type="submit">
+                <i data-lucide="plus"></i> Tambah kategori
+            </button>
+        </form>
+    </div>
+
+    <div class="panel">
+        <div class="panel-heading">
+            <div>
+                <h3>Tambah Subkategori</h3>
+                <p>Parameter default risk engine</p>
+            </div>
+        </div>
+        <form class="admin-form" method="POST" action="{{ route('admin.subcategories.store') }}">
+            @csrf
+            <select name="category_id" required>
+                <option value="">Pilih kategori</option>
+                @foreach ($categories as $category)
+                    <option value="{{ $category->id }}">{{ $category->name }}</option>
+                @endforeach
+            </select>
+            <input name="name" required placeholder="Nama subkategori">
+            <select name="default_risk_level">
+                <option value="LOW">LOW</option>
+                <option value="MEDIUM">MEDIUM</option>
+                <option value="HIGH">HIGH</option>
+                <option value="CRITICAL">CRITICAL</option>
+            </select>
+            <input type="number" name="risk_score" min="0" max="100" value="0" required placeholder="Risk score">
+            <button class="primary-button" type="submit">
+                <i data-lucide="plus"></i> Tambah subkategori
+            </button>
+        </form>
+    </div>
+</section>
+
+<section class="panel master-category-list">
+    <div class="panel-heading">
+        <div>
+            <h3>Daftar Kategori dan Subkategori</h3>
+            <p>Data aktif yang digunakan pada form laporan.</p>
+        </div>
+    </div>
+    @foreach ($categories as $category)
+        <div class="master-category">
+            <div>
+                <strong>{{ $category->name }}</strong>
+                <small>{{ $category->description }}</small>
+            </div>
+            <span>{{ $category->subcategories->count() }} subkategori</span>
+        </div>
+        @foreach ($category->subcategories as $subcategory)
+            <div class="master-subcategory">
+                <span>{{ $subcategory->name }}</span>
+                <small>{{ $subcategory->default_risk_level }} · {{ $subcategory->risk_score }}</small>
+            </div>
+        @endforeach
+    @endforeach
+</section>
+@endsection
