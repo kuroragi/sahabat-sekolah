@@ -1,5 +1,6 @@
 <?php
 
+use App\Helpers\AConnect;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Route;
@@ -175,8 +176,14 @@ Route::get('/dashboard', function () {
 })->middleware(['role:COUNSELOR,PRINCIPAL', 'permission:REPORT_VIEW'])->name('dashboard');
 
 Route::get('/reports/create', function () {
+    $schools = new AConnect();
+    $data = collect($schools->getDataSekolah()['data'])
+        ->map(fn($item) => (object) $item)
+        ->sortBy('nama_sekolah')
+        ->values();
+
     return view('reports.create', [
-        'schools' => DB::table('schools')->orderBy('name')->get(),
+        'schools' => $data,
         'categories' => DB::table('bullying_categories')->where('status', true)->orderBy('name')->get()->map(function ($category) {
             $category->subcategories = DB::table('bullying_subcategories')->where('category_id', $category->id)->where('status', true)->orderBy('name')->get();
 
@@ -601,3 +608,8 @@ Route::post('/cases/{caseNumber}/status', function (string $caseNumber) {
 
     return back()->with('success', 'Status kasus berhasil diperbarui.');
 })->middleware(['role:COUNSELOR', 'permission:CASE_UPDATE'])->name('cases.status');
+
+Route::get('/api-test', function () {
+    $connect = new AConnect();
+    return $connect->getDataSiswa('12345678', '20241', '1234567890');
+})->name('api-test');

@@ -38,6 +38,10 @@ class AConnect
         return $this->client()->get("/v1/data-kelas/{$npsn}/{$semester}")->json() ?? [];
     }
 
+    public function getDataSekolah() {
+        return $this->client()->get("/v1/data-sekolah")->json() ?? [];
+    }
+
     /**
      * Mengambil data siswa dalam satu rombongan belajar.
      */
