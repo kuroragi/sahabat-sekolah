@@ -50,7 +50,7 @@
                 <a class="nav-item {{ ($activeNav ?? '') === 'cases' ? 'active' : '' }}" href="{{ route('reports.inbox', ['status' => 'IN_HANDLING']) }}">
                     <i data-lucide="briefcase-business"></i> Manajemen Kasus
                     @php
-                        $activeCasesCount = \Illuminate\Support\Facades\DB::table('cases')->where('school_id', session('school_id'))->where('status', 'IN_HANDLING')->count();
+                        $activeCasesCount = \Illuminate\Support\Facades\DB::table('cases')->where('school_npsn', session('school_npsn'))->where('status', 'IN_HANDLING')->count();
                     @endphp
                     @if($activeCasesCount > 0)
                         <b>{{ $activeCasesCount }}</b>
@@ -73,7 +73,7 @@
                 <a class="nav-item {{ ($activeNav ?? '') === 'cases' ? 'active' : '' }}" href="{{ route('reports.inbox', ['status' => 'IN_HANDLING']) }}">
                     <i data-lucide="briefcase-business"></i> Manajemen Kasus
                     @php
-                        $activeCasesCount = \Illuminate\Support\Facades\DB::table('cases')->where('school_id', session('school_id'))->where('status', 'IN_HANDLING')->count();
+                        $activeCasesCount = \Illuminate\Support\Facades\DB::table('cases')->where('school_npsn', session('school_npsn'))->where('status', 'IN_HANDLING')->count();
                     @endphp
                     @if($activeCasesCount > 0)
                         <b>{{ $activeCasesCount }}</b>

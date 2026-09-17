@@ -35,7 +35,7 @@ if (! function_exists('scopedCase')) {
     {
         return DB::table('cases')
             ->where('case_number', $caseNumber)
-            ->where('school_id', session('school_id'))
+            ->where('school_npsn', session('school_npsn'))
             ->firstOrFail();
     }
 }
@@ -49,7 +49,7 @@ Route::post('/login', function () {
         return back()->withInput()->with('error', 'Email atau password tidak sesuai.');
     }
     request()->session()->regenerate();
-    request()->session()->put(['user_id' => $user->id, 'user_name' => $user->name, 'user_role' => $user->role, 'school_id' => $user->school_id]);
+    request()->session()->put(['user_id' => $user->id, 'user_name' => $user->name, 'user_role' => $user->role, 'school_npsn' => $user->school_npsn]);
     $destination = match ($user->role) {
         'ADMIN' => route('admin.index'),
         'PRINCIPAL' => route('principal.index'),
@@ -78,51 +78,43 @@ Route::get('/health/details', function () {
 })->name('health.details');
 
 Route::get('/admin', function () {
+    $schoolsMap = (new AConnect())->getSekolahMap();
+    $users = DB::table('users')->orderBy('name')->get()->map(function ($user) use ($schoolsMap) {
+        $user->school_name = $schoolsMap[$user->school_npsn] ?? '-';
+        return $user;
+    });
+
     return view('admin.index', [
-        'schools' => DB::table('schools')->orderBy('name')->get(),
-        'users' => DB::table('users')->leftJoin('schools', 'users.school_id', '=', 'schools.id')->select('users.*', 'schools.name as school_name')->orderBy('users.name')->get(),
+        'schools' => (new AConnect())->getSekolahList(),
+        'users' => $users,
     ]);
 })->middleware(['role:ADMIN', 'permission:USER_MANAGE'])->name('admin.index');
 
-Route::post('/admin/schools', function () {
-    $data = request()->validate(['name' => ['required', 'string', 'max:255'], 'education_level' => ['required', 'in:SD,SDI,MIN,SMP,MTS']]);
-    DB::table('schools')->insert($data + ['created_at' => now(), 'updated_at' => now()]);
-    auditAction('CREATE_SCHOOL', 'SCHOOL', null, $data);
-
-    return back()->with('success', 'Sekolah berhasil ditambahkan.');
-})->middleware(['role:ADMIN', 'permission:SCHOOL_MANAGE'])->name('admin.schools.store');
-
 Route::post('/admin/users', function () {
-    $data = request()->validate(['name' => ['required', 'string', 'max:255'], 'email' => ['required', 'email', 'unique:users,email'], 'role' => ['required', 'in:COUNSELOR,PRINCIPAL,ADMIN'], 'school_id' => ['nullable', 'integer', 'exists:schools,id']]);
+    $data = request()->validate(['name' => ['required', 'string', 'max:255'], 'email' => ['required', 'email', 'unique:users,email'], 'role' => ['required', 'in:COUNSELOR,PRINCIPAL,ADMIN'], 'school_npsn' => ['nullable', 'string']]);
     DB::table('users')->insert($data + ['password' => Hash::make('password'), 'created_at' => now(), 'updated_at' => now()]);
-    auditAction('CREATE_USER', 'USER', $data['email'], ['role' => $data['role'], 'school_id' => $data['school_id']]);
+    auditAction('CREATE_USER', 'USER', $data['email'], ['role' => $data['role'], 'school_npsn' => $data['school_npsn']]);
 
     return back()->with('success', 'Pengguna berhasil dibuat. Password awal: password.');
 })->middleware(['role:ADMIN', 'permission:USER_MANAGE'])->name('admin.users.store');
 
 Route::get('/admin/users', function () {
-    return view('admin.users', ['users' => DB::table('users')->leftJoin('schools', 'users.school_id', '=', 'schools.id')->select('users.*', 'schools.name as school_name')->orderBy('users.name')->get(), 'schools' => DB::table('schools')->orderBy('name')->get()]);
+    $schoolsMap = (new AConnect())->getSekolahMap();
+    $users = DB::table('users')->orderBy('name')->get()->map(function ($user) use ($schoolsMap) {
+        $user->school_name = $schoolsMap[$user->school_npsn] ?? '-';
+        return $user;
+    });
+    
+    return view('admin.users', ['users' => $users, 'schools' => (new AConnect())->getSekolahList()]);
 })->middleware(['role:ADMIN', 'permission:USER_MANAGE'])->name('admin.users');
 
 Route::post('/admin/users/{id}', function (int $id) {
-    $data = request()->validate(['name' => ['required', 'string', 'max:255'], 'role' => ['required', 'in:COUNSELOR,PRINCIPAL,ADMIN'], 'school_id' => ['nullable', 'integer', 'exists:schools,id'], 'status' => ['required', 'in:ACTIVE,INACTIVE']]);
+    $data = request()->validate(['name' => ['required', 'string', 'max:255'], 'role' => ['required', 'in:COUNSELOR,PRINCIPAL,ADMIN'], 'school_npsn' => ['nullable', 'string'], 'status' => ['required', 'in:ACTIVE,INACTIVE']]);
     DB::table('users')->where('id', $id)->update($data + ['updated_at' => now()]);
     auditAction('UPDATE_USER', 'USER', $id, $data);
 
     return back()->with('success', 'Pengguna berhasil diperbarui.');
 })->middleware(['role:ADMIN', 'permission:USER_MANAGE'])->name('admin.users.update');
-
-Route::get('/admin/schools', function () {
-    return view('admin.schools', ['schools' => DB::table('schools')->orderBy('name')->get()]);
-})->middleware(['role:ADMIN', 'permission:SCHOOL_MANAGE'])->name('admin.schools');
-
-Route::post('/admin/schools/{id}', function (int $id) {
-    $data = request()->validate(['name' => ['required', 'string', 'max:255'], 'education_level' => ['required', 'in:SD,SDI,MIN,SMP,MTS'], 'status' => ['required', 'in:1,0']]);
-    DB::table('schools')->where('id', $id)->update(['name' => $data['name'], 'education_level' => $data['education_level'], 'status' => (bool) $data['status'], 'updated_at' => now()]);
-    auditAction('UPDATE_SCHOOL', 'SCHOOL', $id, $data);
-
-    return back()->with('success', 'Sekolah berhasil diperbarui.');
-})->middleware(['role:ADMIN', 'permission:SCHOOL_MANAGE'])->name('admin.schools.update');
 
 Route::get('/admin/master-data', function () {
     return view('admin.master-data', [
@@ -155,14 +147,18 @@ Route::get('/', function () {
 })->name('landing');
 
 Route::get('/dashboard', function () {
+    $schoolsMap = (new AConnect())->getSekolahMap();
     $cases = DB::table('cases')
         ->join('reports', 'cases.report_id', '=', 'reports.id')
-        ->join('schools', 'cases.school_id', '=', 'schools.id')
         ->leftJoin('case_slas', 'cases.id', '=', 'case_slas.case_id')
-        ->select('cases.*', 'reports.reporter_role', 'reports.description', 'schools.name as school_name', 'case_slas.status as sla_status')
-        ->where('cases.school_id', session('school_id'))
+        ->select('cases.*', 'reports.reporter_role', 'reports.description', 'case_slas.status as sla_status')
+        ->where('cases.school_npsn', session('school_npsn'))
         ->orderByDesc('cases.created_at')
-        ->get();
+        ->get()
+        ->map(function ($case) use ($schoolsMap) {
+            $case->school_name = $schoolsMap[$case->school_npsn] ?? '-';
+            return $case;
+        });
 
     return view('dashboard', [
         'cases' => $cases,
@@ -186,7 +182,7 @@ Route::get('/reports/create', function () {
         'schools' => $data,
         'categories' => DB::table('bullying_categories')->where('status', true)->orderBy('name')->get()->map(function ($category) {
             $category->subcategories = DB::table('bullying_subcategories')->where('category_id', $category->id)->where('status', true)->orderBy('name')->get();
-
+            
             return $category;
         }),
     ]);
@@ -196,7 +192,7 @@ Route::get('/reports/inbox', function () {
     $query = DB::table('cases')
         ->join('reports', 'cases.report_id', '=', 'reports.id')
         ->leftJoin('case_slas', 'cases.id', '=', 'case_slas.case_id')
-        ->where('cases.school_id', session('school_id'))
+        ->where('cases.school_npsn', session('school_npsn'))
         ->select('cases.*', 'reports.description', 'reports.reporter_role', 'reports.identity_mode', 'case_slas.status as sla_status');
     if ($status = request('status')) {
         $query->where('cases.status', $status);
@@ -217,10 +213,10 @@ Route::get('/reports/inbox', function () {
 })->middleware(['role:COUNSELOR,PRINCIPAL', 'permission:REPORT_VIEW'])->name('reports.inbox');
 
 Route::get('/statistics', function () {
-    $schoolId = session('school_id');
-    $base = DB::table('cases')->where('school_id', $schoolId);
+    $schoolNpsn = session('school_npsn');
+    $base = DB::table('cases')->where('school_npsn', $schoolNpsn);
     $cases = $base->get();
-    $sla = DB::table('case_slas')->join('cases', 'case_slas.case_id', '=', 'cases.id')->where('cases.school_id', $schoolId)->get();
+    $sla = DB::table('case_slas')->join('cases', 'case_slas.case_id', '=', 'cases.id')->where('cases.school_npsn', $schoolNpsn)->get();
 
     return view('statistics.index', [
         'stats' => ['total' => $cases->count(), 'resolved' => $cases->whereIn('status', ['RESOLVED', 'CLOSED'])->count(), 'active' => $cases->whereNotIn('status', ['RESOLVED', 'CLOSED'])->count(), 'highRisk' => $cases->whereIn('risk_level', ['HIGH', 'CRITICAL'])->count(), 'overdue' => $sla->where('status', 'OVERDUE')->count()],
@@ -232,8 +228,8 @@ Route::get('/statistics', function () {
 })->middleware(['role:COUNSELOR,PRINCIPAL', 'permission:STATISTICS_VIEW'])->name('statistics.index');
 
 Route::get('/statistics/export', function () {
-    $schoolId = session('school_id');
-    $rows = DB::table('cases')->join('case_slas', 'cases.id', '=', 'case_slas.case_id')->where('cases.school_id', $schoolId)->select('cases.case_number', 'cases.category', 'cases.risk_level', 'cases.status', 'case_slas.status as sla_status', 'cases.opened_at', 'cases.resolved_at', 'cases.closed_at')->orderBy('cases.opened_at')->get();
+    $schoolNpsn = session('school_npsn');
+    $rows = DB::table('cases')->join('case_slas', 'cases.id', '=', 'case_slas.case_id')->where('cases.school_npsn', $schoolNpsn)->select('cases.case_number', 'cases.category', 'cases.risk_level', 'cases.status', 'case_slas.status as sla_status', 'cases.opened_at', 'cases.resolved_at', 'cases.closed_at')->orderBy('cases.opened_at')->get();
     auditAction('EXPORT_STATISTICS', 'REPORT', null, ['row_count' => $rows->count()]);
 
     return response()->streamDownload(function () use ($rows) {
@@ -247,7 +243,7 @@ Route::get('/statistics/export', function () {
 
 Route::post('/reports', function () {
     $data = request()->validate([
-        'school_id' => ['required', 'integer', 'exists:schools,id'],
+        'school_npsn' => ['required', 'string'],
         'reporter_role' => ['required', 'in:VICTIM,WITNESS,CONCERNED_PERSON'],
         'identity_mode' => ['required', 'in:IDENTIFIED,CONFIDENTIAL,ANONYMOUS'],
         'reporter_name' => ['nullable', 'string', 'max:255', 'required_unless:identity_mode,ANONYMOUS'],
@@ -256,7 +252,7 @@ Route::post('/reports', function () {
         'subcategory' => ['nullable', 'string', 'max:255', 'exists:bullying_subcategories,name'],
         'description' => ['required', 'string', 'min:20'],
     ], [
-        'school_id.required' => 'Pilih sekolah terlebih dahulu.',
+        'school_npsn.required' => 'Pilih sekolah terlebih dahulu.',
         'reporter_role.required' => 'Pilih peran pelapor (Saya korban, Saya saksi, atau Saya mengetahui kejadian).',
         'identity_mode.required' => 'Pilih mode identitas laporan.',
         'reporter_name.required_unless' => 'Nama pelapor wajib diisi jika mode identitas Rahasia atau Terbuka.',
@@ -276,7 +272,7 @@ Route::post('/reports', function () {
         ]);
         $risk = in_array($data['category'], ['Cyberbullying', 'Fisik', 'Perundungan Bernuansa Seksual'], true) ? 'HIGH' : 'MEDIUM';
         $caseId = DB::table('cases')->insertGetId([
-            'school_id' => $data['school_id'], 'report_id' => $reportId, 'case_number' => $number,
+            'school_npsn' => $data['school_npsn'], 'report_id' => $reportId, 'case_number' => $number,
             'category' => $data['category'], 'risk_level' => $risk, 'status' => 'PENDING_RESPONSE',
             'opened_at' => $now, 'created_at' => $now, 'updated_at' => $now,
         ]);
@@ -361,12 +357,12 @@ Route::get('/notifications', function () {
 })->middleware(['role:COUNSELOR,PRINCIPAL', 'permission:NOTIFICATION_VIEW'])->name('notifications.index');
 
 Route::get('/principal', function () {
-    $schools = DB::table('schools')->orderBy('name')->get();
-    $schoolId = session('school_id');
-    $selectedSchool = $schools->firstWhere('id', $schoolId);
+    $schools = (new AConnect())->getSekolahList();
+    $schoolNpsn = session('school_npsn');
+    $selectedSchool = $schools->firstWhere('npsn', $schoolNpsn);
     $cases = DB::table('cases')
         ->join('case_slas', 'cases.id', '=', 'case_slas.case_id')
-        ->where('cases.school_id', $schoolId)
+        ->where('cases.school_npsn', $schoolNpsn)
         ->select('cases.*', 'case_slas.status as sla_status')
         ->orderByDesc('cases.updated_at')
         ->get();
@@ -389,15 +385,16 @@ Route::post('/notifications/{id}/read', function (int $id) {
 })->middleware(['role:COUNSELOR,PRINCIPAL', 'permission:NOTIFICATION_VIEW'])->name('notifications.read');
 
 Route::get('/cases/{caseNumber}', function (string $caseNumber) {
+    $schoolsMap = (new AConnect())->getSekolahMap();
     $case = DB::table('cases')
         ->join('reports', 'cases.report_id', '=', 'reports.id')
-        ->join('schools', 'cases.school_id', '=', 'schools.id')
         ->leftJoin('case_slas', 'cases.id', '=', 'case_slas.case_id')
         ->where('cases.case_number', $caseNumber)
-        ->where('cases.school_id', session('school_id'))
+        ->where('cases.school_npsn', session('school_npsn'))
         ->leftJoin('reporter_identities', 'reports.id', '=', 'reporter_identities.report_id')
-        ->select('cases.*', 'reports.reporter_role', 'reports.identity_mode', 'reports.description', 'reports.submitted_at', 'reporter_identities.full_name as reporter_name', 'reporter_identities.contact as reporter_contact', 'reporter_identities.access_level as reporter_access_level', 'schools.name as school_name', 'case_slas.status as sla_status', 'case_slas.response_deadline')
+        ->select('cases.*', 'reports.reporter_role', 'reports.identity_mode', 'reports.description', 'reports.submitted_at', 'reporter_identities.full_name as reporter_name', 'reporter_identities.contact as reporter_contact', 'reporter_identities.access_level as reporter_access_level', 'case_slas.status as sla_status', 'case_slas.response_deadline')
         ->firstOrFail();
+    $case->school_name = $schoolsMap[$case->school_npsn] ?? '-';
     DB::table('case_access_logs')->insert([
         'user_id' => session('user_id'), 'user_name' => session('user_name'), 'case_id' => $case->id,
         'action' => 'VIEW_CASE', 'access_level' => session('user_role') === 'PRINCIPAL' ? 'CASE_SUMMARY' : 'CASE_FULL',
@@ -433,8 +430,8 @@ Route::post('/cases/{caseNumber}/parent-involvement', function (string $caseNumb
         'reason' => ['nullable', 'string', 'max:500'],
     ]);
     $case = scopedCase($caseNumber);
-    $parent = DB::table('parents')->where('school_id', $case->school_id)->where('full_name', $data['parent_name'])->first();
-    $parentId = $parent?->id ?: DB::table('parents')->insertGetId(['school_id' => $case->school_id, 'full_name' => $data['parent_name'], 'contact' => $data['parent_contact'], 'created_at' => now(), 'updated_at' => now()]);
+    $parent = DB::table('parents')->where('school_npsn', $case->school_npsn)->where('full_name', $data['parent_name'])->first();
+    $parentId = $parent?->id ?: DB::table('parents')->insertGetId(['school_npsn' => $case->school_npsn, 'full_name' => $data['parent_name'], 'contact' => $data['parent_contact'], 'created_at' => now(), 'updated_at' => now()]);
     $now = now();
     DB::table('case_parent_involvements')->updateOrInsert(['case_id' => $case->id, 'parent_id' => $parentId], ['status' => $data['status'], 'reason' => $data['reason'] ?? null, 'contacted_at' => in_array($data['status'], ['CONTACTED', 'COMPLETED'], true) ? $now : null, 'completed_at' => $data['status'] === 'COMPLETED' ? $now : null, 'updated_at' => $now, 'created_at' => $now]);
     auditAction('UPDATE_PARENT_INVOLVEMENT', 'CASE', $case->case_number, ['parent' => $data['parent_name'], 'status' => $data['status']]);

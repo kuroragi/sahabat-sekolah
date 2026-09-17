@@ -48,7 +48,7 @@
                 @endif
 
                 <label>Sekolah <span>*</span>
-                    <select name="school_id" required>
+                    <select name="school_npsn" required>
                         <option value="">Pilih sekolah</option>
                         @foreach ($schools as $school)
                             <option value="{{ $school->npsn }}" @selected(old('school_npsn') == $school->npsn)>{{ $school->nama_sekolah }}

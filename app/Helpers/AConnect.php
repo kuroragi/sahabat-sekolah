@@ -43,6 +43,30 @@ class AConnect
     }
 
     /**
+     * Get a sorted list of school objects.
+     */
+    public function getSekolahList()
+    {
+        return \Illuminate\Support\Facades\Cache::remember('sekolah_list', 3600, function () {
+            $data = $this->getDataSekolah()['data'] ?? [];
+            return collect($data)
+                ->map(fn($item) => (object) $item)
+                ->sortBy('nama_sekolah')
+                ->values();
+        });
+    }
+
+    /**
+     * Get a map of NPSN => nama_sekolah.
+     */
+    public function getSekolahMap()
+    {
+        return \Illuminate\Support\Facades\Cache::remember('sekolah_map', 3600, function () {
+            return $this->getSekolahList()->pluck('nama_sekolah', 'npsn')->toArray();
+        });
+    }
+
+    /**
      * Mengambil data siswa dalam satu rombongan belajar.
      */
     public function getDataSiswaKelas(string $npsn, string $semester, string $rombonganBelajarId): array

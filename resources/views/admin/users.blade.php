@@ -34,10 +34,10 @@
                             </select>
                         </td>
                         <td>
-                            <select name="school_id">
+                            <select name="school_npsn">
                                 <option value="">Platform</option>
                                 @foreach($schools as $school)
-                                    <option value="{{ $school->id }}" @selected($user->school_id===$school->id)>{{ $school->name }}</option>
+                                    <option value="{{ $school->npsn }}" @selected($user->school_npsn===$school->npsn)>{{ $school->nama_sekolah }}</option>
                                 @endforeach
                             </select>
                         </td>

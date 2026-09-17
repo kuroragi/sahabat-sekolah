@@ -11,29 +11,6 @@
     <div class="panel">
         <div class="panel-heading">
             <div>
-                <h3>Tambah Sekolah</h3>
-                <p>Master data sekolah terdaftar</p>
-            </div>
-        </div>
-        <form class="admin-form" method="POST" action="{{ route('admin.schools.store') }}">
-            @csrf
-            <input name="name" required placeholder="Nama sekolah">
-            <select name="education_level">
-                <option value="MIN">MIN</option>
-                <option value="MTS">MTs</option>
-                <option value="SD">SD</option>
-                <option value="SDI">SDI</option>
-                <option value="SMP">SMP</option>
-            </select>
-            <button class="primary-button" type="submit">
-                <i data-lucide="plus"></i> Tambah sekolah
-            </button>
-        </form>
-    </div>
-
-    <div class="panel">
-        <div class="panel-heading">
-            <div>
                 <h3>Tambah Pengguna</h3>
                 <p>Role dan penugasan sekolah</p>
             </div>
@@ -47,10 +24,10 @@
                 <option value="PRINCIPAL">Kepala Sekolah</option>
                 <option value="ADMIN">Administrator</option>
             </select>
-            <select name="school_id">
+            <select name="school_npsn">
                 <option value="">Tanpa sekolah (Platform)</option>
                 @foreach($schools as $school)
-                    <option value="{{ $school->id }}">{{ $school->name }}</option>
+                    <option value="{{ $school->npsn }}">{{ $school->nama_sekolah }}</option>
                 @endforeach
             </select>
             <button class="primary-button" type="submit">
