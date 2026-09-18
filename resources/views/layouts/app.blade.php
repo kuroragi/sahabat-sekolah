@@ -112,12 +112,65 @@
 
             <div class="profile">
                 @if(session('user_role') !== 'ADMIN')
-                    <a class="icon-button" href="{{ route('notifications.index') }}" title="Notifikasi">
-                        <i data-lucide="bell"></i>
-                        @if(\Illuminate\Support\Facades\DB::table('notifications')->whereNull('read_at')->exists())
-                            <span></span>
-                        @endif
-                    </a>
+                    @php
+                        $headerNotifications = \Illuminate\Support\Facades\DB::table('notifications')
+                            ->orderByDesc('created_at')
+                            ->limit(5)
+                            ->get();
+                        $headerUnreadCount = \Illuminate\Support\Facades\DB::table('notifications')
+                            ->whereNull('read_at')
+                            ->count();
+                    @endphp
+                    <div class="notification-dropdown-wrapper">
+                        <button type="button" class="icon-button notification-trigger" id="notifDropdownBtn" title="Notifikasi" aria-expanded="false">
+                            <i data-lucide="bell"></i>
+                            @if($headerUnreadCount > 0)
+                                <span class="notif-badge-dot"></span>
+                            @endif
+                        </button>
+                        <div class="notification-dropdown-menu" id="notifDropdownMenu">
+                            <div class="notif-dropdown-header">
+                                <strong>Notifikasi</strong>
+                                @if($headerUnreadCount > 0)
+                                    <span class="notif-unread-badge">{{ $headerUnreadCount }} belum dibaca</span>
+                                @else
+                                    <small class="notif-read-all">Semua dibaca</small>
+                                @endif
+                            </div>
+                            <div class="notif-dropdown-body">
+                                @forelse($headerNotifications as $notif)
+                                    <a href="{{ $notif->case_number ? route('cases.show', $notif->case_number) : route('notifications.index') }}" class="notif-dropdown-item {{ is_null($notif->read_at) ? 'unread' : '' }}">
+                                        <div class="notif-dropdown-icon {{ strtolower($notif->priority) }}">
+                                            @if($notif->priority === 'URGENT')
+                                                <i data-lucide="triangle-alert"></i>
+                                            @elseif($notif->priority === 'HIGH')
+                                                <i data-lucide="bell-ring"></i>
+                                            @else
+                                                <i data-lucide="info"></i>
+                                            @endif
+                                        </div>
+                                        <div class="notif-dropdown-content">
+                                            <div class="notif-dropdown-top">
+                                                <strong>{{ $notif->title }}</strong>
+                                                <small>{{ \Illuminate\Support\Carbon::parse($notif->created_at)->diffForHumans() }}</small>
+                                            </div>
+                                            <p>{{ \Illuminate\Support\Str::limit($notif->message, 65) }}</p>
+                                        </div>
+                                    </a>
+                                @empty
+                                    <div class="notif-dropdown-empty">
+                                        <i data-lucide="bell-off"></i>
+                                        <p>Tidak ada notifikasi</p>
+                                    </div>
+                                @endforelse
+                            </div>
+                            <div class="notif-dropdown-footer">
+                                <a href="{{ route('notifications.index') }}" class="notif-view-all">
+                                    Lihat Semua Notifikasi <i data-lucide="arrow-right"></i>
+                                </a>
+                            </div>
+                        </div>
+                    </div>
                 @endif
                 <div class="avatar">
                     {{ strtoupper(substr(session('user_name', 'BK'), 0, 2)) }}
@@ -159,6 +212,34 @@
         </footer>
     </main>
 </div>
-<script>lucide.createIcons();</script>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    lucide.createIcons();
+    const btn = document.getElementById('notifDropdownBtn');
+    const menu = document.getElementById('notifDropdownMenu');
+    if (btn && menu) {
+        btn.addEventListener('click', function(e) {
+            e.stopPropagation();
+            const isOpen = menu.classList.contains('show');
+            menu.classList.toggle('show', !isOpen);
+            btn.setAttribute('aria-expanded', !isOpen);
+        });
+
+        document.addEventListener('click', function(e) {
+            if (!menu.contains(e.target) && !btn.contains(e.target)) {
+                menu.classList.remove('show');
+                btn.setAttribute('aria-expanded', 'false');
+            }
+        });
+
+        document.addEventListener('keydown', function(e) {
+            if (e.key === 'Escape') {
+                menu.classList.remove('show');
+                btn.setAttribute('aria-expanded', 'false');
+            }
+        });
+    }
+});
+</script>
 </body>
 </html>
