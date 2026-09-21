@@ -3,6 +3,7 @@
 namespace App\Helpers;
 
 use Illuminate\Http\Client\PendingRequest;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Http;
 
 class AConnect
@@ -38,8 +39,9 @@ class AConnect
         return $this->client()->get("/v1/data-kelas/{$npsn}/{$semester}")->json() ?? [];
     }
 
-    public function getDataSekolah() {
-        return $this->client()->get("/v1/data-sekolah")->json() ?? [];
+    public function getDataSekolah()
+    {
+        return $this->client()->get('/v1/data-sekolah')->json() ?? [];
     }
 
     /**
@@ -47,13 +49,14 @@ class AConnect
      */
     public function getSekolahList()
     {
-        return \Illuminate\Support\Facades\Cache::remember('sekolah_list', 3600, function () {
-            $data = $this->getDataSekolah()['data'] ?? [];
-            return collect($data)
-                ->map(fn($item) => (object) $item)
-                ->sortBy('nama_sekolah')
-                ->values();
+        $data = Cache::remember('sekolah_list', 3600, function () {
+            return $this->getDataSekolah()['data'] ?? [];
         });
+
+        return collect($data)
+            ->map(fn ($item) => (object) $item)
+            ->sortBy('nama_sekolah')
+            ->values();
     }
 
     /**
@@ -61,7 +64,7 @@ class AConnect
      */
     public function getSekolahMap()
     {
-        return \Illuminate\Support\Facades\Cache::remember('sekolah_map', 3600, function () {
+        return Cache::remember('sekolah_map', 3600, function () {
             return $this->getSekolahList()->pluck('nama_sekolah', 'npsn')->toArray();
         });
     }

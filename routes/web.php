@@ -78,17 +78,72 @@ Route::get('/health/details', function () {
 })->name('health.details');
 
 Route::get('/admin', function () {
-    $schoolsMap = (new AConnect())->getSekolahMap();
-    $users = DB::table('users')->orderBy('name')->get()->map(function ($user) use ($schoolsMap) {
-        $user->school_name = $schoolsMap[$user->school_npsn] ?? '-';
-        return $user;
-    });
+    $schoolsMap = (new AConnect)->getSekolahMap();
+
+    // Stat counters
+    $totalUsers = DB::table('users')->count();
+    $totalReports = DB::table('reports')->count();
+    $totalCases = DB::table('cases')->count();
+    $resolvedCases = DB::table('cases')->where('status', 'RESOLVED')->count();
+    $inHandlingCases = DB::table('cases')->where('status', 'IN_HANDLING')->count();
+    $overdueSla = DB::table('case_slas')->where('status', 'OVERDUE')->count();
+    $highRiskCases = DB::table('cases')->whereIn('risk_level', ['HIGH', 'CRITICAL'])->count();
+    $totalSchools = count($schoolsMap);
+
+    // Cases by month (last 12 months) for bar chart
+    $casesByMonth = DB::table('cases')
+        ->selectRaw("TO_CHAR(created_at, 'Mon') as month_label, EXTRACT(YEAR FROM created_at) as year, EXTRACT(MONTH FROM created_at) as month_num, COUNT(*) as total")
+        ->where('created_at', '>=', now()->subMonths(11)->startOfMonth())
+        ->groupByRaw('month_label, year, month_num')
+        ->orderByRaw('year, month_num')
+        ->get();
+
+    // SLA distribution for donut chart
+    $slaStats = DB::table('case_slas')
+        ->selectRaw('status, COUNT(*) as total')
+        ->groupBy('status')
+        ->get()
+        ->keyBy('status');
+
+    // Cases by status for donut
+    $casesByStatus = DB::table('cases')
+        ->selectRaw('status, COUNT(*) as total')
+        ->groupBy('status')
+        ->get()
+        ->keyBy('status');
+
+    // Recent 5 users
+    $recentUsers = DB::table('users')
+        ->orderByDesc('created_at')
+        ->limit(5)
+        ->get()
+        ->map(function ($user) use ($schoolsMap) {
+            $user->school_name = $schoolsMap[$user->school_npsn] ?? '-';
+
+            return $user;
+        });
 
     return view('admin.index', [
-        'schools' => (new AConnect())->getSekolahList(),
-        'users' => $users,
+        'totalUsers' => $totalUsers,
+        'totalReports' => $totalReports,
+        'totalCases' => $totalCases,
+        'resolvedCases' => $resolvedCases,
+        'inHandlingCases' => $inHandlingCases,
+        'overdueSla' => $overdueSla,
+        'highRiskCases' => $highRiskCases,
+        'totalSchools' => $totalSchools,
+        'casesByMonth' => $casesByMonth,
+        'slaStats' => $slaStats,
+        'casesByStatus' => $casesByStatus,
+        'recentUsers' => $recentUsers,
     ]);
 })->middleware(['role:ADMIN', 'permission:USER_MANAGE'])->name('admin.index');
+
+Route::get('/admin/schools', function () {
+    return view('admin.schools', [
+        'schools' => (new AConnect)->getSekolahList(),
+    ]);
+})->middleware(['role:ADMIN', 'permission:USER_MANAGE'])->name('admin.schools');
 
 Route::post('/admin/users', function () {
     $data = request()->validate(['name' => ['required', 'string', 'max:255'], 'email' => ['required', 'email', 'unique:users,email'], 'role' => ['required', 'in:COUNSELOR,PRINCIPAL,ADMIN'], 'school_npsn' => ['nullable', 'string']]);
@@ -99,13 +154,14 @@ Route::post('/admin/users', function () {
 })->middleware(['role:ADMIN', 'permission:USER_MANAGE'])->name('admin.users.store');
 
 Route::get('/admin/users', function () {
-    $schoolsMap = (new AConnect())->getSekolahMap();
+    $schoolsMap = (new AConnect)->getSekolahMap();
     $users = DB::table('users')->orderBy('name')->get()->map(function ($user) use ($schoolsMap) {
         $user->school_name = $schoolsMap[$user->school_npsn] ?? '-';
+
         return $user;
     });
-    
-    return view('admin.users', ['users' => $users, 'schools' => (new AConnect())->getSekolahList()]);
+
+    return view('admin.users', ['users' => $users, 'schools' => (new AConnect)->getSekolahList()]);
 })->middleware(['role:ADMIN', 'permission:USER_MANAGE'])->name('admin.users');
 
 Route::post('/admin/users/{id}', function (int $id) {
@@ -115,6 +171,14 @@ Route::post('/admin/users/{id}', function (int $id) {
 
     return back()->with('success', 'Pengguna berhasil diperbarui.');
 })->middleware(['role:ADMIN', 'permission:USER_MANAGE'])->name('admin.users.update');
+
+Route::post('/admin/users/{id}/delete', function (int $id) {
+    $user = DB::table('users')->where('id', $id)->first();
+    DB::table('users')->where('id', $id)->delete();
+    auditAction('DELETE_USER', 'USER', $id, ['email' => $user->email ?? null]);
+
+    return back()->with('success', 'Pengguna berhasil dihapus.');
+})->middleware(['role:ADMIN', 'permission:USER_MANAGE'])->name('admin.users.delete');
 
 Route::get('/admin/master-data', function () {
     return view('admin.master-data', [
@@ -147,7 +211,7 @@ Route::get('/', function () {
 })->name('landing');
 
 Route::get('/dashboard', function () {
-    $schoolsMap = (new AConnect())->getSekolahMap();
+    $schoolsMap = (new AConnect)->getSekolahMap();
     $cases = DB::table('cases')
         ->join('reports', 'cases.report_id', '=', 'reports.id')
         ->leftJoin('case_slas', 'cases.id', '=', 'case_slas.case_id')
@@ -157,6 +221,7 @@ Route::get('/dashboard', function () {
         ->get()
         ->map(function ($case) use ($schoolsMap) {
             $case->school_name = $schoolsMap[$case->school_npsn] ?? '-';
+
             return $case;
         });
 
@@ -172,9 +237,9 @@ Route::get('/dashboard', function () {
 })->middleware(['role:COUNSELOR,PRINCIPAL', 'permission:REPORT_VIEW'])->name('dashboard');
 
 Route::get('/reports/create', function () {
-    $schools = new AConnect();
+    $schools = new AConnect;
     $data = collect($schools->getDataSekolah()['data'])
-        ->map(fn($item) => (object) $item)
+        ->map(fn ($item) => (object) $item)
         ->sortBy('nama_sekolah')
         ->values();
 
@@ -182,7 +247,7 @@ Route::get('/reports/create', function () {
         'schools' => $data,
         'categories' => DB::table('bullying_categories')->where('status', true)->orderBy('name')->get()->map(function ($category) {
             $category->subcategories = DB::table('bullying_subcategories')->where('category_id', $category->id)->where('status', true)->orderBy('name')->get();
-            
+
             return $category;
         }),
     ]);
@@ -357,7 +422,7 @@ Route::get('/notifications', function () {
 })->middleware(['role:COUNSELOR,PRINCIPAL', 'permission:NOTIFICATION_VIEW'])->name('notifications.index');
 
 Route::get('/principal', function () {
-    $schools = (new AConnect())->getSekolahList();
+    $schools = (new AConnect)->getSekolahList();
     $schoolNpsn = session('school_npsn');
     $selectedSchool = $schools->firstWhere('npsn', $schoolNpsn);
     $cases = DB::table('cases')
@@ -385,7 +450,7 @@ Route::post('/notifications/{id}/read', function (int $id) {
 })->middleware(['role:COUNSELOR,PRINCIPAL', 'permission:NOTIFICATION_VIEW'])->name('notifications.read');
 
 Route::get('/cases/{caseNumber}', function (string $caseNumber) {
-    $schoolsMap = (new AConnect())->getSekolahMap();
+    $schoolsMap = (new AConnect)->getSekolahMap();
     $case = DB::table('cases')
         ->join('reports', 'cases.report_id', '=', 'reports.id')
         ->leftJoin('case_slas', 'cases.id', '=', 'case_slas.case_id')
@@ -607,6 +672,7 @@ Route::post('/cases/{caseNumber}/status', function (string $caseNumber) {
 })->middleware(['role:COUNSELOR', 'permission:CASE_UPDATE'])->name('cases.status');
 
 Route::get('/api-test', function () {
-    $connect = new AConnect();
+    $connect = new AConnect;
+
     return $connect->getDataSiswa('12345678', '20241', '1234567890');
 })->name('api-test');
