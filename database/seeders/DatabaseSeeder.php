@@ -22,8 +22,8 @@ class DatabaseSeeder extends Seeder
         $sekolahList = collect((new \App\Helpers\AConnect())->getSekolahList());
         
         // Asumsi data yang ada di API, jika tidak ada fallback ke NPSN sembarang
-        $npsnMin = $sekolahList->firstWhere('nama_sekolah', 'MIN Kota Bukittinggi')?->npsn ?? '10307412';
-        $npsnMts = $sekolahList->firstWhere('nama_sekolah', 'MTsN 1 Kota Bukittinggi')?->npsn ?? '10307415';
+        $npsnMin = '10307412';
+        $npsnMts = '10307415';
 
         DB::table('users')->insert([
             ['name' => 'Bu Ratna Sari', 'email' => 'bk@sahabat.test', 'password' => Hash::make('password'), 'role' => 'COUNSELOR', 'school_npsn' => $npsnMin, 'created_at' => $now, 'updated_at' => $now],

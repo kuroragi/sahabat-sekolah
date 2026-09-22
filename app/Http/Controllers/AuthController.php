@@ -26,12 +26,19 @@ class AuthController extends Controller
             return back()->withInput()->with('error', 'Email atau password tidak sesuai.');
         }
 
+        $schoolName = null;
+        if ($user->school_npsn) {
+            $schoolsMap = (new \App\Helpers\AConnect)->getSekolahMap();
+            $schoolName = $schoolsMap[$user->school_npsn] ?? $user->school_npsn;
+        }
+
         $request->session()->regenerate();
         $request->session()->put([
             'user_id' => $user->id,
             'user_name' => $user->name,
             'user_role' => $user->role,
             'school_npsn' => $user->school_npsn,
+            'school_name' => $schoolName,
         ]);
 
         $destination = match ($user->role) {
