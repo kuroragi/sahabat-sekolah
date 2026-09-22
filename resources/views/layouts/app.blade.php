@@ -48,6 +48,9 @@
                 <a class="nav-item {{ ($activeNav ?? '') === 'admin-master-data' ? 'active' : '' }}" href="{{ route('admin.master-data') }}">
                     <i data-lucide="database"></i> Master Data
                 </a>
+                <a class="nav-item {{ ($activeNav ?? '') === 'admin.sla' ? 'active' : '' }}" href="{{ route('admin.sla-configurations') }}">
+                    <i data-lucide="clock-4"></i> SLA & Risiko
+                </a>
             @elseif(session('user_role') === 'PRINCIPAL')
                 <a class="nav-item {{ ($activeNav ?? '') === 'principal' ? 'active' : '' }}" href="{{ route('principal.index') }}">
                     <i data-lucide="shield-check"></i> Monitoring

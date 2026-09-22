@@ -184,4 +184,29 @@ class AdminController extends Controller
 
         return back()->with('success', 'Subkategori berhasil ditambahkan.');
     }
+
+    public function slaConfigurations()
+    {
+        $configs = DB::table('sla_configurations')->orderByRaw("CASE risk_level WHEN 'CRITICAL' THEN 1 WHEN 'HIGH' THEN 2 WHEN 'MEDIUM' THEN 3 WHEN 'LOW' THEN 4 END")->get();
+        return view('admin.sla-configurations', compact('configs'));
+    }
+
+    public function updateSlaConfiguration(Request $request, int $id)
+    {
+        $data = $request->validate([
+            'response_time_hours' => ['required', 'integer', 'min:1', 'max:720'],
+            'resolution_time_days' => ['required', 'integer', 'min:1', 'max:365'],
+        ]);
+
+        DB::table('sla_configurations')->where('id', $id)->update([
+            'response_time_hours' => $data['response_time_hours'],
+            'resolution_time_days' => $data['resolution_time_days'],
+            'updated_at' => now(),
+            'updated_by' => session('user_id'),
+        ]);
+
+        auditAction('UPDATE_SLA_CONFIG', 'SLA_CONFIGURATION', $id, $data);
+
+        return back()->with('success', 'Konfigurasi SLA berhasil diperbarui.');
+    }
 }

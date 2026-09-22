@@ -101,9 +101,18 @@ class ReportController extends Controller
                 'opened_at' => $now, 'created_at' => $now, 'updated_at' => $now,
             ]);
 
+            $config = DB::table('sla_configurations')->where('risk_level', $risk)->first();
+            $responseHours = $config ? $config->response_time_hours : 24;
+            $resolutionDays = $config ? $config->resolution_time_days : 14;
+
             DB::table('case_slas')->insert([
-                'case_id' => $caseId, 'status' => 'ON_TIME', 'response_deadline' => $now->copy()->addDay(),
-                'created_at' => $now, 'updated_at' => $now,
+                'case_id' => $caseId, 
+                'status' => 'ON_TIME', 
+                'response_deadline' => $now->copy()->addHours($responseHours),
+                'resolution_deadline' => null, // dihitung ketika direspon
+                'resolution_status' => 'ON_TRACK',
+                'created_at' => $now, 
+                'updated_at' => $now,
             ]);
 
             if ($data['identity_mode'] !== 'ANONYMOUS') {

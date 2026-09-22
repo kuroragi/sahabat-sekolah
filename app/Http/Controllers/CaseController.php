@@ -251,8 +251,6 @@ class CaseController extends Controller
             DB::table('cases')->where('id', $case->id)->update([
                 'status' => $data['status'],
                 'updated_at' => $now,
-                'resolved_at' => $data['status'] === 'RESOLVED' ? $now : null,
-                'closed_at' => $data['status'] === 'CLOSED' ? $now : null,
             ]);
 
             DB::table('case_status_histories')->insert([
@@ -269,8 +267,23 @@ class CaseController extends Controller
             ]);
 
             if ($case->status === 'PENDING_RESPONSE') {
+                $config = DB::table('sla_configurations')->where('risk_level', $case->risk_level)->first();
+                $resolutionDays = $config ? $config->resolution_time_days : 14;
+
                 DB::table('case_slas')->where('case_id', $case->id)->update([
-                    'status' => 'COMPLETED', 'initial_response_at' => $now, 'updated_at' => $now,
+                    'status' => 'COMPLETED', 
+                    'initial_response_at' => $now, 
+                    'resolution_status' => 'ON_TIME',
+                    'resolution_deadline' => $now->copy()->addDays($resolutionDays),
+                    'updated_at' => $now,
+                ]);
+            }
+
+            if (in_array($data['status'], ['RESOLVED', 'CLOSED'])) {
+                DB::table('case_slas')->where('case_id', $case->id)->update([
+                    'resolution_status' => 'COMPLETED',
+                    'resolved_at' => $now,
+                    'updated_at' => $now,
                 ]);
             }
 
