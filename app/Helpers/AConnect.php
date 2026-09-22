@@ -39,8 +39,9 @@ class AConnect
         return $this->client()->get("/v1/data-kelas/{$npsn}/{$semester}")->json() ?? [];
     }
 
-    public function getDataSekolah() {
-        return $this->client()->get("/v1/data-sekolah")->json() ?? [];
+    public function getDataSekolah()
+    {
+        return $this->client()->get('/v1/data-sekolah')->json() ?? [];
     }
 
     /**
@@ -48,16 +49,14 @@ class AConnect
      */
     public function getSekolahList()
     {
-        $cachedData = \Illuminate\Support\Facades\Cache::remember('sekolah_list_array', 3600, function () {
-            $data = $this->getDataSekolah()['data'] ?? [];
-            return collect($data)
-                ->map(fn($item) => (array) $item)
-                ->sortBy('nama_sekolah')
-                ->values()
-                ->toArray();
+        $data = Cache::remember('sekolah_list', 3600, function () {
+            return $this->getDataSekolah()['data'] ?? [];
         });
 
-        return collect($cachedData)->map(fn($item) => (object) $item);
+        return collect($data)
+            ->map(fn ($item) => (object) $item)
+            ->sortBy('nama_sekolah')
+            ->values();
     }
 
     /**
@@ -65,7 +64,7 @@ class AConnect
      */
     public function getSekolahMap()
     {
-        return Cache::remember('sekolah_map_array', 3600, function () {
+        return Cache::remember('sekolah_map', 3600, function () {
             return $this->getSekolahList()->pluck('nama_sekolah', 'npsn')->toArray();
         });
     }
