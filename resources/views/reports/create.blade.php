@@ -7,6 +7,13 @@
     <title>Buat Laporan | Sahabat Sekolah</title>
     @vite(['resources/css/app.css', 'resources/js/app.js'])
     <script src="https://unpkg.com/lucide@latest"></script>
+    <script src="{{ asset('js/tw-select.js') }}" defer></script>
+    <style>
+        .custom-scrollbar::-webkit-scrollbar { width: 6px; }
+        .custom-scrollbar::-webkit-scrollbar-track { background: #f1f5f9; border-radius: 4px; }
+        .custom-scrollbar::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
+        .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+    </style>
 </head>
 
 <body>
@@ -48,13 +55,28 @@
                 @endif
 
                 <label>Sekolah <span>*</span>
-                    <select name="school_npsn" required>
-                        <option value="">Pilih sekolah</option>
-                        @foreach ($schools as $school)
-                            <option value="{{ $school->npsn }}" @selected(old('school_npsn') == $school->npsn)>{{ $school->nama_sekolah }}
-                            </option>
-                        @endforeach
-                    </select>
+                    <div class="tw-select-container relative w-full mt-1" data-name="school_npsn">
+                        <select name="school_npsn" class="hidden" required>
+                            <option value="">Pilih sekolah</option>
+                            @foreach ($schools as $school)
+                                <option value="{{ $school->npsn }}" @selected(old('school_npsn') == $school->npsn)>{{ $school->nama_sekolah }}</option>
+                            @endforeach
+                        </select>
+                        <button type="button" class="tw-select-trigger w-full flex items-center justify-between bg-white border border-gray-300 rounded-lg px-4 py-2.5 text-sm text-left focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-colors">
+                            <span class="tw-select-text text-gray-500 truncate">Pilih sekolah...</span>
+                            <svg class="w-4 h-4 text-gray-400 pointer-events-none flex-none" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
+                        </button>
+                        <div class="tw-select-dropdown absolute z-50 w-full mt-1 bg-white border border-gray-200 rounded-lg shadow-lg hidden opacity-0 transition-opacity duration-200">
+                            <div class="p-2 border-b border-gray-100">
+                                <div class="relative">
+                                    <svg class="w-4 h-4 text-gray-400 absolute left-3 top-1/2 -translate-y-1/2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
+                                    <input type="text" class="tw-select-search w-full bg-gray-50 border-none text-sm rounded-md pl-9 pr-3 py-2 focus:outline-none focus:ring-1 focus:ring-blue-500" placeholder="Cari sekolah...">
+                                </div>
+                            </div>
+                            <ul class="tw-select-list max-h-60 overflow-y-auto custom-scrollbar p-1" role="listbox"></ul>
+                            <div class="tw-select-empty hidden p-4 text-center text-sm text-gray-500">Pencarian tidak ditemukan.</div>
+                        </div>
+                    </div>
                 </label>
 
                 <div class="two-fields">

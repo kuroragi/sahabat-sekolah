@@ -8,8 +8,18 @@ class NotificationController extends Controller
 {
     public function index()
     {
+        $notifications = DB::table('notifications')
+            ->leftJoin('cases', 'notifications.case_number', '=', 'cases.case_number')
+            ->where(function ($q) {
+                $q->where('cases.school_npsn', session('school_npsn'))
+                  ->orWhereNull('notifications.case_number');
+            })
+            ->select('notifications.*')
+            ->orderByDesc('notifications.created_at')
+            ->get();
+
         return view('notifications.index', [
-            'notifications' => DB::table('notifications')->orderByDesc('created_at')->get(),
+            'notifications' => $notifications,
         ]);
     }
 

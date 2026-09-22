@@ -4,8 +4,16 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{{ $title ?? 'Sahabat Sekolah' }}</title>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=DM+Sans:wght@400;500;700&display=swap" rel="stylesheet">
     @vite(['resources/css/app.css', 'resources/js/app.js'])
     <script src="https://unpkg.com/lucide@latest"></script>
+    <script src="{{ asset('js/tw-select.js') }}" defer></script>
+    <style>
+        .custom-scrollbar::-webkit-scrollbar { width: 6px; }
+        .custom-scrollbar::-webkit-scrollbar-track { background: #f1f5f9; border-radius: 4px; }
+        .custom-scrollbar::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
+        .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+    </style>
 </head>
 <body>
 <div class="app-shell">
@@ -46,6 +54,7 @@
                 </a>
                 <a class="nav-item {{ ($activeNav ?? '') === 'inbox' ? 'active' : '' }}" href="{{ route('reports.inbox') }}">
                     <i data-lucide="inbox"></i> Laporan Masuk
+                    <b>{{ $reportsCount ?? \Illuminate\Support\Facades\DB::table('cases')->where('school_npsn', session('school_npsn'))->count() }}</b>
                 </a>
                 <a class="nav-item {{ ($activeNav ?? '') === 'cases' ? 'active' : '' }}" href="{{ route('reports.inbox', ['status' => 'IN_HANDLING']) }}">
                     <i data-lucide="briefcase-business"></i> Manajemen Kasus
@@ -68,7 +77,7 @@
                 </a>
                 <a class="nav-item {{ ($activeNav ?? '') === 'inbox' ? 'active' : '' }}" href="{{ route('reports.inbox') }}">
                     <i data-lucide="inbox"></i> Laporan Masuk
-                    <b>{{ $reportsCount ?? \Illuminate\Support\Facades\DB::table('reports')->count() }}</b>
+                    <b>{{ $reportsCount ?? \Illuminate\Support\Facades\DB::table('cases')->where('school_npsn', session('school_npsn'))->count() }}</b>
                 </a>
                 <a class="nav-item {{ ($activeNav ?? '') === 'cases' ? 'active' : '' }}" href="{{ route('reports.inbox', ['status' => 'IN_HANDLING']) }}">
                     <i data-lucide="briefcase-business"></i> Manajemen Kasus
@@ -114,11 +123,22 @@
                 @if(session('user_role') !== 'ADMIN')
                     @php
                         $headerNotifications = \Illuminate\Support\Facades\DB::table('notifications')
-                            ->orderByDesc('created_at')
+                            ->leftJoin('cases', 'notifications.case_number', '=', 'cases.case_number')
+                            ->where(function ($q) {
+                                $q->where('cases.school_npsn', session('school_npsn'))
+                                  ->orWhereNull('notifications.case_number');
+                            })
+                            ->select('notifications.*')
+                            ->orderByDesc('notifications.created_at')
                             ->limit(5)
                             ->get();
                         $headerUnreadCount = \Illuminate\Support\Facades\DB::table('notifications')
-                            ->whereNull('read_at')
+                            ->leftJoin('cases', 'notifications.case_number', '=', 'cases.case_number')
+                            ->where(function ($q) {
+                                $q->where('cases.school_npsn', session('school_npsn'))
+                                  ->orWhereNull('notifications.case_number');
+                            })
+                            ->whereNull('notifications.read_at')
                             ->count();
                     @endphp
                     <div class="notification-dropdown-wrapper">

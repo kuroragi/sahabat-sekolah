@@ -149,12 +149,28 @@
                 </div>
                 <div>
                     <label class="block text-[10px] font-semibold text-[#496985] mb-1.5">Sekolah</label>
-                    <select name="school_npsn" class="w-full border border-[#dfe8f1] rounded-lg px-3 py-2.5 text-[11px] text-[#315675] bg-[#fbfdff] focus:outline-none focus:border-[#4d9ae4]">
-                        <option value="">Tanpa sekolah</option>
-                        @foreach($schools as $school)
-                            <option value="{{ $school->npsn }}">{{ $school->nama_sekolah }}</option>
-                        @endforeach
-                    </select>
+                    <div class="tw-select-container relative w-full" data-name="school_npsn">
+                        <select name="school_npsn" class="hidden">
+                            <option value="">Tanpa sekolah</option>
+                            @foreach($schools as $school)
+                                <option value="{{ $school->npsn }}">{{ $school->nama_sekolah }}</option>
+                            @endforeach
+                        </select>
+                        <button type="button" class="tw-select-trigger w-full flex items-center justify-between bg-[#fbfdff] border border-[#dfe8f1] rounded-lg px-3 py-2.5 text-[11px] text-left focus:outline-none focus:border-[#4d9ae4] focus:ring-2 focus:ring-[#e7f3ff] transition-colors">
+                            <span class="tw-select-text text-[#315675] truncate">Pilih sekolah...</span>
+                            <svg class="w-3 h-3 text-[#7390b4] pointer-events-none flex-none" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
+                        </button>
+                        <div class="tw-select-dropdown absolute z-50 w-full mt-1 bg-white border border-[#dfe8f1] rounded-lg shadow-lg hidden opacity-0 transition-opacity duration-200">
+                            <div class="p-2 border-b border-[#edf2f7]">
+                                <div class="relative">
+                                    <svg class="w-3 h-3 text-[#7390b4] absolute left-2.5 top-1/2 -translate-y-1/2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
+                                    <input type="text" class="tw-select-search w-full bg-[#f8fafc] border-none text-[11px] rounded pl-7 pr-2 py-1.5 focus:outline-none focus:ring-1 focus:ring-[#4d9ae4]" placeholder="Cari sekolah...">
+                                </div>
+                            </div>
+                            <ul class="tw-select-list max-h-48 overflow-y-auto custom-scrollbar p-1" role="listbox"></ul>
+                            <div class="tw-select-empty hidden p-3 text-center text-[10px] text-[#7390b4]">Pencarian tidak ditemukan.</div>
+                        </div>
+                    </div>
                 </div>
             </div>
             <div class="flex justify-end gap-2 pt-2 mt-1">
@@ -215,12 +231,28 @@
             </div>
             <div>
                 <label class="block text-[10px] font-semibold text-[#496985] mb-1.5">Sekolah</label>
-                <select id="edit-school" name="school_npsn" class="w-full border border-[#dfe8f1] rounded-lg px-3 py-2.5 text-[11px] text-[#315675] bg-[#fbfdff] focus:outline-none focus:border-[#4d9ae4]">
-                    <option value="">Tanpa sekolah (Platform)</option>
-                    @foreach($schools as $school)
-                        <option value="{{ $school->npsn }}">{{ $school->nama_sekolah }}</option>
-                    @endforeach
-                </select>
+                <div class="tw-select-container relative w-full" data-name="school_npsn">
+                    <select id="edit-school" name="school_npsn" class="hidden">
+                        <option value="">Tanpa sekolah (Platform)</option>
+                        @foreach($schools as $school)
+                            <option value="{{ $school->npsn }}">{{ $school->nama_sekolah }}</option>
+                        @endforeach
+                    </select>
+                    <button type="button" class="tw-select-trigger w-full flex items-center justify-between bg-[#fbfdff] border border-[#dfe8f1] rounded-lg px-3 py-2.5 text-[11px] text-left focus:outline-none focus:border-[#4d9ae4] focus:ring-2 focus:ring-[#e7f3ff] transition-colors">
+                        <span class="tw-select-text text-[#315675] truncate">Pilih sekolah...</span>
+                        <svg class="w-3 h-3 text-[#7390b4] pointer-events-none flex-none" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
+                    </button>
+                    <div class="tw-select-dropdown absolute z-50 w-full mt-1 bg-white border border-[#dfe8f1] rounded-lg shadow-lg hidden opacity-0 transition-opacity duration-200">
+                        <div class="p-2 border-b border-[#edf2f7]">
+                            <div class="relative">
+                                <svg class="w-3 h-3 text-[#7390b4] absolute left-2.5 top-1/2 -translate-y-1/2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
+                                <input type="text" class="tw-select-search w-full bg-[#f8fafc] border-none text-[11px] rounded pl-7 pr-2 py-1.5 focus:outline-none focus:ring-1 focus:ring-[#4d9ae4]" placeholder="Cari sekolah...">
+                            </div>
+                        </div>
+                        <ul class="tw-select-list max-h-48 overflow-y-auto custom-scrollbar p-1" role="listbox"></ul>
+                        <div class="tw-select-empty hidden p-3 text-center text-[10px] text-[#7390b4]">Pencarian tidak ditemukan.</div>
+                    </div>
+                </div>
             </div>
             <div class="flex justify-end gap-2 pt-2 mt-1">
                 <button type="button" id="modal-edit-cancel"
@@ -311,7 +343,11 @@ document.addEventListener('DOMContentLoaded', function () {
             document.getElementById('edit-email').value = d.email;
             document.getElementById('edit-role').value = d.role;
             document.getElementById('edit-status').value = d.status;
-            document.getElementById('edit-school').value = d.school || '';
+            
+            const editSchool = document.getElementById('edit-school');
+            editSchool.value = d.school || '';
+            editSchool.dispatchEvent(new Event('change'));
+
             document.getElementById('edit-subtitle').textContent = d.email;
             openModal(modalEdit);
         });
