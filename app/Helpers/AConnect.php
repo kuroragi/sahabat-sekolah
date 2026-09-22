@@ -3,6 +3,7 @@
 namespace App\Helpers;
 
 use Illuminate\Http\Client\PendingRequest;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Http;
 
 class AConnect
@@ -47,13 +48,16 @@ class AConnect
      */
     public function getSekolahList()
     {
-        return \Illuminate\Support\Facades\Cache::remember('sekolah_list', 3600, function () {
+        $cachedData = \Illuminate\Support\Facades\Cache::remember('sekolah_list_array', 3600, function () {
             $data = $this->getDataSekolah()['data'] ?? [];
             return collect($data)
-                ->map(fn($item) => (object) $item)
+                ->map(fn($item) => (array) $item)
                 ->sortBy('nama_sekolah')
-                ->values();
+                ->values()
+                ->toArray();
         });
+
+        return collect($cachedData)->map(fn($item) => (object) $item);
     }
 
     /**
@@ -61,7 +65,7 @@ class AConnect
      */
     public function getSekolahMap()
     {
-        return \Illuminate\Support\Facades\Cache::remember('sekolah_map', 3600, function () {
+        return Cache::remember('sekolah_map_array', 3600, function () {
             return $this->getSekolahList()->pluck('nama_sekolah', 'npsn')->toArray();
         });
     }
