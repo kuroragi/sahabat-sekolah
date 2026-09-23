@@ -113,7 +113,33 @@
         <div class="case-panel risk-panel">
             <div class="case-panel-heading">
                 <div>
-                    <h2>Penilaian risiko</h2>
+                    <h2 style="display: flex; align-items: center; gap: 8px;">
+                        Penilaian risiko
+                        <style>
+                            .risk-popover summary::-webkit-details-marker { display: none; }
+                            .risk-popover[open] summary i { color: #2563eb; }
+                        </style>
+                        <details class="risk-popover" style="position: relative; display: inline-block;">
+                            <summary style="list-style: none; cursor: pointer; display: flex; align-items: center; color: #94a3b8; outline: none;" title="Panduan Penilaian">
+                                <i data-lucide="info" style="width: 16px; height: 16px;"></i>
+                            </summary>
+                            <div style="position: absolute; left: 0; top: calc(100% + 8px); z-index: 50; width: 340px; background: #fff; border: 1px solid #e2e8f0; border-radius: 8px; padding: 14px; font-size: 11px; color: #475569; line-height: 1.5; box-shadow: 0 10px 15px -3px rgba(0,0,0,0.1), 0 4px 6px -2px rgba(0,0,0,0.05); cursor: default; font-weight: normal;">
+                                <strong style="display: block; margin-bottom: 8px; color: #1e293b; font-size: 12px;">Panduan Penilaian (Total 100 Poin)</strong>
+                                <ul style="margin: 0; padding-left: 20px; margin-bottom: 12px; display: grid; gap: 4px;">
+                                    <li><b>Kategori (0-25):</b> Berdasarkan keparahan kategori & subkategori kejadian.</li>
+                                    <li><b>Keselamatan (0-25):</b> Menilai tingkat ancaman atau bahaya keselamatan fisik/psikologis.</li>
+                                    <li><b>Pengulangan (0-25):</b> Seberapa sering atau potensi kejadian ini berulang di masa depan.</li>
+                                    <li><b>Dampak (0-25):</b> Dampak yang ditimbulkan terhadap korban (trauma, cedera, dll).</li>
+                                </ul>
+                                <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+                                    <span style="background: #dcfce7; color: #166534; padding: 3px 8px; border-radius: 4px; font-weight: 600;">0-25: LOW</span>
+                                    <span style="background: #fef08a; color: #854d0e; padding: 3px 8px; border-radius: 4px; font-weight: 600;">26-50: MEDIUM</span>
+                                    <span style="background: #fed7aa; color: #9a3412; padding: 3px 8px; border-radius: 4px; font-weight: 600;">51-75: HIGH</span>
+                                    <span style="background: #fecaca; color: #991b1b; padding: 3px 8px; border-radius: 4px; font-weight: 600;">76-100: CRITICAL</span>
+                                </div>
+                            </div>
+                        </details>
+                    </h2>
                     <p class="panel-subtitle">Skor tersimpan sebagai bagian dari histori kasus.</p>
                 </div>
                 @if ($riskAssessment)

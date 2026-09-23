@@ -6,30 +6,25 @@ use Illuminate\Support\Facades\DB;
 
 class NotificationController extends Controller
 {
-    public function index()
-    {
-        $notifications = DB::table('notifications')
-            ->leftJoin('cases', 'notifications.case_number', '=', 'cases.case_number')
-            ->where(function ($q) {
-                $q->where('cases.school_npsn', session('school_npsn'))
-                  ->orWhereNull('notifications.case_number');
-            })
-            ->select('notifications.*')
-            ->orderByDesc('notifications.created_at')
-            ->get();
-
-        return view('notifications.index', [
-            'notifications' => $notifications,
-        ]);
-    }
-
     public function read(int $id)
     {
-        DB::table('notifications')->where('id', $id)->update([
-            'read_at' => now(),
-            'updated_at' => now(),
-        ]);
+        $notification = DB::table('notifications')->where('id', $id)->first();
 
-        return back();
+        if (!$notification) {
+            return back();
+        }
+
+        if (is_null($notification->read_at)) {
+            DB::table('notifications')->where('id', $id)->update([
+                'read_at' => now(),
+                'updated_at' => now(),
+            ]);
+        }
+
+        if ($notification->case_number) {
+            return redirect()->route('cases.show', $notification->case_number);
+        }
+
+        return redirect()->route('dashboard');
     }
 }

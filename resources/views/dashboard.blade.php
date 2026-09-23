@@ -200,14 +200,7 @@
                 </div>
                 <i data-lucide="chevron-right"></i>
             </a>
-            <a class="alert-item" href="{{ route('notifications.index') }}">
-                <div class="alert-badge blue-bg"><i data-lucide="message-circle"></i></div>
-                <div>
-                    <strong>Notifikasi & Pesan Terbaru</strong>
-                    <p>Menunggu tanggapan Anda</p>
-                </div>
-                <i data-lucide="chevron-right"></i>
-            </a>
+
         </div>
     </div>
 </section>

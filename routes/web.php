@@ -125,8 +125,7 @@ Route::middleware('auth.session')->group(function () {
     // Notifications
     // ==========================================
     Route::middleware(['role:COUNSELOR,PRINCIPAL', 'permission:NOTIFICATION_VIEW'])->group(function () {
-        Route::get('/notifications', [NotificationController::class, 'index'])->name('notifications.index');
-        Route::post('/notifications/{id}/read', [NotificationController::class, 'read'])->name('notifications.read');
+        Route::get('/notifications/{id}/read', [NotificationController::class, 'read'])->name('notifications.read');
     });
 
     // ==========================================

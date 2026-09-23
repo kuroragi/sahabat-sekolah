@@ -72,7 +72,16 @@
                         <td>{{ $case->identity_mode === 'ANONYMOUS' ? 'Anonim' : $case->reporter_role }}</td>
                         <td><span class="status {{ strtolower($case->status) }}">{{ str_replace('_', ' ', $case->status) }}</span></td>
                         <td><span class="priority {{ strtolower($case->risk_level) }}">{{ $case->risk_level }}</span></td>
-                        <td><span class="sla-{{ strtolower($case->sla_status) }}">{{ $case->sla_status }}</span></td>
+                        <td>
+                            @if ($case->status === 'PENDING_RESPONSE')
+                                <span class="text-gray-400">-</span>
+                            @else
+                                @php
+                                    $activeSla = in_array($case->status, ['RESOLVED', 'CLOSED']) ? 'COMPLETED' : $case->resolution_status;
+                                @endphp
+                                <span class="sla-{{ strtolower($activeSla) }}">{{ $activeSla }}</span>
+                            @endif
+                        </td>
                         <td>
                             <a class="view-button" href="{{ route('cases.show', $case->case_number) }}">
                                 Buka Kasus <i data-lucide="arrow-right"></i>

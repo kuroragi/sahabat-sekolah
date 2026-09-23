@@ -33,10 +33,12 @@ class ReportController extends Controller
             ->join('reports', 'cases.report_id', '=', 'reports.id')
             ->leftJoin('case_slas', 'cases.id', '=', 'case_slas.case_id')
             ->where('cases.school_npsn', session('school_npsn'))
-            ->select('cases.*', 'reports.description', 'reports.reporter_role', 'reports.identity_mode', 'case_slas.status as sla_status');
+            ->select('cases.*', 'reports.description', 'reports.reporter_role', 'reports.identity_mode', 'case_slas.status as sla_status', 'case_slas.resolution_status');
 
         if ($status = $request->input('status')) {
             $query->where('cases.status', $status);
+        } else {
+            $query->where('cases.status', '!=', 'CLOSED');
         }
 
         if ($risk = $request->input('risk_level')) {
@@ -44,7 +46,15 @@ class ReportController extends Controller
         }
 
         if ($sla = $request->input('sla_status')) {
-            $query->where('case_slas.status', $sla);
+            if ($sla === 'COMPLETED') {
+                $query->where(function ($q) {
+                    $q->whereIn('cases.status', ['RESOLVED', 'CLOSED'])
+                      ->orWhere('case_slas.resolution_status', 'COMPLETED');
+                });
+            } else {
+                $query->where('cases.status', '!=', 'PENDING_RESPONSE')
+                      ->where('case_slas.resolution_status', $sla);
+            }
         }
 
         if ($search = trim((string) $request->input('search'))) {
@@ -56,7 +66,7 @@ class ReportController extends Controller
         }
 
         return view('reports.inbox', [
-            'cases' => $query->orderByDesc('cases.updated_at')->get(),
+            'cases' => $query->orderByDesc('cases.created_at')->get(),
             'filters' => $request->only(['status', 'risk_level', 'sla_status', 'search']),
         ]);
     }

@@ -100,10 +100,6 @@
                         href="{{ route('statistics.index') }}">
                         <i data-lucide="bar-chart-3"></i> Statistik
                     </a>
-                    <a class="nav-item {{ ($activeNav ?? '') === 'notifications' ? 'active' : '' }}"
-                        href="{{ route('notifications.index') }}">
-                        <i data-lucide="bell"></i> Notifikasi
-                    </a>
                 @else
                     <a class="nav-item {{ ($activeNav ?? '') === 'dashboard' ? 'active' : '' }}"
                         href="{{ route('dashboard') }}">
@@ -130,18 +126,6 @@
                     <a class="nav-item {{ ($activeNav ?? '') === 'statistics' ? 'active' : '' }}"
                         href="{{ route('statistics.index') }}">
                         <i data-lucide="bar-chart-3"></i> Statistik
-                    </a>
-                    <a class="nav-item {{ ($activeNav ?? '') === 'notifications' ? 'active' : '' }}"
-                        href="{{ route('notifications.index') }}">
-                        <i data-lucide="bell"></i> Notifikasi
-                        @php
-                            $unreadCount = \Illuminate\Support\Facades\DB::table('notifications')
-                                ->whereNull('read_at')
-                                ->count();
-                        @endphp
-                        @if ($unreadCount > 0)
-                            <b>{{ $unreadCount }}</b>
-                        @endif
                     </a>
                 @endif
             </nav>
@@ -206,7 +190,7 @@
                                 </div>
                                 <div class="notif-dropdown-body">
                                     @forelse($headerNotifications as $notif)
-                                        <a href="{{ $notif->case_number ? route('cases.show', $notif->case_number) : route('notifications.index') }}"
+                                        <a href="{{ route('notifications.read', $notif->id) }}"
                                             class="notif-dropdown-item {{ is_null($notif->read_at) ? 'unread' : '' }}">
                                             <div class="notif-dropdown-icon {{ strtolower($notif->priority) }}">
                                                 @if ($notif->priority === 'URGENT')
@@ -231,11 +215,6 @@
                                             <p>Tidak ada notifikasi</p>
                                         </div>
                                     @endforelse
-                                </div>
-                                <div class="notif-dropdown-footer">
-                                    <a href="{{ route('notifications.index') }}" class="notif-view-all">
-                                        Lihat Semua Notifikasi <i data-lucide="arrow-right"></i>
-                                    </a>
                                 </div>
                             </div>
                         </div>
