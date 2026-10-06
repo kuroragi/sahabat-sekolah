@@ -15,13 +15,14 @@ services:
       - db
 
   web:
-    image: nginx:alpine
+    build:
+      context: ./docker/nginx
+      dockerfile: Dockerfile
     container_name: sahabat_web
     restart: unless-stopped
     ports:
       - "8209:80"
     volumes:
-      - ./docker/nginx:/etc/nginx/conf.d
       - shared_public:/var/www/html/public
     networks:
       - sahabat-network
