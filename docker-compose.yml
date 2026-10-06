@@ -9,6 +9,8 @@ services:
     restart: unless-stopped
     volumes:
       - shared_public:/var/www/html/public_shared
+      - env_data:/var/www/html/env_data
+      - app_storage:/var/www/html/storage
     networks:
       - sahabat-network
     depends_on:
@@ -24,6 +26,7 @@ services:
       - "8209:80"
     volumes:
       - shared_public:/var/www/html/public
+      - app_storage:/var/www/html/storage
     networks:
       - sahabat-network
     depends_on:
@@ -55,3 +58,5 @@ networks:
 volumes:
   pgdata:
   shared_public:
+  env_data:
+  app_storage:

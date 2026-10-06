@@ -37,10 +37,14 @@ RUN npm install && npm run build
 # Set permissions
 RUN chown -R www-data:www-data /var/www/html/storage /var/www/html/bootstrap/cache
 
-# Create a startup script to copy public files to shared volume and start php-fpm
+# Create a startup script to copy public files, manage persistent .env, and start php-fpm
 RUN echo '#!/bin/sh' > /usr/local/bin/start.sh \
-    && echo 'cp -rT /var/www/html/public /var/www/html/public_shared' >> /usr/local/bin/start.sh \
-    && echo 'chown -R www-data:www-data /var/www/html/storage /var/www/html/bootstrap/cache' >> /usr/local/bin/start.sh \
+    && echo 'if [ ! -f /var/www/html/env_data/.env ]; then cp /var/www/html/.env.example /var/www/html/env_data/.env; fi' >> /usr/local/bin/start.sh \
+    && echo 'ln -sf /var/www/html/env_data/.env /var/www/html/.env' >> /usr/local/bin/start.sh \
+    && echo 'if grep -q "APP_KEY=$" /var/www/html/.env; then php artisan key:generate --force; fi' >> /usr/local/bin/start.sh \
+    && echo 'cp -aT /var/www/html/public /var/www/html/public_shared' >> /usr/local/bin/start.sh \
+    && echo 'ln -snf /var/www/html/storage/app/public /var/www/html/public_shared/storage' >> /usr/local/bin/start.sh \
+    && echo 'chown -R www-data:www-data /var/www/html/storage /var/www/html/bootstrap/cache /var/www/html/env_data' >> /usr/local/bin/start.sh \
     && echo 'exec php-fpm' >> /usr/local/bin/start.sh \
     && chmod +x /usr/local/bin/start.sh
 
