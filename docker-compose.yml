@@ -38,7 +38,7 @@ services:
       POSTGRES_USER: ${DB_USERNAME:-sahabat_user}
       POSTGRES_PASSWORD: ${DB_PASSWORD:-1q2w3e4r5tzaq}
     volumes:
-      - dbdata:/var/lib/postgresql/data
+      - pgdata:/var/lib/postgresql/data
     networks:
       - sahabat-network
     # Port tidak diexpose ke host (internal only)
@@ -53,5 +53,5 @@ networks:
         - subnet: 192.169.91.0/24
 
 volumes:
-  dbdata:
+  pgdata:
   shared_public:
