@@ -8,26 +8,23 @@ services:
     image: sahabat-sekolah-app
     container_name: sahabat-sekolah-app
     restart: unless-stopped
-    ports:
-      - "8209:80"
     working_dir: /var/www/html
-    depends_on:
-      - db
     volumes:
       - ./:/var/www/html
     networks:
       - sahabat-network
 
-  # web:
-  #   image: nginx:alpine
-  #   container_name: sahabat-sekolah-web
-  #   restart: unless-stopped
-    
-  #   volumes:
-  #     - ./:/var/www/html
-  #     - ./docker/nginx:/etc/nginx/conf.d
-  #   networks:
-  #     - sahabat-network
+  web:
+    image: nginx:alpine
+    container_name: sahabat-sekolah-web
+    restart: unless-stopped
+    ports:
+      - "8209:80"
+    volumes:
+      - ./:/var/www/html
+      - ./docker/nginx:/etc/nginx/conf.d
+    networks:
+      - sahabat-network
 
   db:
     image: postgres:15-alpine
