@@ -26,7 +26,7 @@
         <div>
             <span>Total Laporan</span>
             <strong>{{ $stats['reports'] }}</strong>
-            <small><em>↑ 12%</em> dari bulan lalu</small>
+            <small><em>{{ $stats['reportsTrendSign'] }} {{ abs($stats['reportsTrend']) }}%</em> dari bulan lalu</small>
         </div>
     </div>
     <div class="stat-card orange">
@@ -34,7 +34,7 @@
         <div>
             <span>Dalam Penanganan</span>
             <strong>{{ $stats['handling'] }}</strong>
-            <small><em>↑ 8%</em> perlu perhatian</small>
+            <small><em>{{ $stats['handlingTrendSign'] }} {{ abs($stats['handlingTrend']) }}%</em> perlu perhatian</small>
         </div>
     </div>
     <div class="stat-card red">
@@ -42,7 +42,7 @@
         <div>
             <span>Risiko Tinggi</span>
             <strong>{{ $stats['highRisk'] }}</strong>
-            <small><em>2 baru</em> minggu ini</small>
+            <small><em>{{ $stats['highRiskNewThisWeek'] }} baru</em> minggu ini</small>
         </div>
     </div>
     <div class="stat-card pink">
@@ -66,14 +66,32 @@
         </div>
         <div class="chart">
             <div class="chart-labels">
-                <span>20</span><span>15</span><span>10</span><span>5</span><span>0</span>
+                <span>{{ $stats['maxTrend'] }}</span>
+                <span>{{ round($stats['maxTrend'] * 0.75) }}</span>
+                <span>{{ round($stats['maxTrend'] * 0.5) }}</span>
+                <span>{{ round($stats['maxTrend'] * 0.25) }}</span>
+                <span>0</span>
             </div>
+            @php
+                $points = [];
+                $xStep = 560 / 5;
+                foreach($stats['trendData'] as $idx => $val) {
+                    $x = $idx * $xStep;
+                    // Y: 20 is max, 150 is min (0)
+                    $y = 150 - ($val / max(1, $stats['maxTrend'])) * 130;
+                    $points[] = "{$x},{$y}";
+                }
+                $polyline = implode(' ', $points);
+                $areaPolyline = "0,180 {$polyline} 560,180";
+            @endphp
             <svg viewBox="0 0 560 180" preserveAspectRatio="none">
-                <path class="area" d="M0 152 C40 145 52 124 90 132 S150 150 185 110 S235 120 270 92 S330 108 365 74 S420 85 445 52 S500 60 560 22 L560 180 L0 180Z"></path>
-                <path class="line" d="M0 152 C40 145 52 124 90 132 S150 150 185 110 S235 120 270 92 S330 108 365 74 S420 85 445 52 S500 60 560 22"></path>
+                <polygon class="area" points="{{ $areaPolyline }}"></polygon>
+                <polyline class="line" points="{{ $polyline }}"></polyline>
             </svg>
             <div class="months">
-                <span>Jan</span><span>Feb</span><span>Mar</span><span>Apr</span><span>Mei</span><span>Jun</span>
+                @foreach($stats['trendMonths'] as $month)
+                    <span>{{ $month }}</span>
+                @endforeach
             </div>
         </div>
     </div>
@@ -86,13 +104,15 @@
             <i data-lucide="more-horizontal"></i>
         </div>
         <div class="donut-wrap">
-            <div class="donut"></div>
+            <div class="donut" style="background: {{ $stats['donutStyle'] }}"></div>
             <div class="legend">
-                <span><i class="dot cyan"></i>Cyberbullying <b>35%</b></span>
-                <span><i class="dot blue-dot"></i>Verbal <b>25%</b></span>
-                <span><i class="dot yellow"></i>Sosial <b>15%</b></span>
-                <span><i class="dot coral"></i>Fisik <b>15%</b></span>
-                <span><i class="dot pink-dot"></i>Seksual <b>5%</b></span>
+                @if($stats['categoryData']->isEmpty())
+                    <span><i class="dot" style="background: #e6eef7;"></i>Belum ada data <b>0%</b></span>
+                @else
+                    @foreach($stats['categoryData'] as $cat)
+                        <span><i class="dot" style="background: {{ $cat->color }};"></i>{{ $cat->category }} <b>{{ $cat->percentage }}%</b></span>
+                    @endforeach
+                @endif
             </div>
         </div>
     </div>

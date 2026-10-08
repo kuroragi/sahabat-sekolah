@@ -47,6 +47,66 @@ class PageController extends Controller
             }
         }
 
+        $schoolNpsn = session('school_npsn');
+
+        // Dynamic stats calculations
+        $thisMonthStart = now()->startOfMonth();
+        $lastMonthStart = now()->subMonth()->startOfMonth();
+        $lastMonthEnd = now()->subMonth()->endOfMonth();
+
+        $reportsThisMonth = DB::table('reports')->where('school_npsn', $schoolNpsn)->where('created_at', '>=', $thisMonthStart)->count();
+        $reportsLastMonth = DB::table('reports')->where('school_npsn', $schoolNpsn)->whereBetween('created_at', [$lastMonthStart, $lastMonthEnd])->count();
+        $reportsTrend = $reportsLastMonth > 0 ? round((($reportsThisMonth - $reportsLastMonth) / $reportsLastMonth) * 100) : ($reportsThisMonth > 0 ? 100 : 0);
+        $reportsTrendSign = $reportsTrend >= 0 ? '↑' : '↓';
+
+        $handlingThisMonth = DB::table('cases')->where('school_npsn', $schoolNpsn)->where('status', 'IN_HANDLING')->where('created_at', '>=', $thisMonthStart)->count();
+        $handlingLastMonth = DB::table('cases')->where('school_npsn', $schoolNpsn)->where('status', 'IN_HANDLING')->whereBetween('created_at', [$lastMonthStart, $lastMonthEnd])->count();
+        $handlingTrend = $handlingLastMonth > 0 ? round((($handlingThisMonth - $handlingLastMonth) / $handlingLastMonth) * 100) : ($handlingThisMonth > 0 ? 100 : 0);
+        $handlingTrendSign = $handlingTrend >= 0 ? '↑' : '↓';
+
+        $highRiskNewThisWeek = DB::table('cases')->where('school_npsn', $schoolNpsn)->whereIn('risk_level', ['HIGH', 'CRITICAL'])->where('created_at', '>=', now()->startOfWeek())->count();
+
+        // Trend Data (Last 6 months)
+        $trendMonths = collect();
+        $trendData = collect();
+        for ($i = 5; $i >= 0; $i--) {
+            $monthStart = now()->subMonths($i)->startOfMonth();
+            $monthEnd = now()->subMonths($i)->endOfMonth();
+            $trendMonths->push($monthStart->translatedFormat('M'));
+            $count = DB::table('reports')->where('school_npsn', $schoolNpsn)->whereBetween('created_at', [$monthStart, $monthEnd])->count();
+            $trendData->push($count);
+        }
+        $maxTrend = max(20, $trendData->max() + 5);
+
+        // Category Data
+        $categories = DB::table('reports')
+            ->where('school_npsn', $schoolNpsn)
+            ->select('category', DB::raw('count(*) as total'))
+            ->groupBy('category')
+            ->get();
+            
+        $totalReportsCount = $categories->sum('total') ?: 1;
+        $categoryData = $categories->map(function ($cat) use ($totalReportsCount) {
+            $cat->percentage = round(($cat->total / $totalReportsCount) * 100);
+            return $cat;
+        })->sortByDesc('total')->values();
+
+        // Colors for donut
+        $colors = ['#35aee6', '#277de2', '#ffc85a', '#f47e78', '#e9a0ba', '#a0aec0'];
+        $donutGradient = [];
+        $currentPercent = 0;
+        foreach ($categoryData as $idx => $cat) {
+            $color = $colors[$idx % count($colors)];
+            $cat->color = $color;
+            $nextPercent = $currentPercent + $cat->percentage;
+            $donutGradient[] = "{$color} {$currentPercent}% {$nextPercent}%";
+            $currentPercent = $nextPercent;
+        }
+        $donutStyle = 'conic-gradient(' . implode(',', $donutGradient) . ')';
+        if (empty($donutGradient)) {
+            $donutStyle = 'conic-gradient(#e6eef7 0% 100%)';
+        }
+
         return view('dashboard', [
             'cases' => $cases,
             'slaStats' => $slaStats,
@@ -55,6 +115,18 @@ class PageController extends Controller
                 'handling' => DB::table('cases')->where('status', 'IN_HANDLING')->count(),
                 'highRisk' => DB::table('cases')->whereIn('risk_level', ['HIGH', 'CRITICAL'])->count(),
                 'overdue' => DB::table('case_slas')->where('status', 'OVERDUE')->orWhere('resolution_status', 'OVERDUE')->count(),
+                
+                'reportsTrend' => $reportsTrend,
+                'reportsTrendSign' => $reportsTrendSign,
+                'handlingTrend' => $handlingTrend,
+                'handlingTrendSign' => $handlingTrendSign,
+                'highRiskNewThisWeek' => $highRiskNewThisWeek,
+                
+                'trendMonths' => $trendMonths,
+                'trendData' => $trendData,
+                'maxTrend' => $maxTrend,
+                'categoryData' => $categoryData,
+                'donutStyle' => $donutStyle,
             ],
         ]);
     }

@@ -141,7 +141,7 @@ class ReportController extends Controller
 
             if ($request->hasFile('evidences')) {
                 foreach ($request->file('evidences') as $file) {
-                    $path = $file->store('evidences', 'public');
+                    $path = $file->store('evidences', 'local');
                     DB::table('case_evidences')->insert([
                         'case_id' => $caseId,
                         'file_name' => $file->getClientOriginalName(),

@@ -11,7 +11,7 @@ class CaseController extends Controller
 {
     public function show(string $caseNumber)
     {
-        $schoolsMap = (new AConnect)->getSekolahMap();
+        $schoolName = DB::table('users')->where('school_npsn', $case->school_npsn)->value('school_name');
         $case = DB::table('cases')
             ->join('reports', 'cases.report_id', '=', 'reports.id')
             ->leftJoin('case_slas', 'cases.id', '=', 'case_slas.case_id')
@@ -21,7 +21,17 @@ class CaseController extends Controller
             ->select('cases.*', 'reports.reporter_role', 'reports.identity_mode', 'reports.description', 'reports.submitted_at', 'reporter_identities.full_name as reporter_name', 'reporter_identities.contact as reporter_contact', 'reporter_identities.access_level as reporter_access_level', 'case_slas.status as sla_status', 'case_slas.response_deadline')
             ->firstOrFail();
 
-        $case->school_name = $schoolsMap[$case->school_npsn] ?? '-';
+        $case->school_name = $schoolName ?? '-';
+
+        // Evaluate SLA dynamically for display if SLA scan hasn't run yet
+        if ($case->status === 'PENDING_RESPONSE' && $case->sla_status !== 'OVERDUE' && $case->response_deadline && \Illuminate\Support\Carbon::parse($case->response_deadline)->isPast()) {
+            $case->sla_status = 'OVERDUE';
+        } elseif (in_array($case->status, ['UNDER_VERIFICATION', 'IN_HANDLING'])) {
+            $resolutionDeadline = DB::table('case_slas')->where('case_id', $case->id)->value('resolution_deadline');
+            if ($case->sla_status !== 'OVERDUE' && $resolutionDeadline && \Illuminate\Support\Carbon::parse($resolutionDeadline)->isPast()) {
+                $case->sla_status = 'OVERDUE';
+            }
+        }
 
         DB::table('case_access_logs')->insert([
             'user_id' => session('user_id'), 'user_name' => session('user_name'), 'case_id' => $case->id,
@@ -168,6 +178,22 @@ class CaseController extends Controller
                 'created_at' => $now, 'updated_at' => $now,
             ]);
             DB::table('cases')->where('id', $case->id)->update(['risk_level' => $risk, 'updated_at' => $now]);
+            
+            if ($case->risk_level !== $risk) {
+                $config = DB::table('sla_configurations')->where('risk_level', $risk)->first();
+                $responseHours = $config ? $config->response_time_hours : 24;
+                $resolutionDays = $config ? $config->resolution_time_days : 14;
+
+                $slaUpdate = ['updated_at' => $now];
+                if ($case->status === 'PENDING_RESPONSE') {
+                    $slaUpdate['response_deadline'] = \Illuminate\Support\Carbon::parse($case->opened_at)->addHours($responseHours);
+                } else {
+                    $initialResponse = DB::table('case_slas')->where('case_id', $case->id)->value('initial_response_at') ?? $now;
+                    $slaUpdate['resolution_deadline'] = \Illuminate\Support\Carbon::parse($initialResponse)->addDays($resolutionDays);
+                }
+                DB::table('case_slas')->where('case_id', $case->id)->update($slaUpdate);
+            }
+
             auditAction('ASSESS_RISK', 'CASE', $case->case_number, ['risk_level' => $risk, 'score' => $score]);
             notifyCounselor('RISK_ASSESSED', 'Penilaian risiko tersimpan', $case->case_number.' memiliki level risiko '.$risk.' dengan skor '.$score.'.', $case->case_number, in_array($risk, ['HIGH', 'CRITICAL'], true) ? 'URGENT' : 'NORMAL');
         });
@@ -212,16 +238,54 @@ class CaseController extends Controller
         $table = $documentType === 'evidence' ? 'case_evidences' : 'case_resolution_documents';
         $document = DB::table($table)->where('id', $id)->where('case_id', $case->id)->firstOrFail();
 
-        abort_unless(Storage::disk('local')->exists($document->file_path), 404, 'File tidak ditemukan.');
+        $disk = 'local';
+        if (!Storage::disk($disk)->exists($document->file_path)) {
+            if (Storage::disk('public')->exists($document->file_path)) {
+                $disk = 'public';
+            } else {
+                abort(404, 'File tidak ditemukan.');
+            }
+        }
 
         auditAction('DOWNLOAD_DOCUMENT', 'CASE', $case->case_number, ['document_id' => $id, 'document_type' => $documentType]);
         DB::table('case_access_logs')->insert([
             'user_id' => session('user_id'), 'user_name' => session('user_name'), 'case_id' => $case->id,
-            'action' => 'DOWNLOAD_DOCUMENT', 'access_level' => 'CASE_SENSITIVE', 'reason' => 'Dokumen kasus diunduh',
+            'action' => 'DOWNLOAD_DOCUMENT', 'access_level' => 'CASE_SENSITIVE', 'reason' => 'Dokumen kasus dilihat',
             'ip_address' => request()->ip(), 'created_at' => now(), 'updated_at' => now(),
         ]);
 
-        return Storage::disk('local')->download($document->file_path, $document->file_name);
+        return Storage::disk($disk)->response($document->file_path, $document->file_name);
+    }
+
+    public function printReport(string $caseNumber)
+    {
+        $baseCase = scopedCase($caseNumber);
+        
+        abort_unless(in_array($baseCase->status, ['RESOLVED', 'CLOSED']), 403, 'Hanya kasus yang sudah selesai yang dapat dicetak.');
+
+        $case = DB::table('cases')
+            ->join('reports', 'cases.report_id', '=', 'reports.id')
+            ->leftJoin('reporter_identities', 'reports.id', '=', 'reporter_identities.report_id')
+            ->leftJoin('case_slas', 'cases.id', '=', 'case_slas.case_id')
+            ->where('cases.id', $baseCase->id)
+            ->select('cases.*', 'reports.reporter_role', 'reports.identity_mode', 'reports.description', 'reports.submitted_at', 'reporter_identities.full_name as reporter_name', 'reporter_identities.contact as reporter_contact', 'reporter_identities.access_level as reporter_access_level', 'case_slas.status as sla_status', 'case_slas.response_deadline')
+            ->first();
+
+        $schoolName = DB::table('users')->where('school_npsn', $case->school_npsn)->value('school_name');
+        $case->school_name = $schoolName ?? '-';
+        
+        $participants = DB::table('case_participants')->where('case_id', $case->id)->get();
+        $history = DB::table('case_status_histories')->where('case_id', $case->id)->orderBy('created_at', 'asc')->get();
+        $actions = DB::table('case_access_logs')->where('case_id', $case->id)->orderBy('created_at', 'asc')->get();
+        $notes = DB::table('case_notes')->where('case_id', $case->id)->orderBy('created_at', 'asc')->get();
+
+        DB::table('case_access_logs')->insert([
+            'user_id' => session('user_id'), 'user_name' => session('user_name'), 'case_id' => $case->id,
+            'action' => 'PRINT_REPORT', 'access_level' => 'CASE_FULL', 'reason' => 'Mencetak laporan kasus',
+            'ip_address' => request()->ip(), 'created_at' => now(), 'updated_at' => now(),
+        ]);
+
+        return view('cases.print', compact('case', 'participants', 'history', 'actions', 'notes'));
     }
 
     public function updateStatus(Request $request, string $caseNumber)
