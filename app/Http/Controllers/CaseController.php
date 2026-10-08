@@ -11,7 +11,6 @@ class CaseController extends Controller
 {
     public function show(string $caseNumber)
     {
-        $schoolName = DB::table('users')->where('school_npsn', $case->school_npsn)->value('school_name');
         $case = DB::table('cases')
             ->join('reports', 'cases.report_id', '=', 'reports.id')
             ->leftJoin('case_slas', 'cases.id', '=', 'case_slas.case_id')
@@ -21,6 +20,7 @@ class CaseController extends Controller
             ->select('cases.*', 'reports.reporter_role', 'reports.identity_mode', 'reports.description', 'reports.submitted_at', 'reporter_identities.full_name as reporter_name', 'reporter_identities.contact as reporter_contact', 'reporter_identities.access_level as reporter_access_level', 'case_slas.status as sla_status', 'case_slas.response_deadline')
             ->firstOrFail();
 
+        $schoolName = DB::table('users')->where('school_npsn', $case->school_npsn)->value('school_name');
         $case->school_name = $schoolName ?? '-';
 
         // Evaluate SLA dynamically for display if SLA scan hasn't run yet
