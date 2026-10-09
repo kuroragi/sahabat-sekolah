@@ -17,7 +17,8 @@ class CaseController extends Controller
             ->where('cases.case_number', $caseNumber)
             ->where('cases.school_npsn', session('school_npsn'))
             ->leftJoin('reporter_identities', 'reports.id', '=', 'reporter_identities.report_id')
-            ->select('cases.*', 'reports.reporter_role', 'reports.identity_mode', 'reports.description', 'reports.submitted_at', 'reporter_identities.full_name as reporter_name', 'reporter_identities.contact as reporter_contact', 'reporter_identities.access_level as reporter_access_level', 'case_slas.status as sla_status', 'case_slas.response_deadline')
+            ->leftJoin('students', 'reporter_identities.student_id', '=', 'students.id')
+            ->select('cases.*', 'reports.reporter_role', 'reports.identity_mode', 'reports.description', 'reports.submitted_at', 'reporter_identities.full_name as reporter_name', 'reporter_identities.contact as reporter_contact', 'reporter_identities.access_level as reporter_access_level', 'students.class_name as reporter_class', 'students.student_number as reporter_student_number', 'case_slas.status as sla_status', 'case_slas.response_deadline')
             ->firstOrFail();
 
         $schoolName = DB::table('users')->where('school_npsn', $case->school_npsn)->value('school_name');
@@ -358,5 +359,127 @@ class CaseController extends Controller
         });
 
         return back()->with('success', 'Status kasus berhasil diperbarui.');
+    }
+
+    public function processAction(Request $request, string $caseNumber)
+    {
+        $data = $request->validate([
+            'status' => ['nullable', 'in:UNDER_VERIFICATION,IN_HANDLING,RESOLVED,CLOSED'],
+            'status_reason' => ['nullable', 'string', 'max:500'],
+            'note_type' => ['nullable', 'in:VERIFICATION,HANDLING,COUNSELING,FOLLOW_UP,INTERNAL', 'required_with:note_content'],
+            'note_content' => ['nullable', 'string', 'min:5', 'max:2000', 'required_with:note_type'],
+            'document_type' => ['nullable', 'in:EVIDENCE,RESOLUTION', 'required_with:document_file'],
+            'document_file' => ['nullable', 'file', 'max:10240', 'mimes:jpg,jpeg,png,webp,pdf,doc,docx,mp4,mov,mp3,wav', 'required_with:document_type'],
+        ]);
+
+        $case = scopedCase($caseNumber);
+        $now = now();
+        $messages = [];
+
+        DB::transaction(function () use ($case, $data, $now, &$messages, $request) {
+            // 1. Update Status
+            if (!empty($data['status'])) {
+                $allowed = [
+                    'PENDING_RESPONSE' => ['UNDER_VERIFICATION'],
+                    'UNDER_VERIFICATION' => ['IN_HANDLING', 'RESOLVED'],
+                    'IN_HANDLING' => ['RESOLVED'],
+                    'RESOLVED' => ['CLOSED'],
+                ];
+                
+                if (in_array($data['status'], $allowed[$case->status] ?? [], true)) {
+                    // Check resolution document if closing
+                    if ($data['status'] === 'CLOSED') {
+                        $hasDoc = DB::table('case_resolution_documents')->where('case_id', $case->id)->where('verification_status', 'VALID')->exists();
+                        $uploadingResolution = !empty($data['document_file']) && $data['document_type'] === 'RESOLUTION';
+                        
+                        if (!$hasDoc && !$uploadingResolution) {
+                            throw \Illuminate\Validation\ValidationException::withMessages(['status' => 'Kasus tidak dapat ditutup karena belum memiliki dokumen penyelesaian yang valid.']);
+                        }
+                    }
+
+                    DB::table('cases')->where('id', $case->id)->update([
+                        'status' => $data['status'],
+                        'updated_at' => $now,
+                    ]);
+
+                    DB::table('case_status_histories')->insert([
+                        'case_id' => $case->id, 'old_status' => $case->status, 'new_status' => $data['status'],
+                        'reason' => $data['status_reason'] ?? null, 'changed_by' => 'Bu Ratna Sari',
+                        'created_at' => $now, 'updated_at' => $now,
+                    ]);
+
+                    DB::table('case_actions')->insert([
+                        'case_id' => $case->id,
+                        'action_type' => $data['status'] === 'UNDER_VERIFICATION' ? 'VERIFICATION' : ($data['status'] === 'IN_HANDLING' ? 'HANDLING' : 'RESOLUTION'),
+                        'description' => $data['status_reason'] ?: 'Status kasus diperbarui menjadi '.str_replace('_', ' ', $data['status']),
+                        'performed_by' => 'Bu Ratna Sari', 'created_at' => $now, 'updated_at' => $now,
+                    ]);
+
+                    if ($case->status === 'PENDING_RESPONSE') {
+                        $config = DB::table('sla_configurations')->where('risk_level', $case->risk_level)->first();
+                        $resolutionDays = $config ? $config->resolution_time_days : 14;
+
+                        DB::table('case_slas')->where('case_id', $case->id)->update([
+                            'status' => 'COMPLETED', 
+                            'initial_response_at' => $now, 
+                            'resolution_status' => 'ON_TIME',
+                            'resolution_deadline' => $now->copy()->addDays($resolutionDays),
+                            'updated_at' => $now,
+                        ]);
+                    }
+
+                    if (in_array($data['status'], ['RESOLVED', 'CLOSED'])) {
+                        DB::table('case_slas')->where('case_id', $case->id)->update([
+                            'resolution_status' => 'COMPLETED',
+                            'resolved_at' => $now,
+                            'updated_at' => $now,
+                        ]);
+                    }
+
+                    notifyCounselor('STATUS_CHANGED', 'Status kasus diperbarui', $case->case_number.' sekarang '.str_replace('_', ' ', $data['status']).'.', $case->case_number, 'HIGH');
+                    auditAction('CHANGE_STATUS', 'CASE', $case->case_number, ['status' => $data['status']], ['status' => $case->status]);
+                    $messages[] = 'Status berhasil diperbarui.';
+                }
+            }
+
+            // 2. Add Note
+            if (!empty($data['note_content']) && !empty($data['note_type'])) {
+                DB::table('case_notes')->insert([
+                    'case_id' => $case->id, 'note_type' => $data['note_type'], 'content' => $data['note_content'],
+                    'visibility' => 'PRIVATE_BK', 'created_by' => 'Bu Ratna Sari', 'created_at' => $now, 'updated_at' => $now,
+                ]);
+
+                auditAction('CREATE_NOTE', 'CASE', $case->case_number, ['note_type' => $data['note_type']]);
+                notifyCounselor('NOTE_ADDED', 'Catatan kasus ditambahkan', 'Catatan '.strtolower($data['note_type']).' ditambahkan ke '.$case->case_number.'.', $case->case_number);
+                $messages[] = 'Catatan berhasil disimpan.';
+            }
+
+            // 3. Upload Document
+            if ($request->hasFile('document_file') && !empty($data['document_type'])) {
+                $file = $request->file('document_file');
+                $path = $file->store('case-documents', 'local');
+                
+                $payload = [
+                    'case_id' => $case->id, 'file_name' => $file->getClientOriginalName(), 'file_path' => $path,
+                    'uploaded_by' => 'Bu Ratna Sari', 'created_at' => $now, 'updated_at' => $now,
+                ];
+
+                if ($data['document_type'] === 'RESOLUTION') {
+                    DB::table('case_resolution_documents')->insert($payload + ['verification_status' => 'VALID']);
+                } else {
+                    DB::table('case_evidences')->insert($payload + ['mime_type' => $file->getMimeType(), 'file_size' => $file->getSize()]);
+                }
+
+                auditAction('UPLOAD_DOCUMENT', 'CASE', $case->case_number, ['file_name' => $file->getClientOriginalName(), 'document_type' => $data['document_type']]);
+                notifyCounselor('DOCUMENT_UPLOADED', 'Dokumen kasus diunggah', $file->getClientOriginalName().' ditambahkan ke '.$case->case_number.'.', $case->case_number);
+                $messages[] = 'Dokumen berhasil diunggah.';
+            }
+        });
+
+        if (empty($messages)) {
+            return back()->with('info', 'Tidak ada tindakan yang dilakukan.');
+        }
+
+        return back()->with('success', implode(' ', $messages));
     }
 }

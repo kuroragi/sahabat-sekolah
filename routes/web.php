@@ -154,6 +154,7 @@ Route::middleware('auth.session')->group(function () {
             Route::post('/{caseNumber}/parent-involvement', [CaseController::class, 'updateParentInvolvement'])->name('cases.parent-involvement');
             Route::post('/{caseNumber}/participants', [CaseController::class, 'addParticipant'])->name('cases.participants');
             Route::post('/{caseNumber}/status', [CaseController::class, 'updateStatus'])->name('cases.status');
+            Route::post('/{caseNumber}/action', [CaseController::class, 'processAction'])->name('cases.action');
         });
 
         // Escalate
