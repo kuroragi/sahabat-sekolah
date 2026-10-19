@@ -2,9 +2,13 @@
 
 namespace App\Http\Controllers;
 
+use App\Helpers\AConnect;
+use App\Mail\CaseEscalatedPrincipalMail;
 use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\ValidationException;
 
@@ -116,19 +120,94 @@ class CaseController extends Controller
         $data = $request->validate(['reason' => ['required', 'string', 'min:5', 'max:500']]);
 
         $case = scopedCase($caseNumber);
+        $escalatedBy = session('user_name', 'Bu Ratna Sari');
+        $now = now();
 
         DB::table('case_escalations')->insert([
             'case_id' => $case->id, 'escalation_type' => 'MANUAL', 'reason' => $data['reason'],
-            'escalated_by' => session('user_name', 'Bu Ratna Sari'), 'created_at' => now(), 'updated_at' => now(),
+            'escalated_by' => $escalatedBy, 'created_at' => $now, 'updated_at' => $now,
         ]);
 
         DB::table('notifications')->insert([
             'recipient_name' => 'Kepala Sekolah', 'type' => 'MANUAL_ESCALATION',
             'title' => 'Kasus dieskalasikan', 'message' => $case->case_number.' membutuhkan perhatian Kepala Sekolah.',
-            'priority' => 'URGENT', 'case_number' => $case->case_number, 'created_at' => now(), 'updated_at' => now(),
+            'priority' => 'URGENT', 'case_number' => $case->case_number, 'created_at' => $now, 'updated_at' => $now,
         ]);
 
         auditAction('ESCALATE_CASE', 'CASE', $case->case_number, ['reason' => $data['reason']]);
+
+        $principals = DB::table('users')
+            ->where('school_npsn', $case->school_npsn)
+            ->where('role', 'PRINCIPAL')
+            ->whereNotNull('email')
+            ->where('email', '!=', '')
+            ->get();
+
+        if ($principals->isNotEmpty()) {
+            $schoolName = DB::table('users')
+                ->where('school_npsn', $case->school_npsn)
+                ->whereNotNull('school_name')
+                ->value('school_name');
+
+            if (! $schoolName) {
+                $schoolsMap = (new AConnect)->getSekolahMap();
+                $schoolName = $schoolsMap[$case->school_npsn] ?? 'Sekolah';
+            }
+
+            $caseReport = DB::table('cases')
+                ->join('reports', 'cases.report_id', '=', 'reports.id')
+                ->where('cases.id', $case->id)
+                ->select('reports.description', 'reports.category', 'reports.subcategory')
+                ->first();
+
+            $caseData = [
+                'case_number' => $case->case_number,
+                'school_npsn' => $case->school_npsn,
+                'school_name' => $schoolName,
+                'category' => $caseReport->category ?? $case->category,
+                'subcategory' => $caseReport->subcategory ?? null,
+                'risk_level' => $case->risk_level,
+                'status' => $case->status,
+                'description' => $caseReport->description ?? '',
+                'case_url' => route('cases.show', $case->case_number),
+            ];
+
+            $escalationData = [
+                'escalated_by' => $escalatedBy,
+                'reason' => $data['reason'],
+                'escalated_at' => $now,
+            ];
+
+            $emailTimeout = (int) env('MAIL_TIMEOUT', 3);
+            config(['mail.mailers.smtp.timeout' => $emailTimeout]);
+            $maxBatchTime = (int) env('MAIL_TOTAL_TIMEOUT', 5);
+            $batchStart = microtime(true);
+
+            foreach ($principals as $principal) {
+                if ((microtime(true) - $batchStart) >= $maxBatchTime) {
+                    Log::warning('Total batas waktu tunggu pengiriman email eskalasi tercapai, melewati sisa penerima agar respons tetap cepat.', [
+                        'case_number' => $case->case_number,
+                        'skipped_principal' => $principal->email,
+                    ]);
+                    break;
+                }
+
+                try {
+                    Mail::to($principal->email)->send(new CaseEscalatedPrincipalMail(
+                        caseData: $caseData,
+                        escalationData: $escalationData,
+                        recipientName: $principal->name ?? 'Kepala Sekolah',
+                    ));
+                } catch (\Throwable $e) {
+                    Log::warning('Waktu tunggu habis atau gagal mengirim email eskalasi ke Kepala Sekolah: '.$e->getMessage(), [
+                        'principal_email' => $principal->email,
+                        'case_number' => $case->case_number,
+                    ]);
+
+                    continue;
+                }
+            }
+        }
 
         return back()->with('success', 'Kasus berhasil dieskalasikan kepada Kepala Sekolah.');
     }

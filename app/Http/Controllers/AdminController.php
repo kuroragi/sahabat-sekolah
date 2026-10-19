@@ -5,9 +5,14 @@ namespace App\Http\Controllers;
 use App\Helpers\AConnect;
 use App\Models\AcademicPeriod;
 use App\Models\AchievementCategory;
+use App\Models\StudentAchievement;
+use Carbon\Carbon;
+use Illuminate\Database\QueryException;
+use Illuminate\Database\UniqueConstraintViolationException;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Validation\ValidationException;
 
 class AdminController extends Controller
 {
@@ -25,27 +30,101 @@ class AdminController extends Controller
         $highRiskCases = DB::table('cases')->whereIn('risk_level', ['HIGH', 'CRITICAL'])->count();
         $totalSchools = count($schoolsMap);
 
-        // Cases by month (last 12 months) for bar chart
-        $casesByMonth = DB::table('cases')
-            ->selectRaw("TO_CHAR(created_at, 'Mon') as month_label, EXTRACT(YEAR FROM created_at) as year, EXTRACT(MONTH FROM created_at) as month_num, COUNT(*) as total")
-            ->where('created_at', '>=', now()->subMonths(11)->startOfMonth())
-            ->groupByRaw('month_label, year, month_num')
-            ->orderByRaw('year, month_num')
-            ->get();
+        // Achievement stats
+        $totalAchievements = StudentAchievement::count();
+        $totalStudentsWithAchievements = StudentAchievement::distinct('nisn')->count('nisn');
+        $recentAchievements = StudentAchievement::with('category')
+            ->orderByDesc('achievement_date')
+            ->limit(5)
+            ->get()
+            ->map(function ($item) use ($schoolsMap) {
+                $item->school_name = $schoolsMap[$item->school_npsn] ?? $item->school_npsn;
+
+                return $item;
+            });
+
+        // Cases by month (last 12 months) - Database-agnostic using Carbon date windows
+        $twelveMonthsAgo = now()->subMonths(11)->startOfMonth();
+        $casesPastYear = DB::table('cases')
+            ->where('created_at', '>=', $twelveMonthsAgo)
+            ->pluck('created_at');
+
+        $monthlyCountsMap = [];
+        foreach ($casesPastYear as $createdAt) {
+            $key = Carbon::parse($createdAt)->format('Y-m');
+            $monthlyCountsMap[$key] = ($monthlyCountsMap[$key] ?? 0) + 1;
+        }
+
+        $monthlyLabels = [];
+        $monthlyCounts = [];
+        for ($i = 11; $i >= 0; $i--) {
+            $date = now()->subMonths($i);
+            $key = $date->format('Y-m');
+            $monthlyLabels[] = $date->locale('id')->isoFormat('MMM');
+            $monthlyCounts[] = $monthlyCountsMap[$key] ?? 0;
+        }
 
         // SLA distribution for donut chart
-        $slaStats = DB::table('case_slas')
-            ->selectRaw('status, COUNT(*) as total')
-            ->groupBy('status')
-            ->get()
-            ->keyBy('status');
+        $slaConfig = [
+            'ON_TRACK' => ['label' => 'On Track', 'color' => '#22c55e'],
+            'ON_TIME' => ['label' => 'Tepat Waktu', 'color' => '#3b82f6'],
+            'WARNING' => ['label' => 'Peringatan', 'color' => '#f59e0b'],
+            'OVERDUE' => ['label' => 'Overdue', 'color' => '#ef4444'],
+            'COMPLETED' => ['label' => 'Selesai', 'color' => '#8b5cf6'],
+        ];
 
-        // Cases by status for donut
-        $casesByStatus = DB::table('cases')
+        $slaRaw = DB::table('case_slas')
             ->selectRaw('status, COUNT(*) as total')
             ->groupBy('status')
-            ->get()
-            ->keyBy('status');
+            ->pluck('total', 'status');
+
+        $slaChartData = [
+            'series' => [],
+            'labels' => [],
+            'colors' => [],
+            'total' => 0,
+        ];
+
+        foreach ($slaRaw as $status => $count) {
+            $count = (int) $count;
+            if ($count > 0) {
+                $slaChartData['series'][] = $count;
+                $slaChartData['labels'][] = $slaConfig[$status]['label'] ?? $status;
+                $slaChartData['colors'][] = $slaConfig[$status]['color'] ?? '#9aa9ba';
+                $slaChartData['total'] += $count;
+            }
+        }
+
+        // Cases by status for donut chart
+        $statusConfig = [
+            'PENDING_RESPONSE' => ['label' => 'Pending', 'color' => '#f59e0b'],
+            'UNDER_VERIFICATION' => ['label' => 'Verifikasi', 'color' => '#3b82f6'],
+            'IN_HANDLING' => ['label' => 'Ditangani', 'color' => '#f97316'],
+            'RESOLVED' => ['label' => 'Selesai', 'color' => '#22c55e'],
+            'CLOSED' => ['label' => 'Ditutup', 'color' => '#6b7280'],
+        ];
+
+        $statusRaw = DB::table('cases')
+            ->selectRaw('status, COUNT(*) as total')
+            ->groupBy('status')
+            ->pluck('total', 'status');
+
+        $statusChartData = [
+            'series' => [],
+            'labels' => [],
+            'colors' => [],
+            'total' => 0,
+        ];
+
+        foreach ($statusRaw as $status => $count) {
+            $count = (int) $count;
+            if ($count > 0) {
+                $statusChartData['series'][] = $count;
+                $statusChartData['labels'][] = $statusConfig[$status]['label'] ?? $status;
+                $statusChartData['colors'][] = $statusConfig[$status]['color'] ?? '#9aa9ba';
+                $statusChartData['total'] += $count;
+            }
+        }
 
         // Recent 5 users
         $recentUsers = DB::table('users')
@@ -67,9 +146,13 @@ class AdminController extends Controller
             'overdueSla' => $overdueSla,
             'highRiskCases' => $highRiskCases,
             'totalSchools' => $totalSchools,
-            'casesByMonth' => $casesByMonth,
-            'slaStats' => $slaStats,
-            'casesByStatus' => $casesByStatus,
+            'totalAchievements' => $totalAchievements,
+            'totalStudentsWithAchievements' => $totalStudentsWithAchievements,
+            'recentAchievements' => $recentAchievements,
+            'monthlyLabels' => $monthlyLabels,
+            'monthlyCounts' => $monthlyCounts,
+            'slaChartData' => $slaChartData,
+            'statusChartData' => $statusChartData,
             'recentUsers' => $recentUsers,
         ]);
     }
@@ -95,11 +178,21 @@ class AdminController extends Controller
 
     public function storeUser(Request $request)
     {
+        $request->merge([
+            'email' => strtolower(trim((string) $request->input('email'))),
+        ]);
+
         $data = $request->validate([
             'name' => ['required', 'string', 'max:255'],
-            'email' => ['required', 'email', 'unique:users,email'],
+            'email' => ['required', 'string', 'email', 'max:255', 'unique:users,email'],
             'role' => ['required', 'in:COUNSELOR,PRINCIPAL,ADMIN'],
             'school_npsn' => ['nullable', 'string'],
+        ], [
+            'name.required' => 'Nama pengguna wajib diisi.',
+            'email.required' => 'Email pengguna wajib diisi.',
+            'email.email' => 'Format email tidak valid.',
+            'email.unique' => 'Email ini sudah terdaftar dalam sistem.',
+            'role.required' => 'Pilih role pengguna.',
         ]);
 
         $schoolName = null;
@@ -108,7 +201,27 @@ class AdminController extends Controller
             $schoolName = $schoolsMap[$data['school_npsn']] ?? null;
         }
 
-        DB::table('users')->insert($data + ['school_name' => $schoolName, 'password' => Hash::make('password'), 'created_at' => now(), 'updated_at' => now()]);
+        try {
+            DB::table('users')->insert($data + [
+                'school_name' => $schoolName,
+                'password' => Hash::make('password'),
+                'created_at' => now(),
+                'updated_at' => now(),
+            ]);
+        } catch (UniqueConstraintViolationException $e) {
+            throw ValidationException::withMessages([
+                'email' => 'Email ini sudah terdaftar dalam sistem.',
+            ]);
+        } catch (QueryException $e) {
+            if ($e->getCode() === '23505' || str_contains($e->getMessage(), 'users_email_unique')) {
+                throw ValidationException::withMessages([
+                    'email' => 'Email ini sudah terdaftar dalam sistem.',
+                ]);
+            }
+
+            throw $e;
+        }
+
         auditAction('CREATE_USER', 'USER', $data['email'], ['role' => $data['role'], 'school_npsn' => $data['school_npsn']]);
 
         return back()->with('success', 'Pengguna berhasil dibuat. Password awal: password.');
@@ -120,7 +233,10 @@ class AdminController extends Controller
             'name' => ['required', 'string', 'max:255'],
             'role' => ['required', 'in:COUNSELOR,PRINCIPAL,ADMIN'],
             'school_npsn' => ['nullable', 'string'],
-            'status' => ['required', 'in:ACTIVE,INACTIVE'],
+            'status' => ['nullable', 'in:ACTIVE,INACTIVE'],
+        ], [
+            'name.required' => 'Nama pengguna wajib diisi.',
+            'role.required' => 'Pilih role pengguna.',
         ]);
 
         $schoolName = null;
@@ -128,6 +244,8 @@ class AdminController extends Controller
             $schoolsMap = (new AConnect)->getSekolahMap();
             $schoolName = $schoolsMap[$data['school_npsn']] ?? null;
         }
+
+        unset($data['status']);
 
         DB::table('users')->where('id', $id)->update($data + ['school_name' => $schoolName, 'updated_at' => now()]);
         auditAction('UPDATE_USER', 'USER', $id, $data);

@@ -44,7 +44,7 @@
     </div>
 </section>
 
-<section class="stat-grid">
+<section class="stat-grid" style="grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));">
     <div class="stat-card blue">
         <div class="stat-icon"><i data-lucide="file-text"></i></div>
         <div>
@@ -84,6 +84,14 @@
             </small>
         </div>
     </div>
+    <a href="{{ route('achievements.index') }}" class="stat-card gold is-clickable" style="text-decoration:none;" title="Lihat Rekap Prestasi Siswa">
+        <div class="stat-icon" style="background:#fef3c7;color:#b45309;"><i data-lucide="trophy"></i></div>
+        <div>
+            <span>Prestasi Siswa</span>
+            <strong>{{ $achievementStats['total'] }}</strong>
+            <small><em style="color:#b45309;">{{ $achievementStats['students'] }} siswa</em> berprestasi</small>
+        </div>
+    </a>
 </section>
 
 <section class="content-grid">
@@ -264,6 +272,100 @@
             </a>
         </div>
     </div>
+</section>
+
+{{-- ======================== PRESTASI SISWA PANEL ======================== --}}
+<section class="panel" style="margin-top: 24px;">
+    <div class="panel-heading" style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;padding-bottom:14px;border-bottom:1px solid #edf2f6;">
+        <div>
+            <div style="display:flex;align-items:center;gap:8px;">
+                <div style="width:28px;height:28px;border-radius:8px;background:#fef3c7;color:#b45309;display:flex;align-items:center;justify-content:center;">
+                    <i data-lucide="trophy" style="width:16px;height:16px;"></i>
+                </div>
+                <h3 style="margin:0;font-size:15px;font-weight:700;color:#183b68;">Prestasi Siswa Terkini</h3>
+            </div>
+            <p style="margin:4px 0 0;font-size:11px;color:#73869e;">Capaian membanggakan siswa di sekolah Anda yang telah terdata.</p>
+        </div>
+        <div style="display:flex;align-items:center;gap:10px;">
+            <a class="text-link" href="{{ route('achievements.index') }}" style="font-size:12px;font-weight:600;display:flex;align-items:center;gap:4px;color:#1675e8;text-decoration:none;">
+                Lihat Semua ({{ $achievementStats['total'] }}) <i data-lucide="arrow-up-right" style="width:14px;height:14px;"></i>
+            </a>
+            <a href="{{ route('achievements.create') }}" class="primary-button" style="padding:7px 14px;font-size:12px;display:flex;align-items:center;gap:6px;">
+                <i data-lucide="plus" style="width:14px;height:14px;"></i> Catat Prestasi
+            </a>
+        </div>
+    </div>
+
+    @if ($recentAchievements->isNotEmpty())
+        <div class="table-wrap" style="margin-top:10px;">
+            <table>
+                <thead>
+                    <tr>
+                        <th>Siswa</th>
+                        <th>Capaian Prestasi</th>
+                        <th>Kategori</th>
+                        <th>Tingkat</th>
+                        <th>Tanggal</th>
+                        <th>Aksi</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach ($recentAchievements as $ach)
+                        @php
+                            $badgeStyles = match ($ach->achievement_level) {
+                                'INTERNASIONAL' => 'background:#f3e8ff;color:#7e22ce;border:1px solid #d8b4fe;',
+                                'NASIONAL' => 'background:#ffe4e6;color:#be123c;border:1px solid #fecdd3;',
+                                'PROVINSI' => 'background:#eff6ff;color:#1d4ed8;border:1px solid #bfdbfe;',
+                                'KOTA' => 'background:#fef3c7;color:#b45309;border:1px solid #fde68a;',
+                                default => 'background:#f1f5f9;color:#475569;border:1px solid #e2e8f0;',
+                            };
+                        @endphp
+                        <tr>
+                            <td>
+                                <strong style="color:#183b68;">{{ $ach->student_name }}</strong>
+                                <small style="color:#73869e;">Kelas {{ $ach->class_name ?? '-' }} &bull; NISN: {{ $ach->nisn }}</small>
+                            </td>
+                            <td>
+                                <strong style="color:#1675e8;font-size:12px;">{{ $ach->ranking }}</strong>
+                                <div style="font-size:11px;color:#334155;margin-top:2px;">{{ $ach->achievement_name }}</div>
+                            </td>
+                            <td>
+                                <span class="category-tag" style="background:#f1f5f9;color:#334155;padding:3px 8px;border-radius:6px;font-size:10px;font-weight:600;">
+                                    {{ $ach->category?->name ?? 'Prestasi' }}
+                                </span>
+                            </td>
+                            <td>
+                                <span style="display:inline-block;padding:2px 8px;border-radius:6px;font-size:10px;font-weight:700;letter-spacing:.02em;{{ $badgeStyles }}">
+                                    {{ $ach->achievement_level }}
+                                </span>
+                            </td>
+                            <td>
+                                <span style="font-size:11px;color:#64748b;">
+                                    {{ \Illuminate\Support\Carbon::parse($ach->achievement_date)->format('d M Y') }}
+                                </span>
+                            </td>
+                            <td>
+                                <a class="view-button" href="{{ route('achievements.student', $ach->nisn) }}" style="text-decoration:none;">
+                                    Portofolio <i data-lucide="arrow-right" style="width:12px;height:12px;"></i>
+                                </a>
+                            </td>
+                        </tr>
+                    @endforeach
+                </tbody>
+            </table>
+        </div>
+    @else
+        <div style="text-align:center;padding:36px 20px;color:#73869e;">
+            <div style="width:48px;height:48px;border-radius:12px;background:#fef3c7;color:#b45309;display:grid;place-items:center;margin:0 auto 12px;">
+                <i data-lucide="trophy" style="width:24px;height:24px;"></i>
+            </div>
+            <strong style="display:block;color:#183b68;font-size:14px;margin-bottom:4px;">Belum Ada Data Prestasi Siswa</strong>
+            <p style="font-size:12px;color:#64748b;max-width:380px;margin:0 auto 16px;">Catat prestasi akademik, olahraga, seni budaya, atau keagamaan yang diraih siswa untuk membangun portofolio kebanggaan sekolah.</p>
+            <a href="{{ route('achievements.create') }}" class="primary-button" style="display:inline-flex;align-items:center;gap:6px;padding:8px 16px;font-size:12px;">
+                <i data-lucide="plus" style="width:14px;height:14px;"></i> Catat Prestasi Pertama Siswa
+            </a>
+        </div>
+    @endif
 </section>
 
 {{-- SLA Alert Modal Partial --}}

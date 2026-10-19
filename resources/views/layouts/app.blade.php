@@ -65,6 +65,10 @@
                         href="{{ route('admin.schools') }}">
                         <i data-lucide="building-2"></i> Sekolah
                     </a>
+                    <a class="nav-item {{ ($activeNav ?? '') === 'achievements' ? 'active' : '' }}"
+                        href="{{ route('achievements.index') }}">
+                        <i data-lucide="trophy"></i> Prestasi Siswa
+                    </a>
                     <a class="nav-item {{ ($activeNav ?? '') === 'admin-master-data' ? 'active' : '' }}"
                         href="{{ route('admin.master-data') }}">
                         <i data-lucide="database"></i> Master Data

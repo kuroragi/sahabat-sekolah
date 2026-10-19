@@ -204,14 +204,14 @@ Route::middleware('auth.session')->group(function () {
             Route::post('/', [AchievementController::class, 'store'])->name('achievements.store');
         });
 
-        // View Index (COUNSELOR + PRINCIPAL)
+        // View Index (COUNSELOR + PRINCIPAL + ADMIN)
         Route::get('/', [AchievementController::class, 'index'])
-            ->middleware(['role:COUNSELOR,PRINCIPAL', 'permission:ACHIEVEMENT_VIEW'])
+            ->middleware(['role:COUNSELOR,PRINCIPAL,ADMIN', 'permission:ACHIEVEMENT_VIEW'])
             ->name('achievements.index');
 
-        // View Student History by NISN (COUNSELOR + PRINCIPAL)
+        // View Student History by NISN (COUNSELOR + PRINCIPAL + ADMIN)
         Route::get('/student/{nisn}', [AchievementController::class, 'studentProfile'])
-            ->middleware(['role:COUNSELOR,PRINCIPAL', 'permission:ACHIEVEMENT_VIEW'])
+            ->middleware(['role:COUNSELOR,PRINCIPAL,ADMIN', 'permission:ACHIEVEMENT_VIEW'])
             ->name('achievements.student');
 
         // Manage Edit, Update, Destroy (COUNSELOR only)
@@ -221,15 +221,15 @@ Route::middleware('auth.session')->group(function () {
             Route::post('/{id}/delete', [AchievementController::class, 'destroy'])->whereNumber('id')->name('achievements.destroy');
         });
 
-        // View Detail & Download Certificate (COUNSELOR + PRINCIPAL)
+        // View Detail & Download Certificate (COUNSELOR + PRINCIPAL + ADMIN)
         Route::get('/{id}', [AchievementController::class, 'show'])
             ->whereNumber('id')
-            ->middleware(['role:COUNSELOR,PRINCIPAL', 'permission:ACHIEVEMENT_VIEW'])
+            ->middleware(['role:COUNSELOR,PRINCIPAL,ADMIN', 'permission:ACHIEVEMENT_VIEW'])
             ->name('achievements.show');
 
         Route::get('/{id}/certificate', [AchievementController::class, 'downloadCertificate'])
             ->whereNumber('id')
-            ->middleware(['role:COUNSELOR,PRINCIPAL', 'permission:ACHIEVEMENT_VIEW'])
+            ->middleware(['role:COUNSELOR,PRINCIPAL,ADMIN', 'permission:ACHIEVEMENT_VIEW'])
             ->name('achievements.certificate');
     });
 });

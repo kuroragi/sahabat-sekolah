@@ -22,7 +22,7 @@ class AchievementController extends Controller
         $likeOp = DB::connection()->getDriverName() === 'pgsql' ? 'ilike' : 'like';
 
         $query = StudentAchievement::with('category', 'creator')
-            ->where('school_npsn', $schoolNpsn);
+            ->when($schoolNpsn, fn ($q) => $q->where('school_npsn', $schoolNpsn));
 
         if ($categoryId = $request->input('category_id')) {
             $query->where('category_id', $categoryId);
@@ -84,7 +84,7 @@ class AchievementController extends Controller
         $schoolNpsn = session('school_npsn');
 
         $achievements = StudentAchievement::with('category', 'creator')
-            ->where('school_npsn', $schoolNpsn)
+            ->when($schoolNpsn, fn ($q) => $q->where('school_npsn', $schoolNpsn))
             ->where('nisn', $nisn)
             ->orderByDesc('achievement_date')
             ->get();
@@ -252,7 +252,7 @@ class AchievementController extends Controller
     public function show(int $id)
     {
         $achievement = StudentAchievement::with('category', 'creator')
-            ->where('school_npsn', session('school_npsn'))
+            ->when(session('school_npsn'), fn ($q) => $q->where('school_npsn', session('school_npsn')))
             ->findOrFail($id);
 
         return view('achievements.show', [
@@ -353,7 +353,7 @@ class AchievementController extends Controller
      */
     public function downloadCertificate(int $id)
     {
-        $achievement = StudentAchievement::where('school_npsn', session('school_npsn'))
+        $achievement = StudentAchievement::when(session('school_npsn'), fn ($q) => $q->where('school_npsn', session('school_npsn')))
             ->findOrFail($id);
 
         abort_unless($achievement->certificate_path && Storage::disk('local')->exists($achievement->certificate_path), 404, 'Berkas tidak ditemukan.');

@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Helpers\AConnect;
+use App\Models\StudentAchievement;
 use Carbon\CarbonInterface;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
@@ -286,11 +287,35 @@ class PageController extends Controller
             return $isActive && ($c->sla_status === 'OVERDUE' || $c->resolution_status === 'OVERDUE');
         })->count();
 
+        // Data capaian prestasi siswa untuk dashboard Guru BK
+        $achievementCount = StudentAchievement::when($schoolNpsn, fn ($q) => $q->where('school_npsn', $schoolNpsn))->count();
+        $studentAchievementCount = StudentAchievement::when($schoolNpsn, fn ($q) => $q->where('school_npsn', $schoolNpsn))->distinct('nisn')->count('nisn');
+        $recentAchievements = StudentAchievement::with('category')
+            ->when($schoolNpsn, fn ($q) => $q->where('school_npsn', $schoolNpsn))
+            ->orderByDesc('achievement_date')
+            ->limit(4)
+            ->get();
+        $highestLevel = StudentAchievement::when($schoolNpsn, fn ($q) => $q->where('school_npsn', $schoolNpsn))
+            ->orderByRaw("CASE achievement_level 
+                WHEN 'INTERNASIONAL' THEN 6 
+                WHEN 'NASIONAL' THEN 5 
+                WHEN 'PROVINSI' THEN 4 
+                WHEN 'KOTA' THEN 3 
+                WHEN 'KECAMATAN' THEN 2 
+                ELSE 1 END DESC")
+            ->value('achievement_level');
+
         return view('dashboard', [
             'cases' => $cases,
             'slaStats' => $slaStats,
             'slaAlertCases' => $slaAlertCases,
             'slaAlertSummary' => $slaAlertSummary,
+            'achievementStats' => [
+                'total' => $achievementCount,
+                'students' => $studentAchievementCount,
+                'highestLevel' => $highestLevel,
+            ],
+            'recentAchievements' => $recentAchievements,
             'stats' => [
                 'reports' => DB::table('reports')->when($schoolNpsn, fn ($q) => $q->where('school_npsn', $schoolNpsn))->count(),
                 'handling' => DB::table('cases')->when($schoolNpsn, fn ($q) => $q->where('school_npsn', $schoolNpsn))->where('status', 'IN_HANDLING')->count(),
@@ -325,10 +350,34 @@ class PageController extends Controller
             ->orderByDesc('cases.updated_at')
             ->get();
 
+        // Data capaian prestasi siswa untuk monitoring Kepala Sekolah
+        $totalAchievements = StudentAchievement::when($schoolNpsn, fn ($q) => $q->where('school_npsn', $schoolNpsn))->count();
+        $totalStudentsAchieved = StudentAchievement::when($schoolNpsn, fn ($q) => $q->where('school_npsn', $schoolNpsn))->distinct('nisn')->count('nisn');
+        $recentAchievements = StudentAchievement::with('category')
+            ->when($schoolNpsn, fn ($q) => $q->where('school_npsn', $schoolNpsn))
+            ->orderByDesc('achievement_date')
+            ->limit(4)
+            ->get();
+        $highestLevel = StudentAchievement::when($schoolNpsn, fn ($q) => $q->where('school_npsn', $schoolNpsn))
+            ->orderByRaw("CASE achievement_level 
+                WHEN 'INTERNASIONAL' THEN 6 
+                WHEN 'NASIONAL' THEN 5 
+                WHEN 'PROVINSI' THEN 4 
+                WHEN 'KOTA' THEN 3 
+                WHEN 'KECAMATAN' THEN 2 
+                ELSE 1 END DESC")
+            ->value('achievement_level');
+
         return view('principal.index', [
             'schools' => $schools,
             'selectedSchool' => $selectedSchool,
             'cases' => $cases,
+            'achievementStats' => [
+                'total' => $totalAchievements,
+                'students' => $totalStudentsAchieved,
+                'highestLevel' => $highestLevel,
+            ],
+            'recentAchievements' => $recentAchievements,
             'stats' => [
                 'total' => $cases->count(),
                 'active' => $cases->whereNotIn('status', ['CLOSED', 'RESOLVED'])->count(),

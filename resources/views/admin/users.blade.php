@@ -126,25 +126,31 @@
                 <i data-lucide="x" class="w-4 h-4"></i>
             </button>
         </div>
-        <form method="POST" action="{{ route('admin.users.store') }}" class="grid gap-3">
+        <form id="form-add-user" method="POST" action="{{ route('admin.users.store') }}" class="grid gap-3">
             @csrf
             <div>
                 <label class="block text-[10px] font-semibold text-[#496985] mb-1.5">Nama Lengkap <span class="text-red-500">*</span></label>
-                <input name="name" required placeholder="Contoh: Budi Santoso"
-                    class="w-full border border-[#dfe8f1] rounded-lg px-3 py-2.5 text-[11px] text-[#315675] bg-[#fbfdff] focus:outline-none focus:border-[#4d9ae4] focus:ring-2 focus:ring-[#e7f3ff]">
+                <input name="name" required placeholder="Contoh: Budi Santoso" value="{{ old('name') }}"
+                    class="w-full border @error('name') border-red-400 bg-red-50/20 @else border-[#dfe8f1] bg-[#fbfdff] @enderror rounded-lg px-3 py-2.5 text-[11px] text-[#315675] focus:outline-none focus:border-[#4d9ae4] focus:ring-2 focus:ring-[#e7f3ff]">
+                @error('name')
+                    <p class="text-[10px] text-red-500 mt-1 font-medium">{{ $message }}</p>
+                @enderror
             </div>
             <div>
                 <label class="block text-[10px] font-semibold text-[#496985] mb-1.5">Email <span class="text-red-500">*</span></label>
-                <input type="email" name="email" required placeholder="email@contoh.com"
-                    class="w-full border border-[#dfe8f1] rounded-lg px-3 py-2.5 text-[11px] text-[#315675] bg-[#fbfdff] focus:outline-none focus:border-[#4d9ae4] focus:ring-2 focus:ring-[#e7f3ff]">
+                <input type="email" name="email" required placeholder="email@contoh.com" value="{{ old('email') }}"
+                    class="w-full border @error('email') border-red-400 bg-red-50/20 @else border-[#dfe8f1] bg-[#fbfdff] @enderror rounded-lg px-3 py-2.5 text-[11px] text-[#315675] focus:outline-none focus:border-[#4d9ae4] focus:ring-2 focus:ring-[#e7f3ff]">
+                @error('email')
+                    <p class="text-[10px] text-red-500 mt-1 font-medium">{{ $message }}</p>
+                @enderror
             </div>
             <div class="grid grid-cols-2 gap-3">
                 <div>
                     <label class="block text-[10px] font-semibold text-[#496985] mb-1.5">Role <span class="text-red-500">*</span></label>
                     <select name="role" class="w-full border border-[#dfe8f1] rounded-lg px-3 py-2.5 text-[11px] text-[#315675] bg-[#fbfdff] focus:outline-none focus:border-[#4d9ae4]">
-                        <option value="COUNSELOR">Guru BK</option>
-                        <option value="PRINCIPAL">Kepala Sekolah</option>
-                        <option value="ADMIN">Administrator</option>
+                        <option value="COUNSELOR" {{ old('role') === 'COUNSELOR' ? 'selected' : '' }}>Guru BK</option>
+                        <option value="PRINCIPAL" {{ old('role') === 'PRINCIPAL' ? 'selected' : '' }}>Kepala Sekolah</option>
+                        <option value="ADMIN" {{ old('role') === 'ADMIN' ? 'selected' : '' }}>Administrator</option>
                     </select>
                 </div>
                 <div>
@@ -153,7 +159,7 @@
                         <select name="school_npsn" class="hidden">
                             <option value="">Tanpa sekolah</option>
                             @foreach($schools as $school)
-                                <option value="{{ $school->npsn }}">{{ $school->nama_sekolah }}</option>
+                                <option value="{{ $school->npsn }}" {{ old('school_npsn') === $school->npsn ? 'selected' : '' }}>{{ $school->nama_sekolah }}</option>
                             @endforeach
                         </select>
                         <button type="button" class="tw-select-trigger w-full flex items-center justify-between bg-[#fbfdff] border border-[#dfe8f1] rounded-lg px-3 py-2.5 text-[11px] text-left focus:outline-none focus:border-[#4d9ae4] focus:ring-2 focus:ring-[#e7f3ff] transition-colors">
@@ -178,7 +184,7 @@
                     class="px-4 py-2 text-[11px] font-semibold text-[#5c7b98] bg-[#f3f8fd] border border-[#dfebf5] rounded-lg hover:bg-[#e8f0f8] transition-colors">
                     Batal
                 </button>
-                <button type="submit"
+                <button type="submit" id="btn-submit-add-user"
                     class="flex items-center gap-2 px-4 py-2 text-[11px] font-bold bg-[#1675e8] text-white rounded-lg shadow-[0_4px_12px_rgba(24,120,227,.25)] hover:bg-[#1262c8] transition-colors">
                     <i data-lucide="user-plus" class="w-4 h-4"></i> Buat Pengguna
                 </button>
@@ -332,6 +338,26 @@ document.addEventListener('DOMContentLoaded', function () {
     document.getElementById('modal-add-close').addEventListener('click', () => closeModal(modalAdd));
     document.getElementById('modal-add-cancel').addEventListener('click', () => closeModal(modalAdd));
     document.getElementById('modal-add-backdrop').addEventListener('click', () => closeModal(modalAdd));
+
+    @if ($errors->any())
+        openModal(modalAdd);
+    @endif
+
+    const formAdd = document.getElementById('form-add-user');
+    if (formAdd) {
+        formAdd.addEventListener('submit', function (e) {
+            const btn = document.getElementById('btn-submit-add-user');
+            if (btn && btn.disabled) {
+                e.preventDefault();
+                return false;
+            }
+            if (btn) {
+                btn.disabled = true;
+                btn.classList.add('opacity-70', 'cursor-not-allowed');
+                btn.innerHTML = '<span class="inline-block animate-spin mr-1">⏳</span> Menyimpan...';
+            }
+        });
+    }
 
     // ---- Edit Modal ----
     const modalEdit = document.getElementById('modal-edit');

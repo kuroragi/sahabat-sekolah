@@ -3,8 +3,11 @@
 namespace App\Http\Controllers;
 
 use App\Helpers\AConnect;
+use App\Mail\NewReportCounselorMail;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Str;
 
 class ReportController extends Controller
@@ -174,8 +177,71 @@ class ReportController extends Controller
                 ]);
             }
 
-            return ['number' => $number, 'token' => $anonymousToken];
+            return ['number' => $number, 'token' => $anonymousToken, 'risk' => $risk];
         });
+
+        $counselors = DB::table('users')
+            ->where('school_npsn', $data['school_npsn'])
+            ->where('role', 'COUNSELOR')
+            ->whereNotNull('email')
+            ->where('email', '!=', '')
+            ->get();
+
+        if ($counselors->isNotEmpty()) {
+            $schoolName = DB::table('users')
+                ->where('school_npsn', $data['school_npsn'])
+                ->whereNotNull('school_name')
+                ->value('school_name');
+
+            if (! $schoolName) {
+                $schoolsMap = (new AConnect)->getSekolahMap();
+                $schoolName = $schoolsMap[$data['school_npsn']] ?? 'Sekolah';
+            }
+
+            $mailData = [
+                'case_number' => $caseNumber['number'],
+                'school_npsn' => $data['school_npsn'],
+                'school_name' => $schoolName,
+                'category' => $data['category'],
+                'subcategory' => $data['subcategory'] ?? null,
+                'risk_level' => $caseNumber['risk'] ?? 'MEDIUM',
+                'reporter_role' => $data['reporter_role'],
+                'identity_mode' => $data['identity_mode'],
+                'reporter_name' => $data['reporter_name'] ?? null,
+                'description' => $data['description'],
+                'submitted_at' => now(),
+                'case_url' => route('cases.show', $caseNumber['number']),
+            ];
+
+            $emailTimeout = (int) env('MAIL_TIMEOUT', 3);
+            config(['mail.mailers.smtp.timeout' => $emailTimeout]);
+            $maxBatchTime = (int) env('MAIL_TOTAL_TIMEOUT', 5);
+            $batchStart = microtime(true);
+
+            foreach ($counselors as $counselor) {
+                if ((microtime(true) - $batchStart) >= $maxBatchTime) {
+                    Log::warning('Total batas waktu tunggu pengiriman email laporan tercapai, melewati sisa penerima agar respons pelapor tetap cepat.', [
+                        'case_number' => $caseNumber['number'],
+                        'skipped_counselor' => $counselor->email,
+                    ]);
+                    break;
+                }
+
+                try {
+                    Mail::to($counselor->email)->send(new NewReportCounselorMail(
+                        reportData: $mailData,
+                        recipientName: $counselor->name ?? 'Guru BK',
+                    ));
+                } catch (\Throwable $e) {
+                    Log::warning('Waktu tunggu habis atau gagal mengirim email notifikasi laporan baru ke Guru BK: '.$e->getMessage(), [
+                        'counselor_email' => $counselor->email,
+                        'case_number' => $caseNumber['number'],
+                    ]);
+
+                    continue;
+                }
+            }
+        }
 
         if ($caseNumber['token']) {
             return redirect()->route('reports.receipt')->with(['report_number' => $caseNumber['number'], 'anonymous_token' => $caseNumber['token']]);
