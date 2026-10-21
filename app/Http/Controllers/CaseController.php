@@ -24,19 +24,28 @@ class CaseController extends Controller
             ->where('cases.school_npsn', session('school_npsn'))
             ->leftJoin('reporter_identities', 'reports.id', '=', 'reporter_identities.report_id')
             ->leftJoin('students', 'reporter_identities.student_id', '=', 'students.id')
-            ->select('cases.*', 'reports.reporter_role', 'reports.identity_mode', 'reports.description', 'reports.submitted_at', 'reporter_identities.full_name as reporter_name', 'reporter_identities.contact as reporter_contact', 'reporter_identities.access_level as reporter_access_level', 'students.class_name as reporter_class', 'students.student_number as reporter_student_number', 'case_slas.status as sla_status', 'case_slas.response_deadline')
+            ->select('cases.*', 'reports.reporter_role', 'reports.identity_mode', 'reports.description', 'reports.submitted_at', 'reporter_identities.full_name as reporter_name', 'reporter_identities.contact as reporter_contact', 'reporter_identities.access_level as reporter_access_level', 'students.class_name as reporter_class', 'students.student_number as reporter_student_number', 'case_slas.status as sla_status', 'case_slas.response_deadline', 'case_slas.initial_response_at', 'case_slas.resolution_status', 'case_slas.resolution_deadline')
             ->firstOrFail();
 
         $schoolName = DB::table('users')->where('school_npsn', $case->school_npsn)->value('school_name');
         $case->school_name = $schoolName ?? '-';
 
         // Evaluate SLA dynamically for display if SLA scan hasn't run yet
-        if ($case->status === 'PENDING_RESPONSE' && $case->sla_status !== 'OVERDUE' && $case->response_deadline && Carbon::parse($case->response_deadline)->isPast()) {
-            $case->sla_status = 'OVERDUE';
-        } elseif (in_array($case->status, ['UNDER_VERIFICATION', 'IN_HANDLING'])) {
-            $resolutionDeadline = DB::table('case_slas')->where('case_id', $case->id)->value('resolution_deadline');
-            if ($case->sla_status !== 'OVERDUE' && $resolutionDeadline && Carbon::parse($resolutionDeadline)->isPast()) {
+        if ($case->status === 'PENDING_RESPONSE') {
+            if ($case->sla_status !== 'OVERDUE' && $case->response_deadline && Carbon::parse($case->response_deadline)->isPast()) {
                 $case->sla_status = 'OVERDUE';
+            }
+        } else {
+            $isInitialResponseOverdue = ($case->sla_status === 'OVERDUE')
+                || ($case->initial_response_at && $case->response_deadline && Carbon::parse($case->initial_response_at)->gt(Carbon::parse($case->response_deadline)));
+
+            if ($isInitialResponseOverdue) {
+                $case->sla_status = 'OVERDUE';
+            } elseif (in_array($case->status, ['UNDER_VERIFICATION', 'IN_HANDLING'])) {
+                $resolutionDeadline = $case->resolution_deadline ?? DB::table('case_slas')->where('case_id', $case->id)->value('resolution_deadline');
+                if ($resolutionDeadline && Carbon::parse($resolutionDeadline)->isPast()) {
+                    $case->sla_status = 'OVERDUE';
+                }
             }
         }
 
@@ -413,11 +422,17 @@ class CaseController extends Controller
             ->leftJoin('reporter_identities', 'reports.id', '=', 'reporter_identities.report_id')
             ->leftJoin('case_slas', 'cases.id', '=', 'case_slas.case_id')
             ->where('cases.id', $baseCase->id)
-            ->select('cases.*', 'reports.reporter_role', 'reports.identity_mode', 'reports.description', 'reports.submitted_at', 'reporter_identities.full_name as reporter_name', 'reporter_identities.contact as reporter_contact', 'reporter_identities.access_level as reporter_access_level', 'case_slas.status as sla_status', 'case_slas.response_deadline')
+            ->select('cases.*', 'reports.reporter_role', 'reports.identity_mode', 'reports.description', 'reports.submitted_at', 'reporter_identities.full_name as reporter_name', 'reporter_identities.contact as reporter_contact', 'reporter_identities.access_level as reporter_access_level', 'case_slas.status as sla_status', 'case_slas.response_deadline', 'case_slas.initial_response_at', 'case_slas.resolution_status', 'case_slas.resolution_deadline')
             ->first();
 
         $schoolName = DB::table('users')->where('school_npsn', $case->school_npsn)->value('school_name');
         $case->school_name = $schoolName ?? '-';
+
+        if ($case->sla_status !== 'OVERDUE') {
+            if ($case->initial_response_at && $case->response_deadline && Carbon::parse($case->initial_response_at)->gt(Carbon::parse($case->response_deadline))) {
+                $case->sla_status = 'OVERDUE';
+            }
+        }
 
         $participants = DB::table('case_participants')->where('case_id', $case->id)->get();
         $history = DB::table('case_status_histories')->where('case_id', $case->id)->orderBy('created_at', 'asc')->get();
@@ -490,9 +505,18 @@ class CaseController extends Controller
                 $config = DB::table('sla_configurations')->where('risk_level', $case->risk_level)->first();
                 $resolutionDays = $config ? $config->resolution_time_days : 14;
 
+                $currentSla = DB::table('case_slas')->where('case_id', $case->id)->first();
+                $isResponseOverdue = false;
+                if ($currentSla) {
+                    $isResponseOverdue = ($currentSla->status === 'OVERDUE')
+                        || ($currentSla->response_deadline && Carbon::parse($currentSla->response_deadline)->isPast());
+                }
+                $newResponseStatus = $isResponseOverdue ? 'OVERDUE' : 'ON_TIME';
+
                 DB::table('case_slas')->where('case_id', $case->id)->update([
-                    'status' => 'COMPLETED',
+                    'status' => $newResponseStatus,
                     'initial_response_at' => $now,
+                    'overdue_at' => $isResponseOverdue ? ($currentSla->overdue_at ?? $now) : null,
                     'resolution_status' => 'ON_TIME',
                     'resolution_deadline' => $now->copy()->addDays($resolutionDays),
                     'updated_at' => $now,
@@ -579,9 +603,18 @@ class CaseController extends Controller
                         $config = DB::table('sla_configurations')->where('risk_level', $case->risk_level)->first();
                         $resolutionDays = $config ? $config->resolution_time_days : 14;
 
+                        $currentSla = DB::table('case_slas')->where('case_id', $case->id)->first();
+                        $isResponseOverdue = false;
+                        if ($currentSla) {
+                            $isResponseOverdue = ($currentSla->status === 'OVERDUE')
+                                || ($currentSla->response_deadline && Carbon::parse($currentSla->response_deadline)->isPast());
+                        }
+                        $newResponseStatus = $isResponseOverdue ? 'OVERDUE' : 'ON_TIME';
+
                         DB::table('case_slas')->where('case_id', $case->id)->update([
-                            'status' => 'COMPLETED',
+                            'status' => $newResponseStatus,
                             'initial_response_at' => $now,
+                            'overdue_at' => $isResponseOverdue ? ($currentSla->overdue_at ?? $now) : null,
                             'resolution_status' => 'ON_TIME',
                             'resolution_deadline' => $now->copy()->addDays($resolutionDays),
                             'updated_at' => $now,
@@ -623,9 +656,18 @@ class CaseController extends Controller
                 $config = DB::table('sla_configurations')->where('risk_level', $case->risk_level)->first();
                 $resolutionDays = $config ? $config->resolution_time_days : 14;
 
+                $currentSla = DB::table('case_slas')->where('case_id', $case->id)->first();
+                $isResponseOverdue = false;
+                if ($currentSla) {
+                    $isResponseOverdue = ($currentSla->status === 'OVERDUE')
+                        || ($currentSla->response_deadline && Carbon::parse($currentSla->response_deadline)->isPast());
+                }
+                $newResponseStatus = $isResponseOverdue ? 'OVERDUE' : 'ON_TIME';
+
                 DB::table('case_slas')->where('case_id', $case->id)->update([
-                    'status' => 'COMPLETED',
+                    'status' => $newResponseStatus,
                     'initial_response_at' => $now,
+                    'overdue_at' => $isResponseOverdue ? ($currentSla->overdue_at ?? $now) : null,
                     'resolution_status' => 'ON_TIME',
                     'resolution_deadline' => $now->copy()->addDays($resolutionDays),
                     'updated_at' => $now,

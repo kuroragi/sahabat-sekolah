@@ -36,7 +36,17 @@ class ReportController extends Controller
             ->join('reports', 'cases.report_id', '=', 'reports.id')
             ->leftJoin('case_slas', 'cases.id', '=', 'case_slas.case_id')
             ->where('cases.school_npsn', session('school_npsn'))
-            ->select('cases.*', 'reports.description', 'reports.reporter_role', 'reports.identity_mode', 'case_slas.status as sla_status', 'case_slas.resolution_status');
+            ->select(
+                'cases.*',
+                'reports.description',
+                'reports.reporter_role',
+                'reports.identity_mode',
+                'case_slas.status as sla_status',
+                'case_slas.response_deadline',
+                'case_slas.initial_response_at',
+                'case_slas.resolution_status',
+                'case_slas.resolution_deadline'
+            );
 
         if ($status = $request->input('status')) {
             if ($status !== 'ALL') {
@@ -57,15 +67,42 @@ class ReportController extends Controller
                         ->orWhere('case_slas.resolution_status', 'COMPLETED')
                         ->orWhere('case_slas.status', 'COMPLETED');
                 });
-            } else {
-                $query->where(function ($q) use ($sla) {
-                    $q->where(function ($sub) use ($sla) {
-                        $sub->where('cases.status', 'PENDING_RESPONSE')
-                            ->where('case_slas.status', $sla);
-                    })->orWhere(function ($sub) use ($sla) {
-                        $sub->where('cases.status', '!=', 'PENDING_RESPONSE')
-                            ->where('case_slas.resolution_status', $sla);
-                    });
+            } elseif ($sla === 'OVERDUE') {
+                $query->where(function ($q) {
+                    $q->where('case_slas.status', 'OVERDUE')
+                        ->orWhere('case_slas.resolution_status', 'OVERDUE')
+                        ->orWhere(function ($sub) {
+                            $sub->where('cases.status', 'PENDING_RESPONSE')
+                                ->whereNotNull('case_slas.response_deadline')
+                                ->where('case_slas.response_deadline', '<=', now());
+                        })
+                        ->orWhere(function ($sub) {
+                            $sub->whereIn('cases.status', ['UNDER_VERIFICATION', 'IN_HANDLING'])
+                                ->whereNotNull('case_slas.resolution_deadline')
+                                ->where('case_slas.resolution_deadline', '<=', now());
+                        });
+                });
+            } elseif ($sla === 'WARNING') {
+                $query->where(function ($q) {
+                    $q->where('case_slas.status', 'WARNING')
+                        ->orWhere('case_slas.resolution_status', 'WARNING');
+                });
+            } elseif ($sla === 'ON_TIME') {
+                $query->where(function ($q) {
+                    $q->where('case_slas.status', 'ON_TIME')
+                        ->where(function ($sub) {
+                            $sub->whereNull('case_slas.resolution_status')
+                                ->orWhereIn('case_slas.resolution_status', ['ON_TIME', 'ON_TRACK']);
+                        })
+                        ->where(function ($sub) {
+                            $sub->where('cases.status', '!=', 'PENDING_RESPONSE')
+                                ->orWhere('case_slas.response_deadline', '>', now());
+                        })
+                        ->where(function ($sub) {
+                            $sub->whereNotIn('cases.status', ['UNDER_VERIFICATION', 'IN_HANDLING'])
+                                ->orWhereNull('case_slas.resolution_deadline')
+                                ->orWhere('case_slas.resolution_deadline', '>', now());
+                        });
                 });
             }
         }

@@ -73,15 +73,13 @@ class PageController extends Controller
 
             // Exclude cases that are already responded, in handling, finished, or have counselor interactions
             if ($isNotPending || $hasInitialResponse || $isFinished || $hasInteractions) {
-                // Self-healing: if an already-responded or completed case still has stale OVERDUE/WARNING in case_slas,
-                // synchronize it to COMPLETED so it doesn't pollute SLA stats.
-                if ($isNotPending && in_array($case->sla_status, ['OVERDUE', 'WARNING'], true)) {
+                // If an already-responded case doesn't have initial_response_at recorded yet, populate it
+                if ($isNotPending && empty($case->initial_response_at)) {
                     DB::table('case_slas')->where('case_id', $case->id)->update([
-                        'status' => 'COMPLETED',
-                        'initial_response_at' => $case->initial_response_at ?? ($case->opened_at ?? $now),
+                        'initial_response_at' => $case->opened_at ?? $now,
                         'updated_at' => $now,
                     ]);
-                    $case->sla_status = 'COMPLETED';
+                    $case->initial_response_at = $case->opened_at ?? $now;
                 }
 
                 continue;
