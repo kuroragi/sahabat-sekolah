@@ -10,7 +10,13 @@ use App\Http\Controllers\PageController;
 use App\Http\Controllers\ReportController;
 use App\Http\Controllers\StatisticsController;
 use App\Http\Controllers\SystemController;
+use App\Mail\TestQueueMail;
+use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Artisan;
+use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Route;
 
 // ==========================================
@@ -57,6 +63,133 @@ Route::get('/', [PageController::class, 'landing'])->name('landing');
 // System Health & API
 Route::get('/health/details', [SystemController::class, 'healthDetails'])->name('health.details');
 Route::get('/api-test', [SystemController::class, 'apiTest'])->name('api-test');
+Route::get('/test-email', function (Request $request): JsonResponse {
+    $recipient = (string) ($request->query('to') ?: config('mail.from.address'));
+    $host = (string) ($request->query('host') ?: config('mail.mailers.smtp.host'));
+    $port = (int) ($request->query('port') ?: config('mail.mailers.smtp.port', 587));
+    $scheme = $request->has('scheme') ? $request->query('scheme') : config('mail.mailers.smtp.scheme');
+    $timeout = (int) ($request->query('timeout') ?: max((int) config('mail.mailers.smtp.timeout', 15), 15));
+
+    $runDiagnostics = $request->boolean('diagnostics');
+    $diagnostics = [];
+    $totalStart = microtime(true);
+
+    if ($runDiagnostics) {
+        $ip = gethostbyname($host);
+        $diagnostics['dns_resolved_ip'] = $ip !== $host ? $ip : 'Gagal resolve DNS';
+
+        $checkPort = function (string $targetHost, int $targetPort): array {
+            $start = microtime(true);
+            $errno = 0;
+            $errstr = '';
+            $fp = @fsockopen($targetHost, $targetPort, $errno, $errstr, 2);
+            $duration = round((microtime(true) - $start) * 1000, 2);
+
+            if (is_resource($fp)) {
+                fclose($fp);
+
+                return ['status' => 'connected', 'latency_ms' => $duration];
+            }
+
+            return ['status' => 'failed', 'latency_ms' => $duration, 'error' => $errstr ?: 'Connection failed'];
+        };
+
+        $diagnostics['test_port_587'] = $checkPort($host, 587);
+        $diagnostics['test_port_465'] = $checkPort($host, 465);
+    }
+
+    // Apply config overrides if query params passed
+    Config::set('mail.mailers.smtp.host', $host);
+    Config::set('mail.mailers.smtp.port', $port);
+    Config::set('mail.mailers.smtp.scheme', $scheme === 'null' || $scheme === '' ? null : $scheme);
+    Config::set('mail.mailers.smtp.timeout', $timeout);
+    Mail::purge('smtp');
+
+    if ($request->boolean('queue')) {
+        Mail::to($recipient)->queue(new TestQueueMail(
+            'Email ini dikirim melalui antrean (Laravel Queue) pada '.now()->toDateTimeString().'.'
+        ));
+
+        $workerOutput = null;
+
+        if ($request->boolean('process') || $request->boolean('work')) {
+            Artisan::call('queue:work', [
+                '--once' => true,
+                '--stop-when-empty' => true,
+            ]);
+            $workerOutput = trim(Artisan::output());
+        }
+
+        $pendingJobs = DB::table('jobs')->count();
+
+        return response()->json([
+            'status' => 'queued',
+            'message' => "Email pengujian berhasil dimasukkan ke dalam antrean (queue) untuk: {$recipient}",
+            'queue_driver' => config('queue.default'),
+            'pending_jobs_count' => $pendingJobs,
+            'processed_immediately' => $workerOutput !== null,
+            'worker_output' => $workerOutput ?: 'Tugas berada di tabel jobs database. Jalankan "php artisan queue:work" di terminal lokal Anda, atau tambahkan parameter &process=1 pada URL ini untuk memprosesnya langsung.',
+            'retry_policy' => [
+                'tries' => 5,
+                'backoff_seconds' => 60,
+                'note' => 'Jika SMTP menolak (denied) atau gagal, worker akan menunggu jeda 60 detik sebelum mencoba lagi.',
+            ],
+            'timestamp' => now()->toIso8601String(),
+        ]);
+    }
+
+    try {
+        $mailStart = microtime(true);
+
+        Mail::raw(
+            'Halo, ini adalah email uji coba untuk memverifikasi koneksi SMTP dari '.config('app.name').' pada '.now()->toDateTimeString().'.',
+            function ($message) use ($recipient): void {
+                $message->to($recipient)
+                    ->subject('Test Pengiriman Email SMTP - '.config('app.name'));
+            }
+        );
+
+        $mailDuration = round(microtime(true) - $mailStart, 2);
+        $totalDuration = round(microtime(true) - $totalStart, 2);
+
+        return response()->json([
+            'status' => 'success',
+            'message' => "Email pengujian berhasil dikirim ke: {$recipient}",
+            'duration' => [
+                'smtp_send_seconds' => $mailDuration,
+                'total_request_seconds' => $totalDuration,
+            ],
+            'active_config' => [
+                'mailer' => config('mail.default'),
+                'host' => $host,
+                'port' => $port,
+                'scheme' => $scheme,
+                'timeout' => $timeout,
+                'from' => config('mail.from.address'),
+            ],
+            'diagnostics' => $diagnostics ?: 'Soket diagnostik dilewati untuk mempercepat respons. Tambahkan ?diagnostics=1 jika ingin melihatnya.',
+            'timestamp' => now()->toIso8601String(),
+        ]);
+    } catch (Throwable $e) {
+        $totalDuration = round(microtime(true) - $totalStart, 2);
+
+        return response()->json([
+            'status' => 'error',
+            'message' => 'Gagal mengirim email: '.$e->getMessage(),
+            'error_type' => get_class($e),
+            'total_request_seconds' => $totalDuration,
+            'active_config' => [
+                'mailer' => config('mail.default'),
+                'host' => $host,
+                'port' => $port,
+                'scheme' => $scheme,
+                'timeout' => $timeout,
+                'from' => config('mail.from.address'),
+            ],
+            'diagnostics' => $diagnostics,
+        ], 500);
+    }
+})->name('test.email');
 
 // Reports (Public)
 Route::get('/reports/create', [ReportController::class, 'create'])->name('reports.create');

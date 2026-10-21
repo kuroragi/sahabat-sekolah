@@ -213,32 +213,17 @@ class ReportController extends Controller
                 'case_url' => route('cases.show', $caseNumber['number']),
             ];
 
-            $emailTimeout = (int) env('MAIL_TIMEOUT', 3);
-            config(['mail.mailers.smtp.timeout' => $emailTimeout]);
-            $maxBatchTime = (int) env('MAIL_TOTAL_TIMEOUT', 5);
-            $batchStart = microtime(true);
-
             foreach ($counselors as $counselor) {
-                if ((microtime(true) - $batchStart) >= $maxBatchTime) {
-                    Log::warning('Total batas waktu tunggu pengiriman email laporan tercapai, melewati sisa penerima agar respons pelapor tetap cepat.', [
-                        'case_number' => $caseNumber['number'],
-                        'skipped_counselor' => $counselor->email,
-                    ]);
-                    break;
-                }
-
                 try {
-                    Mail::to($counselor->email)->send(new NewReportCounselorMail(
+                    Mail::to($counselor->email)->queue(new NewReportCounselorMail(
                         reportData: $mailData,
                         recipientName: $counselor->name ?? 'Guru BK',
                     ));
                 } catch (\Throwable $e) {
-                    Log::warning('Waktu tunggu habis atau gagal mengirim email notifikasi laporan baru ke Guru BK: '.$e->getMessage(), [
+                    Log::error('Gagal memasukkan notifikasi email laporan baru ke antrean (queue): '.$e->getMessage(), [
                         'counselor_email' => $counselor->email,
                         'case_number' => $caseNumber['number'],
                     ]);
-
-                    continue;
                 }
             }
         }

@@ -94,7 +94,15 @@
                         <span class="participant-type">{{ $participant->participant_type }}</span>
                         <div>
                             <strong>{{ session('user_role') === 'COUNSELOR' ? $participant->display_name : 'Identitas dibatasi' }}</strong>
-                            <small>{{ $participant->identity_visibility }}</small>
+                            <small>
+                                {{ $participant->identity_visibility }}
+                                @if (session('user_role') === 'COUNSELOR' && !empty($participant->student_nisn))
+                                    · NISN: {{ $participant->student_nisn }}
+                                    @if (!empty($participant->student_class))
+                                        (Kelas {{ $participant->student_class }})
+                                    @endif
+                                @endif
+                            </small>
                         </div>
                     </div>
                 @empty
@@ -102,7 +110,7 @@
                 @endforelse
 
                 @if (session('user_role') === 'COUNSELOR')
-                    <form class="participant-form" method="POST"
+                    <form class="participant-form" method="POST" id="participant-add-form"
                         action="{{ route('cases.participants', $case->case_number) }}">
                         @csrf
                         <div style="display: flex; flex-direction: column; gap: 4px;">
@@ -115,9 +123,57 @@
                                 <option value="OTHER">Lainnya</option>
                             </select>
                         </div>
-                        <div style="display: flex; flex-direction: column; gap: 4px;">
-                            <label style="font-size: 10px; color: #64748b; font-weight: 500;">Nama Pihak Terkait</label>
-                            <input name="display_name" required placeholder="Nama lengkap">
+                        <div style="display: flex; flex-direction: column; gap: 4px; position: relative;">
+                            <div style="display: flex; align-items: center; justify-content: space-between;">
+                                <label style="font-size: 10px; color: #64748b; font-weight: 500;">Nama Pihak Terkait</label>
+                                @if (!empty($students))
+                                    <div style="display: flex; align-items: center; gap: 6px; font-size: 9px;">
+                                        <label style="cursor: pointer; display: inline-flex; align-items: center; gap: 2px; color: #2563eb; font-weight: 600;">
+                                            <input type="radio" name="participant_mode_toggle" value="STUDENT" checked onchange="switchParticipantMode('STUDENT')" style="margin: 0; width: 10px; height: 10px;"> Siswa
+                                        </label>
+                                        <label style="cursor: pointer; display: inline-flex; align-items: center; gap: 2px; color: #64748b; font-weight: 500;">
+                                            <input type="radio" name="participant_mode_toggle" value="MANUAL" onchange="switchParticipantMode('MANUAL')" style="margin: 0; width: 10px; height: 10px;"> Bukan siswa
+                                        </label>
+                                    </div>
+                                @endif
+                            </div>
+
+                            <input type="hidden" name="student_nisn" id="input_participant_student_nisn" value="">
+
+                            @if (!empty($students))
+                                <div id="participant-student-wrapper" class="tw-select-container relative w-full" data-name="student_lookup">
+                                    <select id="participant_student_select" style="opacity: 0; position: absolute; z-index: -1;">
+                                        <option value="">Pilih / cari nama siswa...</option>
+                                        @foreach ($students as $stu)
+                                            <option value="{{ $stu['nisn'] }}" data-name="{{ $stu['nama'] }}">
+                                                {{ $stu['nama'] }} — NISN: {{ $stu['nisn'] }} @if(!empty($stu['kelas'])) (Kelas {{ $stu['kelas'] }}) @endif
+                                            </option>
+                                        @endforeach
+                                    </select>
+                                    <button type="button" class="tw-select-trigger w-full flex items-center justify-between bg-[#fbfdff] border border-[#dfe8f1] rounded-lg px-2.5 py-2 text-[10px] text-left focus:outline-none focus:border-[#4d9ae4] focus:ring-2 focus:ring-[#e7f3ff] transition-colors" style="min-height: 34px;">
+                                        <span class="tw-select-text text-[#7390b4] truncate">Pilih / cari siswa ({{ count($students) }} siswa)...</span>
+                                        <svg class="w-3.5 h-3.5 text-[#7390b4] pointer-events-none flex-none ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
+                                    </button>
+                                    <div class="tw-select-dropdown absolute z-50 w-full mt-1 bg-white border border-[#dfe8f1] rounded-lg shadow-lg hidden opacity-0 transition-opacity duration-200" style="min-width: 260px;">
+                                        <div class="p-1.5 border-b border-[#eef4f9]">
+                                            <div class="relative">
+                                                <svg class="w-3.5 h-3.5 text-[#7390b4] absolute left-2 top-1/2 -translate-y-1/2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
+                                                <input type="text" class="tw-select-search w-full bg-[#f8fafc] border-none text-[10px] rounded pl-6 pr-2 py-1 focus:outline-none focus:ring-1 focus:ring-[#4d9ae4]" placeholder="Ketik nama atau NISN...">
+                                            </div>
+                                        </div>
+                                        <ul class="tw-select-list max-h-48 overflow-y-auto custom-scrollbar p-1" role="listbox"></ul>
+                                        <div class="tw-select-empty hidden p-2.5 text-center text-[10px] text-[#7390b4]">
+                                            Siswa tidak ditemukan.<br>
+                                            <a href="javascript:void(0)" onclick="switchParticipantMode('MANUAL')" style="color: #2563eb; text-decoration: underline; margin-top: 3px; display: inline-block;">Input manual (bukan siswa)</a>
+                                        </div>
+                                    </div>
+                                </div>
+                            @endif
+
+                            <input name="display_name" id="input_participant_display_name"
+                                placeholder="{{ !empty($students) ? 'Nama lengkap pihak terkait' : 'Nama lengkap (siswa / bukan siswa)' }}"
+                                style="{{ !empty($students) ? 'display: none;' : '' }} width: 100%;"
+                                @if(empty($students)) required @endif>
                         </div>
                         <div style="display: flex; flex-direction: column; gap: 4px;">
                             <div style="display: flex; align-items: center; justify-content: space-between;">
@@ -1074,7 +1130,82 @@
         // Re-init Lucide after dynamic render
         document.addEventListener('DOMContentLoaded', () => {
             if (window.lucide) lucide.createIcons();
+            if (typeof window.initTwSelect === 'function') window.initTwSelect();
+
+            const studentSelect = document.getElementById('participant_student_select');
+            const displayInput = document.getElementById('input_participant_display_name');
+            const nisnInput = document.getElementById('input_participant_student_nisn');
+            const form = document.getElementById('participant-add-form');
+
+            if (studentSelect) {
+                studentSelect.addEventListener('change', () => {
+                    const opt = studentSelect.options[studentSelect.selectedIndex];
+                    if (opt && opt.value) {
+                        if (displayInput) displayInput.value = opt.getAttribute('data-name') || opt.text || '';
+                        if (nisnInput) nisnInput.value = opt.value;
+                    } else {
+                        if (displayInput) displayInput.value = '';
+                        if (nisnInput) nisnInput.value = '';
+                    }
+                });
+            }
+
+            if (form) {
+                form.addEventListener('submit', (e) => {
+                    const studentRadio = document.querySelector('input[name="participant_mode_toggle"][value="STUDENT"]');
+                    if (studentRadio && studentRadio.checked) {
+                        if (!displayInput.value.trim() || !nisnInput.value.trim()) {
+                            e.preventDefault();
+                            alert('Silakan pilih salah satu siswa dari daftar pencarian, atau ganti mode ke "Bukan siswa" untuk mengisi manual.');
+                            return false;
+                        }
+                    } else {
+                        if (!displayInput.value.trim()) {
+                            e.preventDefault();
+                            alert('Silakan masukkan nama pihak terkait.');
+                            displayInput.focus();
+                            return false;
+                        }
+                    }
+                });
+            }
         });
+
+        function switchParticipantMode(mode) {
+            const wrapper = document.getElementById('participant-student-wrapper');
+            const displayInput = document.getElementById('input_participant_display_name');
+            const nisnInput = document.getElementById('input_participant_student_nisn');
+            const studentSelect = document.getElementById('participant_student_select');
+            const studentRadio = document.querySelector('input[name="participant_mode_toggle"][value="STUDENT"]');
+            const manualRadio = document.querySelector('input[name="participant_mode_toggle"][value="MANUAL"]');
+
+            if (mode === 'STUDENT') {
+                if (studentRadio) studentRadio.checked = true;
+                if (wrapper) wrapper.style.display = 'block';
+                if (displayInput) {
+                    displayInput.style.display = 'none';
+                    displayInput.removeAttribute('required');
+                    if (studentSelect && studentSelect.selectedIndex > 0) {
+                        const opt = studentSelect.options[studentSelect.selectedIndex];
+                        displayInput.value = opt.getAttribute('data-name') || '';
+                        if (nisnInput) nisnInput.value = opt.value || '';
+                    } else {
+                        displayInput.value = '';
+                        if (nisnInput) nisnInput.value = '';
+                    }
+                }
+            } else {
+                if (manualRadio) manualRadio.checked = true;
+                if (wrapper) wrapper.style.display = 'none';
+                if (displayInput) {
+                    displayInput.style.display = 'block';
+                    displayInput.setAttribute('required', 'required');
+                    displayInput.value = '';
+                    displayInput.focus();
+                }
+                if (nisnInput) nisnInput.value = '';
+            }
+        }
     </script>
 @endsection
 

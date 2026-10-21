@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Helpers\AConnect;
 use App\Mail\CaseEscalatedPrincipalMail;
+use App\Models\AcademicPeriod;
 use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
@@ -60,7 +61,13 @@ class CaseController extends Controller
         $riskHistory = DB::table('case_risk_histories')->where('case_id', $case->id)->latest()->get();
         $notes = DB::table('case_notes')->where('case_id', $case->id)->latest()->get();
         $escalations = DB::table('case_escalations')->where('case_id', $case->id)->latest()->get();
-        $participants = DB::table('case_participants')->where('case_id', $case->id)->where('status', 'ACTIVE')->orderBy('participant_type')->get();
+        $participants = DB::table('case_participants')
+            ->leftJoin('students', 'case_participants.student_id', '=', 'students.id')
+            ->where('case_participants.case_id', $case->id)
+            ->where('case_participants.status', 'ACTIVE')
+            ->select('case_participants.*', 'students.student_number as student_nisn', 'students.class_name as student_class')
+            ->orderBy('case_participants.participant_type')
+            ->get();
         $parentInvolvements = DB::table('case_parent_involvements')
             ->join('parents', 'case_parent_involvements.parent_id', '=', 'parents.id')
             ->where('case_parent_involvements.case_id', $case->id)
@@ -68,7 +75,45 @@ class CaseController extends Controller
             ->latest()
             ->get();
 
-        return view('cases.show', compact('case', 'history', 'actions', 'evidences', 'resolutionDocuments', 'riskAssessment', 'riskHistory', 'notes', 'escalations', 'participants', 'parentInvolvements'));
+        $students = [];
+        if (session('user_role') === 'COUNSELOR') {
+            try {
+                $activePeriod = AcademicPeriod::where('is_active', true)->first();
+                $fallbackPeriod = AcademicPeriod::where('is_fallback', true)->orderBy('order_no')->first();
+
+                $aConnect = new AConnect;
+                $activeSemesterId = $activePeriod?->semester_id ?? '20252';
+                $schoolNpsn = $case->school_npsn ?: session('school_npsn');
+
+                // Cek id dari semester aktif sekarang apakah data siswa sudah ada
+                $rawStudents = $schoolNpsn ? $aConnect->getSiswaSekolah($schoolNpsn, $activeSemesterId) : [];
+
+                // Jika belum ada data siswa, cek menggunakan id semester cadangan
+                if (
+                    empty($rawStudents) &&
+                    $fallbackPeriod &&
+                    $fallbackPeriod->semester_id !== $activeSemesterId &&
+                    $schoolNpsn
+                ) {
+                    $fallbackStudents = $aConnect->getSiswaSekolah($schoolNpsn, $fallbackPeriod->semester_id);
+                    if (! empty($fallbackStudents)) {
+                        $rawStudents = $fallbackStudents;
+                    }
+                }
+
+                // Ambil NISN dan nama saja sebagai data
+                $students = collect($rawStudents)->map(fn ($s) => [
+                    'nisn' => trim((string) ($s['nisn'] ?? '')),
+                    'nama' => trim((string) ($s['nm_siswa'] ?? '')),
+                    'kelas' => trim((string) ($s['nm_kelas'] ?? '')),
+                ])->filter(fn ($s) => ! empty($s['nisn']) && ! empty($s['nama']))->values()->all();
+            } catch (\Throwable $e) {
+                Log::warning('Gagal memuat data siswa AConnect di CaseController: '.$e->getMessage());
+                $students = [];
+            }
+        }
+
+        return view('cases.show', compact('case', 'history', 'actions', 'evidences', 'resolutionDocuments', 'riskAssessment', 'riskHistory', 'notes', 'escalations', 'participants', 'parentInvolvements', 'students'));
     }
 
     public function updateParentInvolvement(Request $request, string $caseNumber)
@@ -102,15 +147,49 @@ class CaseController extends Controller
             'participant_type' => ['required', 'in:REPORTER,VICTIM,ALLEGED_PERPETRATOR,WITNESS,OTHER'],
             'display_name' => ['required', 'string', 'min:2', 'max:255'],
             'identity_visibility' => ['required', 'in:CASE_RESTRICTED,CASE_FULL,CASE_SENSITIVE'],
+            'student_nisn' => ['nullable', 'string', 'max:50'],
         ]);
 
         $case = scopedCase($caseNumber);
+        $studentId = null;
+
+        if (! empty($data['student_nisn'])) {
+            $student = DB::table('students')
+                ->where('school_npsn', $case->school_npsn)
+                ->where('student_number', $data['student_nisn'])
+                ->first();
+
+            if ($student) {
+                $studentId = $student->id;
+            } else {
+                $studentId = DB::table('students')->insertGetId([
+                    'school_npsn' => $case->school_npsn,
+                    'full_name' => $data['display_name'],
+                    'student_number' => $data['student_nisn'],
+                    'status' => 'ACTIVE',
+                    'created_at' => now(),
+                    'updated_at' => now(),
+                ]);
+            }
+        }
+
         DB::table('case_participants')->insert([
-            'case_id' => $case->id, 'participant_type' => $data['participant_type'], 'display_name' => $data['display_name'],
-            'identity_visibility' => $data['identity_visibility'], 'created_at' => now(), 'updated_at' => now(),
+            'case_id' => $case->id,
+            'participant_type' => $data['participant_type'],
+            'student_id' => $studentId,
+            'display_name' => $data['display_name'],
+            'identity_visibility' => $data['identity_visibility'],
+            'status' => 'ACTIVE',
+            'created_at' => now(),
+            'updated_at' => now(),
         ]);
 
-        auditAction('ADD_PARTICIPANT', 'CASE', $case->case_number, ['participant_type' => $data['participant_type'], 'visibility' => $data['identity_visibility']]);
+        auditAction('ADD_PARTICIPANT', 'CASE', $case->case_number, [
+            'participant_type' => $data['participant_type'],
+            'visibility' => $data['identity_visibility'],
+            'student_nisn' => $data['student_nisn'] ?? null,
+            'student_id' => $studentId,
+        ]);
 
         return back()->with('success', 'Pihak terkait berhasil ditambahkan.');
     }
@@ -178,33 +257,18 @@ class CaseController extends Controller
                 'escalated_at' => $now,
             ];
 
-            $emailTimeout = (int) env('MAIL_TIMEOUT', 3);
-            config(['mail.mailers.smtp.timeout' => $emailTimeout]);
-            $maxBatchTime = (int) env('MAIL_TOTAL_TIMEOUT', 5);
-            $batchStart = microtime(true);
-
             foreach ($principals as $principal) {
-                if ((microtime(true) - $batchStart) >= $maxBatchTime) {
-                    Log::warning('Total batas waktu tunggu pengiriman email eskalasi tercapai, melewati sisa penerima agar respons tetap cepat.', [
-                        'case_number' => $case->case_number,
-                        'skipped_principal' => $principal->email,
-                    ]);
-                    break;
-                }
-
                 try {
-                    Mail::to($principal->email)->send(new CaseEscalatedPrincipalMail(
+                    Mail::to($principal->email)->queue(new CaseEscalatedPrincipalMail(
                         caseData: $caseData,
                         escalationData: $escalationData,
                         recipientName: $principal->name ?? 'Kepala Sekolah',
                     ));
                 } catch (\Throwable $e) {
-                    Log::warning('Waktu tunggu habis atau gagal mengirim email eskalasi ke Kepala Sekolah: '.$e->getMessage(), [
+                    Log::error('Gagal memasukkan notifikasi email eskalasi ke antrean (queue): '.$e->getMessage(), [
                         'principal_email' => $principal->email,
                         'case_number' => $case->case_number,
                     ]);
-
-                    continue;
                 }
             }
         }
