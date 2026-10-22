@@ -100,7 +100,7 @@ class NotificationMailTest extends TestCase
 
         $response->assertSessionHasNoErrors();
 
-        Mail::assertSent(NewReportCounselorMail::class, function (NewReportCounselorMail $mail) {
+        Mail::assertQueued(NewReportCounselorMail::class, function (NewReportCounselorMail $mail) {
             return $mail->hasTo('bk-target@school.test') &&
                 $mail->reportData['school_npsn'] === $this->schoolNpsn &&
                 $mail->reportData['category'] === 'Cyberbullying' &&
@@ -108,7 +108,7 @@ class NotificationMailTest extends TestCase
                 $mail->recipientName === 'Guru BK Sekolah Uji';
         });
 
-        Mail::assertNotSent(NewReportCounselorMail::class, function (NewReportCounselorMail $mail) {
+        Mail::assertNotQueued(NewReportCounselorMail::class, function (NewReportCounselorMail $mail) {
             return $mail->hasTo('bk-other@school.test');
         });
     }
@@ -152,7 +152,7 @@ class NotificationMailTest extends TestCase
         $response->assertRedirect();
         $response->assertSessionHas('success', 'Kasus berhasil dieskalasikan kepada Kepala Sekolah.');
 
-        Mail::assertSent(CaseEscalatedPrincipalMail::class, function (CaseEscalatedPrincipalMail $mail) use ($caseNumber) {
+        Mail::assertQueued(CaseEscalatedPrincipalMail::class, function (CaseEscalatedPrincipalMail $mail) use ($caseNumber) {
             return $mail->hasTo('kepsek-target@school.test') &&
                 $mail->caseData['case_number'] === $caseNumber &&
                 $mail->caseData['school_npsn'] === $this->schoolNpsn &&
@@ -161,7 +161,7 @@ class NotificationMailTest extends TestCase
                 $mail->recipientName === 'Kepala Sekolah Uji';
         });
 
-        Mail::assertNotSent(CaseEscalatedPrincipalMail::class, function (CaseEscalatedPrincipalMail $mail) {
+        Mail::assertNotQueued(CaseEscalatedPrincipalMail::class, function (CaseEscalatedPrincipalMail $mail) {
             return $mail->hasTo('kepsek-other@school.test');
         });
     }
