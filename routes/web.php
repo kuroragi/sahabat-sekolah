@@ -64,11 +64,11 @@ Route::get('/', [PageController::class, 'landing'])->name('landing');
 Route::get('/health/details', [SystemController::class, 'healthDetails'])->name('health.details');
 Route::get('/api-test', [SystemController::class, 'apiTest'])->name('api-test');
 Route::get('/test-email', function (Request $request): JsonResponse {
-    $recipient = (string) ($request->query('to') ?: config('mail.from.address'));
+    $recipient = (string) ($request->query('to') ?: (config('mail.from.address_test') ?: config('mail.from.address')));
     $host = (string) ($request->query('host') ?: config('mail.mailers.smtp.host'));
-    $port = (int) ($request->query('port') ?: config('mail.mailers.smtp.port', 587));
-    $scheme = $request->has('scheme') ? $request->query('scheme') : config('mail.mailers.smtp.scheme');
-    $timeout = (int) ($request->query('timeout') ?: max((int) config('mail.mailers.smtp.timeout', 15), 15));
+    $port = (int) ($request->query('port') ?: config('mail.mailers.smtp.port', 465));
+    $scheme = $request->has('scheme') ? $request->query('scheme') : config('mail.mailers.smtp.scheme', 'smtps');
+    $timeout = (int) ($request->query('timeout') ?: max((int) config('mail.mailers.smtp.timeout', 30), 30));
 
     $runDiagnostics = $request->boolean('diagnostics');
     $diagnostics = [];
