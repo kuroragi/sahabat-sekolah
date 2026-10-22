@@ -268,7 +268,10 @@ Route::middleware('auth.session')->group(function () {
     // Notifications
     // ==========================================
     Route::middleware(['role:COUNSELOR,PRINCIPAL', 'permission:NOTIFICATION_VIEW'])->group(function () {
-        Route::get('/notifications/{id}/read', [NotificationController::class, 'read'])->name('notifications.read');
+        Route::get('/notifications', [NotificationController::class, 'index'])->name('notifications.index');
+        Route::post('/notifications/read-selected', [NotificationController::class, 'readSelected'])->name('notifications.read-selected');
+        Route::post('/notifications/read-all', [NotificationController::class, 'readAll'])->name('notifications.read-all');
+        Route::match(['get', 'post'], '/notifications/{id}/read', [NotificationController::class, 'read'])->name('notifications.read');
     });
 
     // ==========================================

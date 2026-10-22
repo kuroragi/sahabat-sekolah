@@ -61,7 +61,9 @@ class AnonymousController extends Controller
             'updated_at' => now(),
         ]);
 
-        notifyCounselor('ANONYMOUS_MESSAGE', 'Pesan anonim baru', 'Pelapor mengirim informasi tambahan pada laporan.', null, 'HIGH');
+        $caseNumber = DB::table('cases')->where('report_id', $report->report_id)->value('case_number');
+
+        notifyCounselor('ANONYMOUS_MESSAGE', 'Pesan anonim baru', 'Pelapor mengirim informasi tambahan pada laporan.', $caseNumber, 'HIGH');
 
         return redirect()->route('anonymous.channel', ['token' => strtoupper($data['token'])])
             ->with('success', 'Pesan anonim berhasil dikirim.');

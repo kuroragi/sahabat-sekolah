@@ -109,6 +109,23 @@
                         href="{{ route('achievements.index') }}">
                         <i data-lucide="trophy"></i> Prestasi Siswa
                     </a>
+                    <a class="nav-item {{ ($activeNav ?? '') === 'notifications' ? 'active' : '' }}"
+                        href="{{ route('notifications.index') }}">
+                        <i data-lucide="bell"></i> Notifikasi
+                        @php
+                            $unreadNotifsCount = \Illuminate\Support\Facades\DB::table('notifications')
+                                ->leftJoin('cases', 'notifications.case_number', '=', 'cases.case_number')
+                                ->where(function ($q) {
+                                    $q->where('cases.school_npsn', session('school_npsn'))
+                                      ->orWhereNull('notifications.case_number');
+                                })
+                                ->whereNull('notifications.read_at')
+                                ->count();
+                        @endphp
+                        @if ($unreadNotifsCount > 0)
+                            <b>{{ $unreadNotifsCount }}</b>
+                        @endif
+                    </a>
                 @else
                     <a class="nav-item {{ ($activeNav ?? '') === 'dashboard' ? 'active' : '' }}"
                         href="{{ route('dashboard') }}">
@@ -139,6 +156,23 @@
                     <a class="nav-item {{ ($activeNav ?? '') === 'achievements' ? 'active' : '' }}"
                         href="{{ route('achievements.index') }}">
                         <i data-lucide="trophy"></i> Prestasi Siswa
+                    </a>
+                    <a class="nav-item {{ ($activeNav ?? '') === 'notifications' ? 'active' : '' }}"
+                        href="{{ route('notifications.index') }}">
+                        <i data-lucide="bell"></i> Notifikasi
+                        @php
+                            $unreadNotifsCount = \Illuminate\Support\Facades\DB::table('notifications')
+                                ->leftJoin('cases', 'notifications.case_number', '=', 'cases.case_number')
+                                ->where(function ($q) {
+                                    $q->where('cases.school_npsn', session('school_npsn'))
+                                      ->orWhereNull('notifications.case_number');
+                                })
+                                ->whereNull('notifications.read_at')
+                                ->count();
+                        @endphp
+                        @if ($unreadNotifsCount > 0)
+                            <b>{{ $unreadNotifsCount }}</b>
+                        @endif
                     </a>
                 @endif
             </nav>
@@ -196,7 +230,15 @@
                                 <div class="notif-dropdown-header">
                                     <strong>Notifikasi</strong>
                                     @if ($headerUnreadCount > 0)
-                                        <span class="notif-unread-badge">{{ $headerUnreadCount }} belum dibaca</span>
+                                        <div style="display:flex; align-items:center; gap:8px;">
+                                            <span class="notif-unread-badge">{{ $headerUnreadCount }} belum dibaca</span>
+                                            <form method="POST" action="{{ route('notifications.read-all') }}" style="margin:0;">
+                                                @csrf
+                                                <button type="submit" class="notif-readall-btn" title="Tandai semua notifikasi dibaca">
+                                                    <i data-lucide="check-check"></i>
+                                                </button>
+                                            </form>
+                                        </div>
                                     @else
                                         <small class="notif-read-all">Semua dibaca</small>
                                     @endif
@@ -228,6 +270,11 @@
                                             <p>Tidak ada notifikasi</p>
                                         </div>
                                     @endforelse
+                                </div>
+                                <div class="notif-dropdown-footer">
+                                    <a href="{{ route('notifications.index') }}" class="notif-view-all">
+                                        Lihat Semua Notifikasi <i data-lucide="arrow-right"></i>
+                                    </a>
                                 </div>
                             </div>
                         </div>

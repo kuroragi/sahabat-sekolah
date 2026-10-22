@@ -87,5 +87,8 @@ nav { display:grid; gap:4px; }.nav-item { color:#abc2df; text-decoration:none; p
 .notif-view-all { color:#1877e8; text-decoration:none; font:700 11px 'DM Sans'; display:inline-flex; align-items:center; gap:5px; transition:gap .15s ease; }
 .notif-view-all:hover { color:#0f5fbc; gap:8px; }
 .notif-view-all svg { width:13px; }
+.notif-readall-btn { border:none; background:#e1efff; color:#1877e3; width:24px; height:24px; border-radius:6px; display:inline-flex; align-items:center; justify-content:center; cursor:pointer; transition:all .15s ease; padding:0; }
+.notif-readall-btn:hover { background:#1877e3; color:#ffffff; }
+.notif-readall-btn svg { width:13px; height:13px; }
 
 
