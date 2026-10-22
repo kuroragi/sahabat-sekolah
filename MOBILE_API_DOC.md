@@ -142,6 +142,8 @@ API Sahabat Sekolah menerapkan arsitektur pengamanan berlapis (*Defense-in-Depth
 | **Auth** | `POST` | `/auth/login` | Publik | Login Guru BK / Kepala Sekolah (dapat token) |
 | **Auth** | `POST` | `/auth/logout` | Auth | Hapus token aktif / Logout |
 | **Auth** | `GET` | `/me` | Auth | Info profil dan role pengguna aktif |
+| **Auth** | `POST` | `/auth/forgot-password` | Publik | Kirim tautan reset kata sandi ke email |
+| **Auth** | `POST` | `/auth/reset-password` | Publik | Atur ulang kata sandi baru menggunakan token |
 | **Dashboard**| `GET` | `/dashboard` | Auth | Ringkasan metrik dashboard, SLA & kasus terbaru |
 | **Dashboard**| `GET` | `/dashboard/statistics` | Auth | Data agregasi statistik perundungan & tren |
 | **Kasus** | `GET` | `/cases` | Auth | Daftar kasus sekolah dengan filter dan pagination |
@@ -463,6 +465,51 @@ Mengautentikasi pengguna dan mengembalikan token API (Bearer).
 {
   "success": true,
   "message": "Logout berhasil. Token telah dicabut."
+}
+```
+
+---
+
+### 4.4. Minta Tautan Reset Kata Sandi (Forgot Password)
+Mengirimkan tautan reset kata sandi ke alamat email terdaftar melalui antrean pengiriman email (Laravel Queue).
+
+- **URL**: `POST /api/v1/auth/forgot-password`
+- **Akses**: Publik
+- **Body Request**:
+```json
+{
+  "email": "guru.bk@smpn2bukittinggi.sch.id"
+}
+```
+- **Contoh Response (`200 OK`)**:
+```json
+{
+  "success": true,
+  "message": "Jika alamat email terdaftar, tautan reset password telah dikirimkan ke email Anda."
+}
+```
+
+---
+
+### 4.5. Atur Ulang Kata Sandi (Reset Password)
+Mengubah kata sandi akun dengan token verifikasi yang diterima melalui email (masa berlaku 60 menit).
+
+- **URL**: `POST /api/v1/auth/reset-password`
+- **Akses**: Publik
+- **Body Request**:
+```json
+{
+  "email": "guru.bk@smpn2bukittinggi.sch.id",
+  "token": "64_karakter_token_dari_email",
+  "password": "PasswordBaru123#",
+  "password_confirmation": "PasswordBaru123#"
+}
+```
+- **Contoh Response (`200 OK`)**:
+```json
+{
+  "success": true,
+  "message": "Kata sandi berhasil diperbarui. Silakan login kembali dengan kata sandi baru Anda."
 }
 ```
 
