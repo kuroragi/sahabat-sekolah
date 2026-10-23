@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Helpers\AConnect;
+use App\Mail\AdminResetPasswordMail;
 use App\Mail\UserCreatedMail;
 use App\Models\AcademicPeriod;
 use App\Models\AchievementCategory;
@@ -270,12 +271,56 @@ class AdminController extends Controller
             $schoolName = $schoolsMap[$data['school_npsn']] ?? null;
         }
 
+        $status = $data['status'] ?? 'ACTIVE';
         unset($data['status']);
 
-        DB::table('users')->where('id', $id)->update($data + ['school_name' => $schoolName, 'updated_at' => now()]);
-        auditAction('UPDATE_USER', 'USER', $id, $data);
+        DB::table('users')->where('id', $id)->update($data + [
+            'school_name' => $schoolName,
+            'status' => $status,
+            'updated_at' => now(),
+        ]);
+        auditAction('UPDATE_USER', 'USER', $id, $data + ['status' => $status]);
 
         return back()->with('success', 'Pengguna berhasil diperbarui.');
+    }
+
+    public function resetPassword(int $id)
+    {
+        $user = DB::table('users')->where('id', $id)->firstOrFail();
+
+        $randomPassword = Str::random(8);
+
+        DB::table('users')->where('id', $id)->update([
+            'password' => Hash::make($randomPassword),
+            'updated_at' => now(),
+        ]);
+
+        $schoolsMap = (new AConnect)->getSekolahMap();
+        $schoolName = $user->school_name ?? ($user->school_npsn ? ($schoolsMap[$user->school_npsn] ?? null) : null);
+
+        try {
+            Mail::to($user->email)->queue(new AdminResetPasswordMail(
+                userData: [
+                    'name' => $user->name,
+                    'email' => $user->email,
+                    'role' => $user->role,
+                    'school_name' => $schoolName,
+                    'password' => $randomPassword,
+                    'login_url' => route('login'),
+                ],
+                recipientName: $user->name,
+            ));
+        } catch (\Throwable $e) {
+            Log::error('Gagal memasukkan email reset password oleh admin ke antrean: '.$e->getMessage(), [
+                'user_id' => $user->id,
+                'email' => $user->email,
+                'error' => $e->getMessage(),
+            ]);
+        }
+
+        auditAction('RESET_USER_PASSWORD', 'USER', $id, ['email' => $user->email]);
+
+        return back()->with('success', "Password untuk pengguna {$user->name} ({$user->email}) berhasil direset. Password acak 8 karakter baru telah dikirimkan ke email.");
     }
 
     public function deleteUser(int $id)

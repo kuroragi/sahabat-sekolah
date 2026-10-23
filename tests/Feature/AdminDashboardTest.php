@@ -2,6 +2,7 @@
 
 namespace Tests\Feature;
 
+use App\Mail\AdminResetPasswordMail;
 use App\Mail\UserCreatedMail;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
@@ -245,5 +246,59 @@ class AdminDashboardTest extends TestCase
         $mailable->assertSeeInHtml('Xy7K9mP2');
         $mailable->assertSeeInHtml('http://localhost/login');
         $mailable->assertSeeInHtml('KATA SANDI SEMENTARA');
+    }
+
+    public function test_admin_can_reset_user_password_to_random_and_queues_email(): void
+    {
+        Mail::fake();
+
+        $counselorId = DB::table('users')->insertGetId([
+            'name' => 'Guru Konseling',
+            'email' => 'counselor@school.test',
+            'password' => Hash::make('passwordLama123'),
+            'role' => 'COUNSELOR',
+            'school_npsn' => '10300074',
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
+
+        $response = $this->withSession($this->adminSession())
+            ->post("/admin/users/{$counselorId}/reset-password");
+
+        $response->assertRedirect();
+        $response->assertSessionHas('success');
+
+        $updatedUser = DB::table('users')->where('id', $counselorId)->first();
+        $this->assertFalse(Hash::check('passwordLama123', $updatedUser->password));
+
+        Mail::assertQueued(AdminResetPasswordMail::class, function (AdminResetPasswordMail $mail) use ($updatedUser) {
+            $hasTo = $mail->hasTo('counselor@school.test');
+            $password = $mail->userData['password'];
+            $lengthIs8 = strlen($password) === 8;
+            $passwordMatchesHash = Hash::check($password, $updatedUser->password);
+            $roleMatches = $mail->userData['role'] === 'COUNSELOR';
+
+            return $hasTo && $lengthIs8 && $passwordMatchesHash && $roleMatches;
+        });
+    }
+
+    public function test_admin_reset_password_mail_renders_properly(): void
+    {
+        $mailable = new AdminResetPasswordMail(
+            userData: [
+                'name' => 'Guru Konseling',
+                'email' => 'counselor@school.test',
+                'role' => 'COUNSELOR',
+                'school_name' => 'SMP Negeri 2 Bukittinggi',
+                'password' => 'aB3kL9mZ',
+                'login_url' => 'http://localhost/login',
+            ],
+            recipientName: 'Guru Konseling',
+        );
+
+        $mailable->assertSeeInHtml('Guru Konseling');
+        $mailable->assertSeeInHtml('counselor@school.test');
+        $mailable->assertSeeInHtml('aB3kL9mZ');
+        $mailable->assertSeeInHtml('KATA SANDI BARU SEMENTARA');
     }
 }

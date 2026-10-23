@@ -214,6 +214,10 @@ Route::middleware('guest.session')->group(function () {
     Route::post('/forgot-password', [AuthController::class, 'sendResetLinkEmail'])->middleware('throttle:5,1')->name('password.email');
     Route::get('/reset-password/{token}', [AuthController::class, 'showResetPassword'])->name('password.reset');
     Route::post('/reset-password', [AuthController::class, 'resetPassword'])->middleware('throttle:5,1')->name('password.update');
+
+    // Security incident: report unauthorized password change (signed URL)
+    Route::get('/security/unauthorized-password-change/{id}', [AuthController::class, 'reportUnauthorizedPasswordChange'])
+        ->name('security.report-unauthorized');
 });
 
 // ==========================================
@@ -221,6 +225,7 @@ Route::middleware('guest.session')->group(function () {
 // ==========================================
 Route::middleware('auth.session')->group(function () {
     Route::post('/logout', [AuthController::class, 'logout'])->name('logout');
+    Route::post('/change-password', [AuthController::class, 'changePassword'])->middleware('throttle:5,1')->name('password.change');
 
     Route::get('/dashboard', [PageController::class, 'dashboard'])
         ->middleware(['role:COUNSELOR,PRINCIPAL', 'permission:REPORT_VIEW'])
@@ -240,6 +245,7 @@ Route::middleware('auth.session')->group(function () {
         Route::get('/users', [AdminController::class, 'users'])->name('admin.users');
         Route::post('/users', [AdminController::class, 'storeUser'])->name('admin.users.store');
         Route::post('/users/{id}', [AdminController::class, 'updateUser'])->name('admin.users.update');
+        Route::post('/users/{id}/reset-password', [AdminController::class, 'resetPassword'])->name('admin.users.reset-password');
         Route::post('/users/{id}/delete', [AdminController::class, 'deleteUser'])->name('admin.users.delete');
 
         // SLA Configuration

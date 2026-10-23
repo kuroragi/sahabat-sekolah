@@ -96,6 +96,14 @@
                             <i data-lucide="pencil" class="w-3 h-3"></i> Edit
                         </button>
                         <button
+                            class="btn-reset-password flex items-center gap-1 bg-[#fff8eb] text-[#d97706] text-[9px] font-semibold px-2.5 py-1.5 rounded-lg hover:bg-[#fef3c7] transition-colors"
+                            data-id="{{ $user->id }}"
+                            data-name="{{ $user->name }}"
+                            data-email="{{ $user->email }}"
+                            title="Reset Password Pengguna">
+                            <i data-lucide="key-round" class="w-3 h-3"></i> Reset
+                        </button>
+                        <button
                             class="btn-delete flex items-center gap-1 bg-[#fff0f0] text-[#e6636a] text-[9px] font-semibold px-2.5 py-1.5 rounded-lg hover:bg-[#ffe2e3] transition-colors"
                             data-id="{{ $user->id }}"
                             data-name="{{ $user->name }}">
@@ -299,6 +307,33 @@
     </div>
 </div>
 
+{{-- ======================== MODAL: RESET PASSWORD ======================== --}}
+<div id="modal-reset-password" class="fixed inset-0 z-50 hidden items-center justify-center p-4" role="dialog" aria-modal="true" aria-labelledby="modal-reset-title">
+    <div class="absolute inset-0 bg-black/40 backdrop-blur-sm" id="modal-reset-backdrop"></div>
+    <div class="relative bg-white rounded-2xl shadow-2xl w-full max-w-sm p-7 animate-modal text-center">
+        <div class="w-14 h-14 rounded-full bg-[#fef3c7] text-[#d97706] flex items-center justify-center mx-auto mb-4">
+            <i data-lucide="key-round" class="w-7 h-7"></i>
+        </div>
+        <h2 id="modal-reset-title" class="font-extrabold text-[17px] text-[#193d6c] mb-2" style="font-family:'Plus Jakarta Sans'">Reset Kata Sandi?</h2>
+        <p class="text-[11px] text-[#8494a9] mb-4">
+            Kata sandi untuk <strong id="reset-user-name" class="text-[#315675]"></strong> akan direset menjadi <strong class="text-[#193d6c]">kata sandi acak 8 karakter</strong> baru dan langsung dikirimkan ke email <span id="reset-user-email" class="font-mono text-[#1675e8]"></span>.
+        </p>
+        <form id="reset-password-form" method="POST">
+            @csrf
+            <div class="flex justify-center gap-3">
+                <button type="button" id="modal-reset-cancel"
+                    class="px-5 py-2 text-[11px] font-semibold text-[#5c7b98] bg-[#f3f8fd] border border-[#dfebf5] rounded-lg hover:bg-[#e8f0f8] transition-colors">
+                    Batal
+                </button>
+                <button type="submit"
+                    class="flex items-center gap-2 px-5 py-2 text-[11px] font-bold bg-[#d97706] text-white rounded-lg hover:bg-[#b45309] transition-colors shadow-sm">
+                    <i data-lucide="key-round" class="w-4 h-4"></i> Ya, Reset Kata Sandi
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
 <style>
 .animate-modal { animation: modal-in 0.2s ease; }
 @keyframes modal-in { from { opacity:0; transform:scale(.96) translateY(8px); } to { opacity:1; transform:none; } }
@@ -394,12 +429,34 @@ document.addEventListener('DOMContentLoaded', function () {
     document.getElementById('modal-delete-cancel').addEventListener('click', () => closeModal(modalDelete));
     document.getElementById('modal-delete-backdrop').addEventListener('click', () => closeModal(modalDelete));
 
+    // ---- Reset Password Modal ----
+    const modalReset = document.getElementById('modal-reset-password');
+    const resetForm = document.getElementById('reset-password-form');
+    const resetName = document.getElementById('reset-user-name');
+    const resetEmail = document.getElementById('reset-user-email');
+
+    document.querySelectorAll('.btn-reset-password').forEach(btn => {
+        btn.addEventListener('click', () => {
+            const id = btn.dataset.id;
+            const name = btn.dataset.name;
+            const email = btn.dataset.email;
+
+            resetName.textContent = name;
+            resetEmail.textContent = email;
+            resetForm.action = `/admin/users/${id}/reset-password`;
+            openModal(modalReset);
+        });
+    });
+    document.getElementById('modal-reset-cancel').addEventListener('click', () => closeModal(modalReset));
+    document.getElementById('modal-reset-backdrop').addEventListener('click', () => closeModal(modalReset));
+
     // ---- Close on ESC ----
     document.addEventListener('keydown', e => {
         if (e.key === 'Escape') {
             closeModal(modalAdd);
             closeModal(modalEdit);
             closeModal(modalDelete);
+            closeModal(modalReset);
         }
     });
 });

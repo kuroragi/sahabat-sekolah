@@ -2,11 +2,14 @@
 
 namespace Tests\Feature;
 
+use App\Mail\PasswordChangedMail;
 use App\Mail\ResetPasswordMail;
+use App\Mail\SuspectedBreachAdminAlertMail;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Mail;
+use Illuminate\Support\Facades\URL;
 use Illuminate\Support\Str;
 use Tests\TestCase;
 
@@ -195,5 +198,167 @@ class PasswordResetTest extends TestCase
 
         $updatedUser = DB::table('users')->where('id', $this->userId)->first();
         $this->assertTrue(Hash::check('PasswordMobileBaru789#', $updatedUser->password));
+    }
+
+    public function test_user_can_change_own_password_and_receives_security_notification_email(): void
+    {
+        Mail::fake();
+
+        $session = [
+            'user_id' => $this->userId,
+            'user_name' => 'Guru BK Ratna',
+            'user_role' => 'COUNSELOR',
+            'school_npsn' => '10307412',
+        ];
+
+        $response = $this->withSession($session)->post('/change-password', [
+            'current_password' => 'passwordLama123',
+            'password' => 'PasswordBaru999#',
+            'password_confirmation' => 'PasswordBaru999#',
+        ]);
+
+        $response->assertRedirect();
+        $response->assertSessionHas('success');
+
+        $updatedUser = DB::table('users')->where('id', $this->userId)->first();
+        $this->assertTrue(Hash::check('PasswordBaru999#', $updatedUser->password));
+
+        Mail::assertQueued(PasswordChangedMail::class, function (PasswordChangedMail $mail) {
+            return $mail->hasTo($this->userEmail) &&
+                str_contains($mail->changeData['unauthorized_url'], 'security/unauthorized-password-change') &&
+                $mail->changeData['email'] === $this->userEmail;
+        });
+    }
+
+    public function test_user_cannot_change_password_with_incorrect_current_password(): void
+    {
+        $session = [
+            'user_id' => $this->userId,
+            'user_name' => 'Guru BK Ratna',
+            'user_role' => 'COUNSELOR',
+            'school_npsn' => '10307412',
+        ];
+
+        $response = $this->withSession($session)->post('/change-password', [
+            'current_password' => 'salah123',
+            'password' => 'PasswordBaru999#',
+            'password_confirmation' => 'PasswordBaru999#',
+        ]);
+
+        $response->assertSessionHas('error', 'Kata sandi saat ini tidak cocok.');
+
+        $user = DB::table('users')->where('id', $this->userId)->first();
+        $this->assertTrue(Hash::check('passwordLama123', $user->password));
+    }
+
+    public function test_unauthorized_password_change_report_deactivates_account_and_notifies_admin(): void
+    {
+        Mail::fake();
+
+        // Admin to receive emergency security notification
+        DB::table('users')->insert([
+            'name' => 'Admin Keamanan',
+            'email' => 'admin-sec@sahabat.test',
+            'password' => Hash::make('adminPass123'),
+            'role' => 'ADMIN',
+            'status' => 'ACTIVE',
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
+
+        $validSignedUrl = URL::temporarySignedRoute(
+            'security.report-unauthorized',
+            now()->addDays(7),
+            ['id' => $this->userId]
+        );
+
+        $response = $this->get($validSignedUrl);
+
+        $response->assertOk();
+        $response->assertSee('Akun Anda Telah Dinonaktifkan Sementara');
+        $response->assertSee($this->userEmail);
+
+        // Assert user status is now INACTIVE
+        $user = DB::table('users')->where('id', $this->userId)->first();
+        $this->assertEquals('INACTIVE', $user->status);
+
+        // Assert urgent notification inserted for Admin
+        $this->assertDatabaseHas('notifications', [
+            'recipient_name' => 'Administrator',
+            'type' => 'SECURITY_ALERT',
+            'priority' => 'URGENT',
+        ]);
+
+        // Assert audit trail logged
+        $this->assertDatabaseHas('audit_logs', [
+            'user_id' => $this->userId,
+            'action' => 'SUSPECTED_ACCOUNT_BREACH',
+        ]);
+
+        // Assert admin received emergency email
+        Mail::assertQueued(SuspectedBreachAdminAlertMail::class, function (SuspectedBreachAdminAlertMail $mail) {
+            return $mail->hasTo('admin-sec@sahabat.test') &&
+                $mail->incidentData['victim_email'] === $this->userEmail &&
+                $mail->incidentData['victim_name'] === 'Guru BK Ratna';
+        });
+
+        // Assert inactive user cannot log in
+        $loginResponse = $this->post('/login', [
+            'email' => $this->userEmail,
+            'password' => 'passwordLama123',
+        ]);
+
+        $loginResponse->assertSessionHas('error');
+        $this->assertStringContainsString('dinonaktifkan sementara', session('error'));
+    }
+
+    public function test_tampered_unauthorized_url_is_forbidden(): void
+    {
+        $validSignedUrl = URL::temporarySignedRoute(
+            'security.report-unauthorized',
+            now()->addDays(7),
+            ['id' => $this->userId]
+        );
+
+        $tamperedUrl = $validSignedUrl.'&tampered=1';
+
+        $response = $this->get($tamperedUrl);
+        $response->assertStatus(403);
+    }
+
+    public function test_security_emails_render_properly(): void
+    {
+        // 1. PasswordChangedMail
+        $mail1 = new PasswordChangedMail([
+            'name' => 'Ratna Sari',
+            'email' => 'ratna@sekolah.test',
+            'changed_at' => '23 Oktober 2026, 17:00',
+            'ip_address' => '192.168.1.10',
+            'user_agent' => 'Mozilla/5.0 TestBrowser',
+            'unauthorized_url' => 'http://localhost/security/unauthorized-password-change/1?sig=test',
+        ], 'Ratna Sari');
+
+        $mail1->assertSeeInHtml('Ratna Sari');
+        $mail1->assertSeeInHtml('ratna@sekolah.test');
+        $mail1->assertSeeInHtml('192.168.1.10');
+        $mail1->assertSeeInHtml('Amankan Akun Saya (Bukan Saya)');
+
+        // 2. SuspectedBreachAdminAlertMail
+        $mail2 = new SuspectedBreachAdminAlertMail([
+            'victim_name' => 'Ratna Sari',
+            'victim_email' => 'ratna@sekolah.test',
+            'victim_role' => 'COUNSELOR',
+            'victim_school' => 'SMP Negeri 2 Bukittinggi',
+            'reported_at' => '23 Oktober 2026, 17:05',
+            'ip_address' => '192.168.1.10',
+            'user_agent' => 'Mozilla/5.0 TestBrowser',
+            'admin_users_url' => 'http://localhost/admin/users',
+        ], 'Admin Utama');
+
+        $mail2->assertSeeInHtml('PERINGATAN INSIDEN KEAMANAN');
+        $mail2->assertSeeInHtml('ratna@sekolah.test');
+        $mail2->assertSeeInHtml('NONAKTIF (INACTIVE)');
+        $mail2->assertSeeInHtml('SMP Negeri 2 Bukittinggi');
+        $mail2->assertSeeInHtml('http://localhost/admin/users');
     }
 }
