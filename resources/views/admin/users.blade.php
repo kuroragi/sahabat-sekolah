@@ -120,7 +120,7 @@
         <div class="flex items-center justify-between mb-5">
             <div>
                 <h2 id="modal-add-title" class="font-extrabold text-[17px] text-[#193d6c]" style="font-family:'Plus Jakarta Sans'">Tambah Pengguna</h2>
-                <p class="text-[10px] text-[#8494a9] mt-1">Password awal akan disetel ke <code class="bg-gray-100 px-1 rounded">password</code></p>
+                <p class="text-[10px] text-[#8494a9] mt-1">Kata sandi acak 8 karakter akan dibuat dan otomatis dikirimkan ke email pengguna.</p>
             </div>
             <button id="modal-add-close" class="w-8 h-8 rounded-full bg-[#f3f7fb] text-[#7390b4] flex items-center justify-center hover:bg-[#e8eef5] transition-colors">
                 <i data-lucide="x" class="w-4 h-4"></i>

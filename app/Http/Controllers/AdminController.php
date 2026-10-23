@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Helpers\AConnect;
+use App\Mail\UserCreatedMail;
 use App\Models\AcademicPeriod;
 use App\Models\AchievementCategory;
 use App\Models\StudentAchievement;
@@ -12,6 +13,9 @@ use Illuminate\Database\UniqueConstraintViolationException;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Mail;
+use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
 
 class AdminController extends Controller
@@ -201,10 +205,12 @@ class AdminController extends Controller
             $schoolName = $schoolsMap[$data['school_npsn']] ?? null;
         }
 
+        $randomPassword = Str::random(8);
+
         try {
             DB::table('users')->insert($data + [
                 'school_name' => $schoolName,
-                'password' => Hash::make('password'),
+                'password' => Hash::make($randomPassword),
                 'created_at' => now(),
                 'updated_at' => now(),
             ]);
@@ -222,9 +228,28 @@ class AdminController extends Controller
             throw $e;
         }
 
+        try {
+            Mail::to($data['email'])->queue(new UserCreatedMail(
+                userData: [
+                    'name' => $data['name'],
+                    'email' => $data['email'],
+                    'role' => $data['role'],
+                    'school_name' => $schoolName,
+                    'password' => $randomPassword,
+                    'login_url' => route('login'),
+                ],
+                recipientName: $data['name'],
+            ));
+        } catch (\Throwable $e) {
+            Log::error('Gagal memasukkan email akun baru ke antrean (queue): '.$e->getMessage(), [
+                'email' => $data['email'],
+                'error' => $e->getMessage(),
+            ]);
+        }
+
         auditAction('CREATE_USER', 'USER', $data['email'], ['role' => $data['role'], 'school_npsn' => $data['school_npsn']]);
 
-        return back()->with('success', 'Pengguna berhasil dibuat. Password awal: password.');
+        return back()->with('success', "Pengguna berhasil dibuat. Kata sandi acak 8 karakter telah dikirimkan ke email {$data['email']}.");
     }
 
     public function updateUser(Request $request, int $id)

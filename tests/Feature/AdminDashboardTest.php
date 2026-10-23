@@ -2,10 +2,12 @@
 
 namespace Tests\Feature;
 
+use App\Mail\UserCreatedMail;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Mail;
 use Tests\TestCase;
 
 class AdminDashboardTest extends TestCase
@@ -19,6 +21,11 @@ class AdminDashboardTest extends TestCase
         parent::setUp();
 
         Http::fake([
+            '*/v1/data-sekolah*' => Http::response([
+                'data' => [
+                    ['npsn' => '10300074', 'nama_sekolah' => 'SMP Negeri 2 Bukittinggi'],
+                ],
+            ], 200),
             '*/rest/v1/sekolah*' => Http::response([
                 ['npsn' => '10300074', 'nama' => 'SMP Negeri 2 Bukittinggi'],
             ], 200),
@@ -149,6 +156,8 @@ class AdminDashboardTest extends TestCase
 
     public function test_store_user_normalizes_email_and_prevents_case_insensitive_duplicate(): void
     {
+        Mail::fake();
+
         // First user with mixed case and whitespace
         $response = $this->withSession($this->adminSession())
             ->from('/admin/users')
@@ -179,5 +188,62 @@ class AdminDashboardTest extends TestCase
 
         $responseDuplicate->assertRedirect('/admin/users');
         $responseDuplicate->assertSessionHasErrors(['email']);
+    }
+
+    public function test_store_user_generates_random_8_character_password_and_queues_welcome_email(): void
+    {
+        Mail::fake();
+
+        $response = $this->withSession($this->adminSession())
+            ->from('/admin/users')
+            ->post('/admin/users', [
+                'name' => 'Guru BK Baru',
+                'email' => 'guru.baru@sekolah.test',
+                'role' => 'COUNSELOR',
+                'school_npsn' => '10300074',
+            ]);
+
+        $response->assertRedirect('/admin/users');
+        $response->assertSessionHas('success');
+        $this->assertStringContainsString('guru.baru@sekolah.test', session('success'));
+
+        $user = DB::table('users')->where('email', 'guru.baru@sekolah.test')->first();
+        $this->assertNotNull($user);
+        $this->assertNotEquals('password', $user->password);
+
+        Mail::assertQueued(UserCreatedMail::class, function (UserCreatedMail $mail) use ($user) {
+            $hasTo = $mail->hasTo('guru.baru@sekolah.test');
+            $password = $mail->userData['password'];
+            $lengthIs8 = strlen($password) === 8;
+            $passwordMatchesHash = Hash::check($password, $user->password);
+            $roleMatches = $mail->userData['role'] === 'COUNSELOR';
+            $schoolMatches = $mail->userData['school_name'] === 'SMP Negeri 2 Bukittinggi';
+            $recipientNameMatches = $mail->recipientName === 'Guru BK Baru';
+
+            return $hasTo && $lengthIs8 && $passwordMatchesHash && $roleMatches && $schoolMatches && $recipientNameMatches;
+        });
+    }
+
+    public function test_user_created_mail_renders_properly(): void
+    {
+        $mailable = new UserCreatedMail(
+            userData: [
+                'name' => 'Budi Pratama',
+                'email' => 'budi.pratama@sekolah.test',
+                'role' => 'COUNSELOR',
+                'school_name' => 'SMP Negeri 2 Bukittinggi',
+                'password' => 'Xy7K9mP2',
+                'login_url' => 'http://localhost/login',
+            ],
+            recipientName: 'Budi Pratama',
+        );
+
+        $mailable->assertSeeInHtml('Budi Pratama');
+        $mailable->assertSeeInHtml('budi.pratama@sekolah.test');
+        $mailable->assertSeeInHtml('Guru BK');
+        $mailable->assertSeeInHtml('SMP Negeri 2 Bukittinggi');
+        $mailable->assertSeeInHtml('Xy7K9mP2');
+        $mailable->assertSeeInHtml('http://localhost/login');
+        $mailable->assertSeeInHtml('KATA SANDI SEMENTARA');
     }
 }
