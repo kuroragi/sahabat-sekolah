@@ -324,18 +324,135 @@ class ReportController extends Controller
             ]);
         }
 
-        return redirect()->route('cases.show', $caseNumber['number'])
-            ->with('success', 'Laporan berhasil dibuat dan masuk ke antrean Guru BK.');
+        if (session()->has('user_id')) {
+            return redirect()->route('cases.show', $caseNumber['number'])
+                ->with('success', 'Laporan berhasil dibuat dan masuk ke antrean Guru BK.');
+        }
+
+        return redirect()->route('reports.receipt')->with([
+            'report_number' => $caseNumber['number'],
+            'is_crisis' => $caseNumber['is_crisis'] ?? false,
+        ]);
     }
 
     public function receipt()
     {
-        abort_unless(session()->has('anonymous_token'), 404);
+        abort_unless(session()->has('report_number'), 404);
 
         return view('reports.receipt', [
             'reportNumber' => session('report_number'),
             'anonymousToken' => session('anonymous_token'),
             'isCrisis' => session('is_crisis', false),
         ]);
+    }
+
+    public function track(Request $request)
+    {
+        $rawQuery = (string) ($request->input('q') ?? $request->input('token') ?? $request->input('report_number') ?? '');
+        $query = trim($rawQuery);
+        $searched = ($query !== '');
+        $case = null;
+        $report = null;
+        $messages = collect();
+        $isAnonymousOwner = false;
+        $activeStep = 1;
+        $histories = collect();
+        $schoolName = null;
+        $token = null;
+
+        if ($searched) {
+            // 1. Cek apakah query cocok dengan token anonim (4 kata atau hash)
+            $tokenHash = AnonymousTokenHelper::hash($query);
+            $tokenRecord = DB::table('anonymous_report_tokens')
+                ->where('token_hash', $tokenHash)
+                ->where('status', true)
+                ->where(function ($q) {
+                    $q->whereNull('expires_at')->orWhere('expires_at', '>', now());
+                })
+                ->first();
+
+            if ($tokenRecord) {
+                $isAnonymousOwner = true;
+                $token = $query;
+                DB::table('anonymous_report_tokens')
+                    ->where('id', $tokenRecord->id)
+                    ->update(['last_access_at' => now(), 'updated_at' => now()]);
+
+                $report = DB::table('reports')->where('id', $tokenRecord->report_id)->first();
+                if ($report) {
+                    $case = DB::table('cases')->where('report_id', $report->id)->first();
+                    $messages = DB::table('anonymous_messages')
+                        ->where('report_id', $report->id)
+                        ->orderBy('created_at')
+                        ->get();
+                }
+            } else {
+                // 2. Cek apakah query cocok dengan nomor laporan atau nomor kasus
+                $cleanQuery = strtoupper($query);
+                $case = DB::table('cases')
+                    ->where('case_number', $cleanQuery)
+                    ->first();
+
+                if (! $case) {
+                    $report = DB::table('reports')->where('report_number', $cleanQuery)->first();
+                    if ($report) {
+                        $case = DB::table('cases')->where('report_id', $report->id)->first();
+                    }
+                } else {
+                    $report = DB::table('reports')->where('id', $case->report_id)->first();
+                }
+            }
+
+            if ($case && $report) {
+                // Ambil SLA
+                $case->sla = DB::table('case_slas')->where('case_id', $case->id)->first();
+
+                // Ambil Nama Sekolah
+                $schoolName = DB::table('users')
+                    ->where('school_npsn', $case->school_npsn)
+                    ->whereNotNull('school_name')
+                    ->value('school_name');
+
+                if (! $schoolName) {
+                    try {
+                        $schoolsMap = (new AConnect)->getSekolahMap();
+                        $schoolName = $schoolsMap[$case->school_npsn] ?? null;
+                    } catch (\Throwable $e) {
+                        $schoolName = null;
+                    }
+                }
+                $schoolName = $schoolName ?: 'Sekolah Lingkup Kota Bukittinggi';
+
+                // Ambil riwayat perubahan status
+                $histories = DB::table('case_status_histories')
+                    ->where('case_id', $case->id)
+                    ->orderBy('created_at', 'asc')
+                    ->get();
+
+                // Mapping 5 tahapan utama alur kasus
+                $statusStepMap = [
+                    'PENDING_RESPONSE' => 1,
+                    'UNDER_VERIFICATION' => 2,
+                    'WAITING_REPORTER_INFO' => 3,
+                    'IN_HANDLING' => 3,
+                    'RESOLVED' => 4,
+                    'CLOSED' => 5,
+                ];
+                $activeStep = $statusStepMap[$case->status] ?? 1;
+            }
+        }
+
+        return view('reports.track', compact(
+            'query',
+            'searched',
+            'case',
+            'report',
+            'isAnonymousOwner',
+            'token',
+            'messages',
+            'activeStep',
+            'histories',
+            'schoolName'
+        ));
     }
 }

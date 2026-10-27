@@ -17,15 +17,19 @@ class CaseController extends Controller
 {
     public function show(string $caseNumber)
     {
-        $case = DB::table('cases')
+        $query = DB::table('cases')
             ->join('reports', 'cases.report_id', '=', 'reports.id')
             ->leftJoin('case_slas', 'cases.id', '=', 'case_slas.case_id')
             ->where('cases.case_number', $caseNumber)
-            ->where('cases.school_npsn', session('school_npsn'))
             ->leftJoin('reporter_identities', 'reports.id', '=', 'reporter_identities.report_id')
             ->leftJoin('students', 'reporter_identities.student_id', '=', 'students.id')
-            ->select('cases.*', 'reports.reporter_role', 'reports.identity_mode', 'reports.description', 'reports.submitted_at', 'reporter_identities.full_name as reporter_name', 'reporter_identities.contact as reporter_contact', 'reporter_identities.access_level as reporter_access_level', 'students.class_name as reporter_class', 'students.student_number as reporter_student_number', 'case_slas.status as sla_status', 'case_slas.response_deadline', 'case_slas.initial_response_at', 'case_slas.resolution_status', 'case_slas.resolution_deadline')
-            ->firstOrFail();
+            ->select('cases.*', 'reports.reporter_role', 'reports.identity_mode', 'reports.description', 'reports.submitted_at', 'reporter_identities.full_name as reporter_name', 'reporter_identities.contact as reporter_contact', 'reporter_identities.access_level as reporter_access_level', 'students.class_name as reporter_class', 'students.student_number as reporter_student_number', 'case_slas.status as sla_status', 'case_slas.response_deadline', 'case_slas.initial_response_at', 'case_slas.resolution_status', 'case_slas.resolution_deadline');
+
+        if (session('school_npsn')) {
+            $query->where('cases.school_npsn', session('school_npsn'));
+        }
+
+        $case = $query->firstOrFail();
 
         $schoolName = DB::table('users')->where('school_npsn', $case->school_npsn)->value('school_name');
         $case->school_name = $schoolName ?? '-';
@@ -51,7 +55,7 @@ class CaseController extends Controller
 
         DB::table('case_access_logs')->insert([
             'user_id' => session('user_id'), 'user_name' => session('user_name'), 'case_id' => $case->id,
-            'action' => 'VIEW_CASE', 'access_level' => session('user_role') === 'PRINCIPAL' ? 'CASE_SUMMARY' : 'CASE_FULL',
+            'action' => 'VIEW_CASE', 'access_level' => in_array(session('user_role'), ['PRINCIPAL', 'CITY_ADMIN']) ? 'CASE_SUMMARY' : 'CASE_FULL',
             'reason' => 'Case detail dibuka', 'ip_address' => request()->ip(), 'created_at' => now(), 'updated_at' => now(),
         ]);
         auditAction('VIEW_CASE', 'CASE', $case->case_number);
@@ -262,14 +266,23 @@ class CaseController extends Controller
     {
         $data = $request->validate([
             'reason' => ['required', 'string', 'min:5', 'max:500'],
-            'escalate_to' => ['nullable', 'in:PRINCIPAL,CITY_ADMIN'],
+            'escalate_to' => ['nullable', 'in:PRINCIPAL,CITY_ADMIN,CITY_DISDIK,CITY_PPA,CITY_SATGAS'],
         ]);
 
         $case = scopedCase($caseNumber);
         $escalatedBy = session('user_name', 'Bu Ratna Sari');
         $now = now();
         $target = $data['escalate_to'] ?? 'PRINCIPAL';
-        $notifiedTo = $target === 'CITY_ADMIN' ? 'Dinas Pendidikan Kota Bukittinggi' : 'Kepala Sekolah';
+
+        if ($target === 'CITY_PPA') {
+            $notifiedTo = 'UPTD PPA - DP3APPKB Kota Bukittinggi';
+        } elseif ($target === 'CITY_SATGAS') {
+            $notifiedTo = 'Satgas PPKSP Kota Bukittinggi (Disdik & UPTD PPA)';
+        } elseif ($target === 'CITY_DISDIK' || $target === 'CITY_ADMIN') {
+            $notifiedTo = 'Dinas Pendidikan Kota Bukittinggi';
+        } else {
+            $notifiedTo = 'Kepala Sekolah';
+        }
 
         DB::table('case_escalations')->insert([
             'case_id' => $case->id,
@@ -299,9 +312,46 @@ class CaseController extends Controller
             'notified_to' => $notifiedTo,
         ]);
 
-        if ($target === 'CITY_ADMIN') {
+        if ($target === 'CITY_PPA') {
             $recipients = DB::table('users')
-                ->where('role', 'ADMIN')
+                ->where('role', 'CITY_ADMIN')
+                ->where(function ($query) {
+                    $query->where('school_name', 'LIKE', '%PPA%')
+                        ->orWhere('school_name', 'LIKE', '%DP3APPKB%')
+                        ->orWhere('email', 'LIKE', '%ppa%');
+                })
+                ->whereNotNull('email')
+                ->where('email', '!=', '')
+                ->get();
+
+            if ($recipients->isEmpty()) {
+                $recipients = DB::table('users')
+                    ->where('role', 'CITY_ADMIN')
+                    ->whereNotNull('email')
+                    ->where('email', '!=', '')
+                    ->get();
+            }
+        } elseif ($target === 'CITY_DISDIK' || $target === 'CITY_ADMIN') {
+            $recipients = DB::table('users')
+                ->where('role', 'CITY_ADMIN')
+                ->where(function ($query) {
+                    $query->where('school_name', 'LIKE', '%Pendidikan%')
+                        ->orWhere('email', 'LIKE', '%dinas%');
+                })
+                ->whereNotNull('email')
+                ->where('email', '!=', '')
+                ->get();
+
+            if ($recipients->isEmpty()) {
+                $recipients = DB::table('users')
+                    ->where('role', 'CITY_ADMIN')
+                    ->whereNotNull('email')
+                    ->where('email', '!=', '')
+                    ->get();
+            }
+        } elseif ($target === 'CITY_SATGAS') {
+            $recipients = DB::table('users')
+                ->where('role', 'CITY_ADMIN')
                 ->whereNotNull('email')
                 ->where('email', '!=', '')
                 ->get();
@@ -315,12 +365,29 @@ class CaseController extends Controller
 
             if ($recipients->isEmpty()) {
                 $recipients = DB::table('users')
-                    ->where('role', 'ADMIN')
+                    ->where('role', 'CITY_ADMIN')
                     ->whereNotNull('email')
                     ->where('email', '!=', '')
                     ->get();
+
+                if ($recipients->isEmpty()) {
+                    $recipients = DB::table('users')
+                        ->where('role', 'ADMIN')
+                        ->whereNotNull('email')
+                        ->where('email', '!=', '')
+                        ->get();
+                }
                 $notifiedTo = 'Dinas Pendidikan Kota Bukittinggi (Fallback)';
             }
+        }
+
+        // Global fallback to ADMIN if no recipient found
+        if ($recipients->isEmpty()) {
+            $recipients = DB::table('users')
+                ->where('role', 'ADMIN')
+                ->whereNotNull('email')
+                ->where('email', '!=', '')
+                ->get();
         }
 
         if ($recipients->isNotEmpty()) {
@@ -356,25 +423,26 @@ class CaseController extends Controller
                 'escalated_by' => $escalatedBy,
                 'reason' => $data['reason'],
                 'escalated_at' => $now,
+                'notified_to' => $notifiedTo,
             ];
 
-            foreach ($recipients as $principal) {
+            foreach ($recipients as $recipient) {
                 try {
-                    Mail::to($principal->email)->queue(new CaseEscalatedPrincipalMail(
+                    Mail::to($recipient->email)->queue(new CaseEscalatedPrincipalMail(
                         caseData: $caseData,
                         escalationData: $escalationData,
-                        recipientName: $principal->name ?? ($target === 'CITY_ADMIN' ? 'Admin Dinas' : 'Kepala Sekolah'),
+                        recipientName: $recipient->name ?? $notifiedTo,
                     ));
                 } catch (\Throwable $e) {
                     Log::error('Gagal memasukkan notifikasi email eskalasi ke antrean (queue): '.$e->getMessage(), [
-                        'principal_email' => $principal->email,
+                        'recipient_email' => $recipient->email,
                         'case_number' => $case->case_number,
                     ]);
                 }
             }
         }
 
-        return back()->with('success', 'Kasus berhasil dieskalasikan kepada Kepala Sekolah.');
+        return back()->with('success', "Kasus berhasil dieskalasikan kepada {$notifiedTo}.");
     }
 
     public function addNote(Request $request, string $caseNumber)

@@ -193,13 +193,47 @@ Seluruh paket kerja Fase 1 telah diimplementasikan, diformat sesuai standar Lara
    - Seluruh pemanggilan endpoint `AConnect` (`getDataSekolah`, `getDataSiswa`, `getDataKelas`, `getDataSiswaKelas`, `healthCheck`) dibungkus dengan *timeout* 5 detik dan blok *defensive try-catch*.
    - Sekolah atau siswa yang belum terdata di microservice Pemkot Bukittinggi tidak akan merusak alur aplikasi (tidak memicu 500 error), melainkan dialihkan secara anggun ke tampilan cadangan atau pencatatan manual.
 
+9. **Paket 9: Portal & URL Publik Pelacak Posisi Laporan (`/track`)** [STATUS: SELESAI]
+   - Menyediakan endpoint khusus publik `GET /track` (dan alias `/reports/track`) di mana pelapor dapat memantau secara transparan dan aman posisi tahapan penanganan kasus mereka.
+   - Mendukung dua mode pelacakan ramah anak & privasi terjaga:
+     1. **Kunci Rahasia 4 Kata** (khusus pelapor anonim): Membuka posisi tahapan + mengaktifkan ruang percakapan dua arah terenkripsi dengan Guru BK langsung di halaman pelacak.
+     2. **Nomor Registrasi Laporan** (misal `SS-2026-09-0001`): Menampilkan posisi tahapan tanpa membocorkan catatan internal atau identitas sensitif.
+   - **Stepper Visual 5 Tahapan Terstruktur:**
+     1. *Laporan Masuk (PENDING_RESPONSE)*: Diterima aman oleh sistem.
+     2. *Verifikasi & Asesmen Awal (UNDER_VERIFICATION)*: Pemeriksaan bukti & risiko oleh Guru BK.
+     3. *Proses Penanganan Kasus (IN_HANDLING / WAITING_REPORTER_INFO)*: Tindakan aktif, konseling, mediasi; dengan highlight khusus bila Guru BK menunggu tanggapan pelapor.
+     4. *Penyelesaian Kasus (RESOLVED)*: Substansi kasus selesai ditangani.
+     5. *Selesai & Ditutup (CLOSED)*: Dokumen penyelesaian lengkap & resmi diarsipkan.
+   - Terintegrasi dengan tombol *"Lacak Posisi Laporan"* pada tanda terima (`reports/receipt.blade.php`), bilah navigasi & beranda (`landing.blade.php`), serta kanal komunikasi anonim (`anonymous/channel.blade.php`).
+
+10. **Paket 10: Multi-Instansi Eskalasi Jenjang 3 Tingkat Kota (`CITY_ADMIN`: Disdik & UPTD PPA DP3APPKB)** [STATUS: SELESAI]
+    - **Penyediaan Akun Resmi Multi-Instansi:**
+      - Menambahkan migrasi database `2026_10_27_091500_add_city_admin_role_and_account.php` dan `2026_10_27_101000_add_uptd_ppa_city_admin_account.php`.
+      - Mendaftarkan dua akun instansi resmi tingkat kota:
+        1. **Dinas Pendidikan & Kebudayaan Kota Bukittinggi**: `dinas@sahabat.test` (`role: CITY_ADMIN`, `school_npsn: null`).
+        2. **UPTD PPA - DP3APPKB Kota Bukittinggi**: `ppa@sahabat.test` (`role: CITY_ADMIN`, `school_npsn: null`).
+    - **Pilihan Eskalasi Spesifik di Form Guru BK (`cases.show`):**
+      - Guru BK dapat memilih tujuan eskalasi yang sesuai dengan konteks dan jenis kasus:
+        1. *Jenjang 2: Kepala Sekolah* (penanganan internal satuan pendidikan).
+        2. *Jenjang 3: Dinas Pendidikan Kota Bukittinggi* (`CITY_DISDIK`: isu manajerial, kedinasan, sanksi administratif, pembinaan kurikulum).
+        3. *Jenjang 3: UPTD PPA - DP3APPKB* (`CITY_PPA`: kekerasan fisik berat, pelecehan/kekerasan seksual, perlindungan hukum & psikologis anak).
+        4. *Jenjang 3: Satgas PPKSP Kota* (`CITY_SATGAS`: gabungan Dinas Pendidikan dan UPTD PPA untuk situasi kritis/darurat lintas sektor).
+    - **Penyaluran Notifikasi & Email Cerdas (`CaseController::escalate`):**
+      - Sistem menyaring akun penerima email dan notifikasi secara tepat: jika ditujukan ke UPTD PPA, email terkirim ke `ppa@sahabat.test`; jika ke Disdik, email ke `dinas@sahabat.test`; jika ke Satgas Gabungan, terkirim ke kedua instansi sekaligus.
+    - **Pemisahan Cakupan Sekolah (School Scoping):**
+      - Akun staf sekolah (`COUNSELOR`, `PRINCIPAL`) terisolasi ketat pada NPSN masing-masing.
+      - Seluruh akun tingkat kota (`CITY_ADMIN`, `ADMIN`) memiliki `school_npsn = null`, sehingga memiliki hak akses lintas sekolah se-Kota Bukittinggi untuk memantau dan membuka detail kasus (`scopedCase` & `CaseController::show`).
+    - **Antarmuka Manajemen Pengguna (`/admin/users`):**
+      - Dropdown filter role dan modal tambah/ubah pengguna mendukung pemilihan instansi tingkat kota (*Dinas Pendidikan*, *UPTD PPA DP3APPKB*, *Satgas PPKSP*).
+      - Badge visual membedakan instansi secara tegas: badge indigo untuk `Disdik (City)` dan badge rose untuk `UPTD PPA (City)`.
+
 ---
 
 ### Hasil Verifikasi Pengujian Otomatis
 
 - **Feature Tests:**
-  - `tests/Feature/BusinessRulesTest.php`: **14 PASSED** (Token 4 kata, Exif, Panic Exit, Chips, Crisis red-flag, Reassignment, Fallback Madrasah, Jenjang 3 Eskalasi, SlaCalculator jam kerja, Daily Digest).
-  - `tests/Feature/AdminDashboardTest.php`: **8 PASSED** (Reset password via token aman 60 menit, RBAC admin).
+  - `tests/Feature/BusinessRulesTest.php`: **21 PASSED** (Token 4 kata, Exif, Panic Exit, Chips, Crisis red-flag, Reassignment, Fallback Madrasah, Jenjang 3 Eskalasi Disdik, Eskalasi UPTD PPA DP3APPKB, Eskalasi Satgas Gabungan, Akses Kasus Lintas Sekolah, SlaCalculator jam kerja, Daily Digest, Tracking token anonim, Tracking nomor laporan, Stepper 5 tahap, Pesan interaktif tracker).
+  - `tests/Feature/AdminDashboardTest.php`: **11 PASSED** (Pembuatan akun CITY_ADMIN Disdik, pembuatan akun CITY_ADMIN UPTD PPA dengan pilihan instansi, update role CITY_ADMIN, Reset password via token aman 60 menit, Normalisasi email, Chart & SLA Admin).
   - `tests/Feature/PasswordResetTest.php`: **13 PASSED** (Alur reset password mandiri).
-- **Full Test Suite:** **79 PASSED, 0 FAILED** (404 assertions).
-- **Code Style:** Lulus pemformatan Laravel Pint tanpa pelanggaran gaya kode.
+- **Full Test Suite:** **89 PASSED, 0 FAILED** (459 assertions).
+- **Code Style:** Lulus pemformatan Laravel Pint tanpa pelanggaran gaya kode (`{"tool":"pint","result":"passed"}`).

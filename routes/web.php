@@ -58,10 +58,12 @@ if (! function_exists('auditAction')) {
 if (! function_exists('scopedCase')) {
     function scopedCase(string $caseNumber): object
     {
-        return DB::table('cases')
-            ->where('case_number', $caseNumber)
-            ->where('school_npsn', session('school_npsn'))
-            ->firstOrFail();
+        $query = DB::table('cases')->where('case_number', $caseNumber);
+        if (session('school_npsn')) {
+            $query->where('school_npsn', session('school_npsn'));
+        }
+
+        return $query->firstOrFail();
     }
 }
 
@@ -205,6 +207,11 @@ Route::get('/test-email', function (Request $request): JsonResponse {
 Route::get('/reports/create', [ReportController::class, 'create'])->name('reports.create');
 Route::post('/reports', [ReportController::class, 'store'])->middleware('throttle:10,1')->name('reports.store');
 Route::get('/reports/receipt', [ReportController::class, 'receipt'])->name('reports.receipt');
+Route::get('/track', [ReportController::class, 'track'])->name('reports.track');
+Route::get('/reports/track', fn () => redirect()->route('reports.track'));
+Route::post('/track/message', [AnonymousController::class, 'sendMessage'])
+    ->middleware('throttle:5,1')
+    ->name('reports.track.message');
 
 // Anonymous Channel
 Route::get('/anonymous-channel', [AnonymousController::class, 'channel'])->name('anonymous.channel');
@@ -245,16 +252,16 @@ Route::middleware('auth.session')->group(function () {
         ->name('principal.index');
 
     // ==========================================
-    // Admin
+    // Admin & City Admin
     // ==========================================
-    Route::prefix('admin')->middleware(['role:ADMIN', 'permission:USER_MANAGE'])->group(function () {
+    Route::prefix('admin')->middleware(['role:ADMIN,CITY_ADMIN', 'permission:USER_MANAGE'])->group(function () {
         Route::get('/', [AdminController::class, 'index'])->name('admin.index');
         Route::get('/schools', [AdminController::class, 'schools'])->name('admin.schools');
 
         // User Management
         Route::get('/users', [AdminController::class, 'users'])->name('admin.users');
         Route::post('/users', [AdminController::class, 'storeUser'])->name('admin.users.store');
-        Route::post('/users/{id}', [AdminController::class, 'updateUser'])->name('admin.users.update');
+        Route::match(['post', 'put'], '/users/{id}', [AdminController::class, 'updateUser'])->name('admin.users.update');
         Route::post('/users/{id}/reset-password', [AdminController::class, 'resetPassword'])->name('admin.users.reset-password');
         Route::post('/users/{id}/delete', [AdminController::class, 'deleteUser'])->name('admin.users.delete');
 
@@ -264,7 +271,7 @@ Route::middleware('auth.session')->group(function () {
     });
 
     // Admin Master Data
-    Route::prefix('admin/master-data')->middleware(['role:ADMIN', 'permission:MASTER_DATA_MANAGE'])->group(function () {
+    Route::prefix('admin/master-data')->middleware(['role:ADMIN,CITY_ADMIN', 'permission:MASTER_DATA_MANAGE'])->group(function () {
         Route::get('/', [AdminController::class, 'masterData'])->name('admin.master-data');
         Route::post('/categories', [AdminController::class, 'storeCategory'])->name('admin.categories.store');
         Route::post('/subcategories', [AdminController::class, 'storeSubcategory'])->name('admin.subcategories.store');
@@ -289,7 +296,7 @@ Route::middleware('auth.session')->group(function () {
     // ==========================================
     // Notifications
     // ==========================================
-    Route::middleware(['role:COUNSELOR,PRINCIPAL', 'permission:NOTIFICATION_VIEW'])->group(function () {
+    Route::middleware(['role:COUNSELOR,PRINCIPAL,ADMIN,CITY_ADMIN', 'permission:NOTIFICATION_VIEW'])->group(function () {
         Route::get('/notifications', [NotificationController::class, 'index'])->name('notifications.index');
         Route::post('/notifications/read-selected', [NotificationController::class, 'readSelected'])->name('notifications.read-selected');
         Route::post('/notifications/read-all', [NotificationController::class, 'readAll'])->name('notifications.read-all');
@@ -299,7 +306,7 @@ Route::middleware('auth.session')->group(function () {
     // ==========================================
     // Statistics
     // ==========================================
-    Route::middleware(['role:COUNSELOR,PRINCIPAL', 'permission:STATISTICS_VIEW'])->group(function () {
+    Route::middleware(['role:COUNSELOR,PRINCIPAL,ADMIN,CITY_ADMIN', 'permission:STATISTICS_VIEW'])->group(function () {
         Route::get('/statistics', [StatisticsController::class, 'index'])->name('statistics.index');
         Route::get('/statistics/export', [StatisticsController::class, 'export'])->name('statistics.export');
     });
@@ -310,11 +317,11 @@ Route::middleware('auth.session')->group(function () {
     Route::prefix('cases')->group(function () {
         // View
         Route::get('/{caseNumber}', [CaseController::class, 'show'])
-            ->middleware(['role:COUNSELOR,PRINCIPAL', 'permission:CASE_VIEW'])
+            ->middleware(['role:COUNSELOR,PRINCIPAL,ADMIN,CITY_ADMIN', 'permission:CASE_VIEW'])
             ->name('cases.show');
 
         Route::get('/{caseNumber}/print', [CaseController::class, 'printReport'])
-            ->middleware(['role:COUNSELOR,PRINCIPAL', 'permission:CASE_VIEW'])
+            ->middleware(['role:COUNSELOR,PRINCIPAL,ADMIN,CITY_ADMIN', 'permission:CASE_VIEW'])
             ->name('cases.print');
 
         // Update endpoints (Counselor only)

@@ -77,6 +77,7 @@
                     </div>
                 </div>
 
+                @if (!empty($anonymousToken))
                 <div class="bg-white border-2 border-dashed border-blue-200 rounded-xl p-4 text-center">
                     <span class="text-xs font-bold text-blue-600 uppercase tracking-wider block mb-1">Kunci Rahasia Laporanmu (4 Kata)</span>
                     <div class="token-pill text-white py-3 px-4 rounded-xl font-mono text-sm md:text-lg font-bold my-2 shadow-inner select-all" id="anonymous-token">
@@ -96,16 +97,33 @@
                 <p class="text-[11px] text-slate-400 text-center mt-3 leading-relaxed">
                     Catat atau simpan 4 kata rahasia di atas. Kamu dapat memakainya kapan saja untuk melihat status penanganan dan membalas pesan Guru BK tanpa pernah diketahui siapa dirimu.
                 </p>
+                @else
+                <div class="bg-blue-50 border border-blue-200 rounded-xl p-4 text-center">
+                    <span class="text-xs font-bold text-blue-700 uppercase tracking-wider block mb-1">Nomor Registrasi Laporan</span>
+                    <div class="text-slate-900 py-2 px-4 rounded-xl font-mono text-lg md:text-xl font-extrabold my-1 select-all">
+                        {{ $reportNumber }}
+                    </div>
+                    <p class="text-xs text-slate-600 mt-1">
+                        Gunakan nomor ini kapan saja untuk memantau posisi dan perkembangan penanganan kasusmu oleh Guru BK.
+                    </p>
+                </div>
+                @endif
             </div>
 
             <!-- Tombol Aksi -->
             <div class="flex flex-col sm:flex-row gap-3">
-                <a href="{{ route('anonymous.channel', ['token' => $anonymousToken]) }}" class="flex-1 inline-flex items-center justify-center gap-2 bg-blue-600 hover:bg-blue-700 text-white font-semibold text-sm px-5 py-3 rounded-xl shadow-md shadow-blue-500/20 transition-all text-center">
+                <a href="{{ route('reports.track', ['q' => $anonymousToken ?? $reportNumber]) }}" class="flex-1 inline-flex items-center justify-center gap-2 bg-blue-600 hover:bg-blue-700 text-white font-semibold text-sm px-5 py-3 rounded-xl shadow-md shadow-blue-500/20 transition-all text-center">
+                    <i data-lucide="compass" class="w-4 h-4"></i>
+                    <span>Lacak Posisi Laporan</span>
+                </a>
+                @if (!empty($anonymousToken))
+                <a href="{{ route('anonymous.channel', ['token' => $anonymousToken]) }}" class="inline-flex items-center justify-center gap-2 bg-emerald-600 hover:bg-emerald-700 text-white font-semibold text-sm px-5 py-3 rounded-xl shadow-md shadow-emerald-500/20 transition-all text-center">
                     <i data-lucide="message-square" class="w-4 h-4"></i>
                     <span>Buka Ruang Obrolan Rahasia</span>
                 </a>
+                @endif
                 <a href="{{ url('/') }}" class="inline-flex items-center justify-center gap-2 bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold text-sm px-5 py-3 rounded-xl transition-colors text-center">
-                    <span>Kembali ke Beranda</span>
+                    <span>Beranda</span>
                 </a>
             </div>
         </main>

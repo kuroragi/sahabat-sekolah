@@ -70,6 +70,11 @@ class AnonymousController extends Controller
 
         notifyCounselor('ANONYMOUS_MESSAGE', 'Pesan anonim baru', 'Pelapor mengirim informasi tambahan pada laporan.', $caseNumber, 'HIGH');
 
+        if ($request->input('redirect_to') === 'track') {
+            return redirect()->route('reports.track', ['q' => $tokenClean])
+                ->with('success', 'Pesan Anda berhasil dikirim ke Guru BK.');
+        }
+
         return redirect()->route('anonymous.channel', ['token' => $tokenClean])
             ->with('success', 'Pesan anonim berhasil dikirim.');
     }

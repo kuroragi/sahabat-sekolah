@@ -137,7 +137,13 @@ class AdminController extends Controller
             ->limit(5)
             ->get()
             ->map(function ($user) use ($schoolsMap) {
-                $user->school_name = $schoolsMap[$user->school_npsn] ?? '-';
+                if ($user->role === 'CITY_ADMIN') {
+                    $user->school_name = $user->school_name ?: 'Dinas Pendidikan Kota Bukittinggi';
+                } elseif ($user->role === 'ADMIN') {
+                    $user->school_name = $user->school_name ?: 'Administrator Sistem';
+                } else {
+                    $user->school_name = $schoolsMap[$user->school_npsn] ?? ($user->school_name ?? '-');
+                }
 
                 return $user;
             });
@@ -201,7 +207,13 @@ class AdminController extends Controller
     {
         $schoolsMap = (new AConnect)->getSekolahMap();
         $users = DB::table('users')->orderBy('name')->get()->map(function ($user) use ($schoolsMap) {
-            $user->school_name = $schoolsMap[$user->school_npsn] ?? '-';
+            if ($user->role === 'CITY_ADMIN') {
+                $user->school_name = $user->school_name ?: 'Dinas Pendidikan Kota Bukittinggi';
+            } elseif ($user->role === 'ADMIN') {
+                $user->school_name = $user->school_name ?: 'Administrator Sistem';
+            } else {
+                $user->school_name = $schoolsMap[$user->school_npsn] ?? ($user->school_name ?? '-');
+            }
 
             return $user;
         });
@@ -218,8 +230,9 @@ class AdminController extends Controller
         $data = $request->validate([
             'name' => ['required', 'string', 'max:255'],
             'email' => ['required', 'string', 'email', 'max:255', 'unique:users,email'],
-            'role' => ['required', 'in:COUNSELOR,PRINCIPAL,ADMIN'],
+            'role' => ['required', 'in:COUNSELOR,PRINCIPAL,ADMIN,CITY_ADMIN'],
             'school_npsn' => ['nullable', 'string'],
+            'city_agency' => ['nullable', 'string'],
         ], [
             'name.required' => 'Nama pengguna wajib diisi.',
             'email.required' => 'Email pengguna wajib diisi.',
@@ -232,7 +245,13 @@ class AdminController extends Controller
         if (! empty($data['school_npsn'])) {
             $schoolsMap = (new AConnect)->getSekolahMap();
             $schoolName = $schoolsMap[$data['school_npsn']] ?? null;
+        } elseif ($data['role'] === 'CITY_ADMIN') {
+            $schoolName = $request->input('city_agency') ?: ($request->input('agency_name') ?: 'Dinas Pendidikan Kota Bukittinggi');
+        } elseif ($data['role'] === 'ADMIN') {
+            $schoolName = 'Administrator Sistem';
         }
+
+        unset($data['city_agency']);
 
         $randomPassword = Str::random(8);
 
@@ -285,8 +304,9 @@ class AdminController extends Controller
     {
         $data = $request->validate([
             'name' => ['required', 'string', 'max:255'],
-            'role' => ['required', 'in:COUNSELOR,PRINCIPAL,ADMIN'],
+            'role' => ['required', 'in:COUNSELOR,PRINCIPAL,ADMIN,CITY_ADMIN'],
             'school_npsn' => ['nullable', 'string'],
+            'city_agency' => ['nullable', 'string'],
             'status' => ['nullable', 'in:ACTIVE,INACTIVE'],
         ], [
             'name.required' => 'Nama pengguna wajib diisi.',
@@ -297,10 +317,14 @@ class AdminController extends Controller
         if (! empty($data['school_npsn'])) {
             $schoolsMap = (new AConnect)->getSekolahMap();
             $schoolName = $schoolsMap[$data['school_npsn']] ?? null;
+        } elseif ($data['role'] === 'CITY_ADMIN') {
+            $schoolName = $request->input('city_agency') ?: ($request->input('agency_name') ?: 'Dinas Pendidikan Kota Bukittinggi');
+        } elseif ($data['role'] === 'ADMIN') {
+            $schoolName = 'Administrator Sistem';
         }
 
         $status = $data['status'] ?? 'ACTIVE';
-        unset($data['status']);
+        unset($data['status'], $data['city_agency']);
 
         DB::table('users')->where('id', $id)->update($data + [
             'school_name' => $schoolName,

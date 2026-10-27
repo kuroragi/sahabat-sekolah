@@ -57,7 +57,7 @@ class AuthController extends Controller
         ]);
 
         $destination = match ($user->role) {
-            'ADMIN' => route('admin.index'),
+            'ADMIN', 'CITY_ADMIN' => route('admin.index'),
             'PRINCIPAL' => route('principal.index'),
             default => route('dashboard'),
         };

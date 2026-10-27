@@ -736,17 +736,19 @@
             @if (session('user_role') === 'COUNSELOR')
                 <div class="case-panel escalation-panel">
                     <h2>Eskalasi Kasus</h2>
-                    <p>Kirim notifikasi prioritas kepada Kepala Sekolah atau Dinas Pendidikan Kota Bukittinggi.</p>
+                    <p>Kirim notifikasi prioritas kepada Kepala Sekolah, Dinas Pendidikan, UPTD PPA (DP3APPKB), atau Satgas PPKSP Kota Bukittinggi.</p>
                     <form method="POST" action="{{ route('cases.escalate', $case->case_number) }}">
                         @csrf
                         <div style="margin-bottom: 8px;">
                             <label style="font-size: 11px; font-weight: 600; color: #475569; display: block; margin-bottom: 4px;">Tujuan Eskalasi</label>
                             <select name="escalate_to" style="width: 100%; padding: 6px 10px; border-radius: 6px; border: 1px solid #cbd5e1; font-size: 12px; background: #fff;">
                                 <option value="PRINCIPAL">Jenjang 2: Kepala Sekolah</option>
-                                <option value="CITY_ADMIN">Jenjang 3: Dinas Pendidikan Kota Bukittinggi</option>
+                                <option value="CITY_DISDIK">Jenjang 3: Dinas Pendidikan Kota Bukittinggi (Manajerial & Pembinaan)</option>
+                                <option value="CITY_PPA">Jenjang 3: UPTD PPA - DP3APPKB (Kekerasan Berat & Pendampingan Korban)</option>
+                                <option value="CITY_SATGAS">Jenjang 3: Satgas PPKSP Kota (Disdik & UPTD PPA Gabungan)</option>
                             </select>
                         </div>
-                        <textarea name="reason" rows="3" minlength="5" required placeholder="Jelaskan alasan eskalasi (misal: penanganan tingkat kota, situasi kritis, atau konflik internal)..."></textarea>
+                        <textarea name="reason" rows="3" minlength="5" required placeholder="Jelaskan alasan eskalasi (misal: penanganan tingkat kota, situasi kritis, pelecehan seksual, atau perlindungan khusus)..."></textarea>
                         <button class="secondary-button" type="submit"><i data-lucide="arrow-up-right"></i> Eskalasikan kasus</button>
                     </form>
                 </div>

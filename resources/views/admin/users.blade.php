@@ -19,6 +19,7 @@
         <select id="role-filter" class="border border-[#dfe8f1] rounded-lg text-[11px] bg-white text-[#315675] px-3 py-2 focus:outline-none focus:border-[#4d9ae4]">
             <option value="">Semua Role</option>
             <option value="ADMIN">Administrator</option>
+            <option value="CITY_ADMIN">Instansi Kota: Disdik & UPTD PPA (City Admin)</option>
             <option value="PRINCIPAL">Kepala Sekolah</option>
             <option value="COUNSELOR">Guru BK</option>
         </select>
@@ -61,8 +62,19 @@
                 </td>
                 <td class="px-3 py-3">
                     @php
-                        $roleColors = ['ADMIN' => 'bg-purple-100 text-purple-700', 'PRINCIPAL' => 'bg-blue-100 text-blue-700', 'COUNSELOR' => 'bg-emerald-100 text-emerald-700'];
-                        $roleLabels = ['ADMIN' => 'Admin', 'PRINCIPAL' => 'Kepsek', 'COUNSELOR' => 'Guru BK'];
+                        $isPpa = str_contains($user->school_name ?? '', 'PPA') || str_contains($user->school_name ?? '', 'DP3APPKB');
+                        $roleColors = [
+                            'ADMIN' => 'bg-purple-100 text-purple-700',
+                            'CITY_ADMIN' => $isPpa ? 'bg-rose-100 text-rose-700' : 'bg-indigo-100 text-indigo-700',
+                            'PRINCIPAL' => 'bg-blue-100 text-blue-700',
+                            'COUNSELOR' => 'bg-emerald-100 text-emerald-700',
+                        ];
+                        $roleLabels = [
+                            'ADMIN' => 'Administrator',
+                            'CITY_ADMIN' => $isPpa ? 'UPTD PPA (City)' : 'Disdik (City)',
+                            'PRINCIPAL' => 'Kepala Sekolah',
+                            'COUNSELOR' => 'Guru BK',
+                        ];
                     @endphp
                     <span class="px-2 py-1 rounded text-[9px] font-semibold {{ $roleColors[$user->role] ?? 'bg-gray-100 text-gray-600' }}">
                         {{ $roleLabels[$user->role] ?? $user->role }}
@@ -92,6 +104,7 @@
                             data-email="{{ $user->email }}"
                             data-role="{{ $user->role }}"
                             data-school="{{ $user->school_npsn }}"
+                            data-agency="{{ $user->school_name }}"
                             data-status="{{ $user->status ?? 'ACTIVE' }}">
                             <i data-lucide="pencil" class="w-3 h-3"></i> Edit
                         </button>
@@ -155,13 +168,14 @@
             <div class="grid grid-cols-2 gap-3">
                 <div>
                     <label class="block text-[10px] font-semibold text-[#496985] mb-1.5">Role <span class="text-red-500">*</span></label>
-                    <select name="role" class="w-full border border-[#dfe8f1] rounded-lg px-3 py-2.5 text-[11px] text-[#315675] bg-[#fbfdff] focus:outline-none focus:border-[#4d9ae4]">
+                    <select id="add-role" name="role" class="w-full border border-[#dfe8f1] rounded-lg px-3 py-2.5 text-[11px] text-[#315675] bg-[#fbfdff] focus:outline-none focus:border-[#4d9ae4]">
                         <option value="COUNSELOR" {{ old('role') === 'COUNSELOR' ? 'selected' : '' }}>Guru BK</option>
                         <option value="PRINCIPAL" {{ old('role') === 'PRINCIPAL' ? 'selected' : '' }}>Kepala Sekolah</option>
+                        <option value="CITY_ADMIN" {{ old('role') === 'CITY_ADMIN' ? 'selected' : '' }}>Instansi Kota / Satgas PPKSP (City Admin)</option>
                         <option value="ADMIN" {{ old('role') === 'ADMIN' ? 'selected' : '' }}>Administrator</option>
                     </select>
                 </div>
-                <div>
+                <div id="add-school-wrapper">
                     <label class="block text-[10px] font-semibold text-[#496985] mb-1.5">Sekolah</label>
                     <div class="tw-select-container relative w-full" data-name="school_npsn">
                         <select name="school_npsn" class="hidden">
@@ -186,6 +200,14 @@
                         </div>
                     </div>
                 </div>
+            </div>
+            <div id="add-city-agency-wrapper" class="hidden">
+                <label class="block text-[10px] font-semibold text-[#496985] mb-1.5">Instansi Tingkat Kota <span class="text-red-500">*</span></label>
+                <select name="city_agency" id="add-city-agency" class="w-full border border-[#dfe8f1] rounded-lg px-3 py-2.5 text-[11px] text-[#315675] bg-[#fbfdff] focus:outline-none focus:border-[#4d9ae4]">
+                    <option value="Dinas Pendidikan & Kebudayaan Kota Bukittinggi">Dinas Pendidikan & Kebudayaan Kota Bukittinggi</option>
+                    <option value="UPTD PPA - DP3APPKB Kota Bukittinggi">UPTD PPA (DP3APPKB Kota Bukittinggi)</option>
+                    <option value="Satgas PPKSP Kota Bukittinggi">Satgas PPKSP Kota Bukittinggi</option>
+                </select>
             </div>
             <div class="flex justify-end gap-2 pt-2 mt-1">
                 <button type="button" id="modal-add-cancel"
@@ -232,6 +254,7 @@
                     <select id="edit-role" name="role" class="w-full border border-[#dfe8f1] rounded-lg px-3 py-2.5 text-[11px] text-[#315675] bg-[#fbfdff] focus:outline-none focus:border-[#4d9ae4]">
                         <option value="COUNSELOR">Guru BK</option>
                         <option value="PRINCIPAL">Kepala Sekolah</option>
+                        <option value="CITY_ADMIN">Instansi Kota / Satgas PPKSP (City Admin)</option>
                         <option value="ADMIN">Administrator</option>
                     </select>
                 </div>
@@ -243,7 +266,15 @@
                     </select>
                 </div>
             </div>
-            <div>
+            <div id="edit-city-agency-wrapper" class="hidden">
+                <label class="block text-[10px] font-semibold text-[#496985] mb-1.5">Instansi Tingkat Kota <span class="text-red-500">*</span></label>
+                <select name="city_agency" id="edit-city-agency" class="w-full border border-[#dfe8f1] rounded-lg px-3 py-2.5 text-[11px] text-[#315675] bg-[#fbfdff] focus:outline-none focus:border-[#4d9ae4]">
+                    <option value="Dinas Pendidikan & Kebudayaan Kota Bukittinggi">Dinas Pendidikan & Kebudayaan Kota Bukittinggi</option>
+                    <option value="UPTD PPA - DP3APPKB Kota Bukittinggi">UPTD PPA (DP3APPKB Kota Bukittinggi)</option>
+                    <option value="Satgas PPKSP Kota Bukittinggi">Satgas PPKSP Kota Bukittinggi</option>
+                </select>
+            </div>
+            <div id="edit-school-wrapper">
                 <label class="block text-[10px] font-semibold text-[#496985] mb-1.5">Sekolah</label>
                 <div class="tw-select-container relative w-full" data-name="school_npsn">
                     <select id="edit-school" name="school_npsn" class="hidden">
@@ -369,12 +400,34 @@ document.addEventListener('DOMContentLoaded', function () {
 
     // ---- Add Modal ----
     const modalAdd = document.getElementById('modal-add');
-    document.getElementById('btn-add-user').addEventListener('click', () => openModal(modalAdd));
+    const addRoleSelect = document.getElementById('add-role');
+    function toggleAddRole() {
+        const role = addRoleSelect?.value;
+        const agencyWrapper = document.getElementById('add-city-agency-wrapper');
+        const schoolWrapper = document.getElementById('add-school-wrapper');
+        if (role === 'CITY_ADMIN') {
+            agencyWrapper?.classList.remove('hidden');
+            schoolWrapper?.classList.add('hidden');
+        } else if (role === 'ADMIN') {
+            agencyWrapper?.classList.add('hidden');
+            schoolWrapper?.classList.add('hidden');
+        } else {
+            agencyWrapper?.classList.add('hidden');
+            schoolWrapper?.classList.remove('hidden');
+        }
+    }
+    addRoleSelect?.addEventListener('change', toggleAddRole);
+
+    document.getElementById('btn-add-user').addEventListener('click', () => {
+        toggleAddRole();
+        openModal(modalAdd);
+    });
     document.getElementById('modal-add-close').addEventListener('click', () => closeModal(modalAdd));
     document.getElementById('modal-add-cancel').addEventListener('click', () => closeModal(modalAdd));
     document.getElementById('modal-add-backdrop').addEventListener('click', () => closeModal(modalAdd));
 
     @if ($errors->any())
+        toggleAddRole();
         openModal(modalAdd);
     @endif
 
@@ -396,6 +449,24 @@ document.addEventListener('DOMContentLoaded', function () {
 
     // ---- Edit Modal ----
     const modalEdit = document.getElementById('modal-edit');
+    const editRoleSelect = document.getElementById('edit-role');
+    function toggleEditRole() {
+        const role = editRoleSelect?.value;
+        const agencyWrapper = document.getElementById('edit-city-agency-wrapper');
+        const schoolWrapper = document.getElementById('edit-school-wrapper');
+        if (role === 'CITY_ADMIN') {
+            agencyWrapper?.classList.remove('hidden');
+            schoolWrapper?.classList.add('hidden');
+        } else if (role === 'ADMIN') {
+            agencyWrapper?.classList.add('hidden');
+            schoolWrapper?.classList.add('hidden');
+        } else {
+            agencyWrapper?.classList.add('hidden');
+            schoolWrapper?.classList.remove('hidden');
+        }
+    }
+    editRoleSelect?.addEventListener('change', toggleEditRole);
+
     document.querySelectorAll('.btn-edit').forEach(btn => {
         btn.addEventListener('click', () => {
             const d = btn.dataset;
@@ -404,6 +475,14 @@ document.addEventListener('DOMContentLoaded', function () {
             document.getElementById('edit-email').value = d.email;
             document.getElementById('edit-role').value = d.role;
             document.getElementById('edit-status').value = d.status;
+
+            if (d.role === 'CITY_ADMIN' && d.agency) {
+                const agencySelect = document.getElementById('edit-city-agency');
+                if (agencySelect) {
+                    agencySelect.value = d.agency;
+                }
+            }
+            toggleEditRole();
             
             const editSchool = document.getElementById('edit-school');
             editSchool.value = d.school || '';

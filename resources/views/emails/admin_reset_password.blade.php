@@ -28,11 +28,13 @@
                     @php
                         $roleLabels = [
                             'ADMIN' => 'Administrator',
+                            'CITY_ADMIN' => 'Dinas Pendidikan',
                             'PRINCIPAL' => 'Kepala Sekolah',
                             'COUNSELOR' => 'Guru BK',
                         ];
                         $roleBadgeClasses = [
                             'ADMIN' => 'badge-info',
+                            'CITY_ADMIN' => 'badge-primary',
                             'PRINCIPAL' => 'badge-warning',
                             'COUNSELOR' => 'badge-success',
                         ];

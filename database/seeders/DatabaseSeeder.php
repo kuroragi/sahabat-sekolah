@@ -55,6 +55,22 @@ class DatabaseSeeder extends Seeder
                 'school_npsn' => $smpn2Npsn,
                 'school_name' => $smpn2Name,
             ],
+            [
+                'email' => 'dinas@sahabat.test',
+                'name' => 'Dinas Pendidikan Kota Bukittinggi',
+                'password' => Hash::make('Dinas#Bkt2026!Secure'),
+                'role' => 'CITY_ADMIN',
+                'school_npsn' => null,
+                'school_name' => 'Dinas Pendidikan & Kebudayaan Kota Bukittinggi',
+            ],
+            [
+                'email' => 'ppa@sahabat.test',
+                'name' => 'UPTD PPA Kota Bukittinggi',
+                'password' => Hash::make('Ppa#Bkt2026!Secure'),
+                'role' => 'CITY_ADMIN',
+                'school_npsn' => null,
+                'school_name' => 'UPTD PPA - DP3APPKB Kota Bukittinggi',
+            ],
         ];
 
         foreach ($seedUsers as $user) {

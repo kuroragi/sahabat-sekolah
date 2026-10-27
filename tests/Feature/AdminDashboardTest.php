@@ -300,4 +300,92 @@ class AdminDashboardTest extends TestCase
         $mailable->assertSeeInHtml('Atur Ulang Kata Sandi');
         $mailable->assertSeeInHtml('60 menit');
     }
+
+    public function test_admin_can_create_city_admin_user_and_queues_email(): void
+    {
+        Mail::fake();
+
+        $response = $this->withSession($this->adminSession())
+            ->from('/admin/users')
+            ->post('/admin/users', [
+                'name' => 'Petugas Disdikpora',
+                'email' => 'petugas.disdik@bukittinggi.go.id',
+                'role' => 'CITY_ADMIN',
+                'school_npsn' => null,
+            ]);
+
+        $response->assertRedirect('/admin/users');
+        $response->assertSessionHas('success');
+
+        $user = DB::table('users')->where('email', 'petugas.disdik@bukittinggi.go.id')->first();
+        $this->assertNotNull($user);
+        $this->assertEquals('CITY_ADMIN', $user->role);
+        $this->assertEquals('Dinas Pendidikan Kota Bukittinggi', $user->school_name);
+        $this->assertNull($user->school_npsn);
+
+        Mail::assertQueued(UserCreatedMail::class, function (UserCreatedMail $mail) {
+            return $mail->hasTo('petugas.disdik@bukittinggi.go.id')
+                && $mail->userData['role'] === 'CITY_ADMIN'
+                && $mail->userData['school_name'] === 'Dinas Pendidikan Kota Bukittinggi';
+        });
+    }
+
+    public function test_admin_can_update_user_to_city_admin(): void
+    {
+        $userId = DB::table('users')->insertGetId([
+            'name' => 'Staff Uji',
+            'email' => 'staff.uji@example.test',
+            'password' => Hash::make('password'),
+            'role' => 'COUNSELOR',
+            'school_npsn' => '10300074',
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
+
+        $response = $this->withSession($this->adminSession())
+            ->put("/admin/users/{$userId}", [
+                'name' => 'Staff Uji Diperbarui',
+                'role' => 'CITY_ADMIN',
+                'school_npsn' => null,
+                'status' => 'ACTIVE',
+            ]);
+
+        $response->assertRedirect();
+        $response->assertSessionHas('success');
+
+        $updated = DB::table('users')->where('id', $userId)->first();
+        $this->assertEquals('CITY_ADMIN', $updated->role);
+        $this->assertEquals('Dinas Pendidikan Kota Bukittinggi', $updated->school_name);
+        $this->assertNull($updated->school_npsn);
+    }
+
+    public function test_admin_can_create_city_admin_user_specifically_for_uptd_ppa(): void
+    {
+        Mail::fake();
+
+        $response = $this->withSession($this->adminSession())
+            ->from('/admin/users')
+            ->post('/admin/users', [
+                'name' => 'Petugas UPTD PPA',
+                'email' => 'petugas.ppa@bukittinggikota.go.id',
+                'role' => 'CITY_ADMIN',
+                'city_agency' => 'UPTD PPA - DP3APPKB Kota Bukittinggi',
+                'school_npsn' => null,
+            ]);
+
+        $response->assertRedirect('/admin/users');
+        $response->assertSessionHas('success');
+
+        $user = DB::table('users')->where('email', 'petugas.ppa@bukittinggikota.go.id')->first();
+        $this->assertNotNull($user);
+        $this->assertEquals('CITY_ADMIN', $user->role);
+        $this->assertEquals('UPTD PPA - DP3APPKB Kota Bukittinggi', $user->school_name);
+        $this->assertNull($user->school_npsn);
+
+        Mail::assertQueued(UserCreatedMail::class, function (UserCreatedMail $mail) {
+            return $mail->hasTo('petugas.ppa@bukittinggikota.go.id')
+                && $mail->userData['role'] === 'CITY_ADMIN'
+                && $mail->userData['school_name'] === 'UPTD PPA - DP3APPKB Kota Bukittinggi';
+        });
+    }
 }

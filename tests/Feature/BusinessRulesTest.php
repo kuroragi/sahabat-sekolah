@@ -235,14 +235,21 @@ class BusinessRulesTest extends TestCase
     {
         Mail::fake();
 
-        DB::table('users')->insert([
-            'name' => 'Admin Disdikpora',
-            'email' => 'admin.disdik@bukittinggi.test',
-            'password' => Hash::make('password'),
-            'role' => 'ADMIN',
-            'created_at' => now(),
-            'updated_at' => now(),
-        ]);
+        $cityAdmin = DB::table('users')->where('email', 'dinas@sahabat.test')->first();
+        if (! $cityAdmin) {
+            $cityAdminId = DB::table('users')->insertGetId([
+                'name' => 'Dinas Pendidikan Bukittinggi',
+                'email' => 'dinas@sahabat.test',
+                'password' => Hash::make('password'),
+                'role' => 'CITY_ADMIN',
+                'school_npsn' => null,
+                'school_name' => 'Dinas Pendidikan Kota Bukittinggi',
+                'created_at' => now(),
+                'updated_at' => now(),
+            ]);
+        } else {
+            $cityAdminId = $cityAdmin->id;
+        }
 
         $response = $this->withSession($this->counselorSession())->post('/cases/'.$this->caseNumber.'/escalate', [
             'reason' => 'Perlu penanganan lintas sektor oleh Satgas PPKSP Kota Bukittinggi.',
@@ -256,7 +263,118 @@ class BusinessRulesTest extends TestCase
         ]);
 
         Mail::assertQueued(CaseEscalatedPrincipalMail::class, function (CaseEscalatedPrincipalMail $mail) {
-            return $mail->hasTo('admin.disdik@bukittinggi.test');
+            return $mail->hasTo('dinas@sahabat.test');
+        });
+
+        // Test CITY_ADMIN can access case detail directly across schools
+        $citySession = [
+            'user_id' => $cityAdminId,
+            'user_name' => 'Dinas Pendidikan Bukittinggi',
+            'user_role' => 'CITY_ADMIN',
+            'school_npsn' => null,
+        ];
+
+        $viewResponse = $this->withSession($citySession)->get('/cases/'.$this->caseNumber);
+        $viewResponse->assertOk();
+        $viewResponse->assertSee($this->caseNumber);
+    }
+
+    public function test_level_3_escalation_specifically_to_uptd_ppa(): void
+    {
+        Mail::fake();
+
+        $ppaAdmin = DB::table('users')->where('email', 'ppa@sahabat.test')->first();
+        if (! $ppaAdmin) {
+            $ppaAdminId = DB::table('users')->insertGetId([
+                'name' => 'UPTD PPA Kota Bukittinggi',
+                'email' => 'ppa@sahabat.test',
+                'password' => Hash::make('password'),
+                'role' => 'CITY_ADMIN',
+                'school_npsn' => null,
+                'school_name' => 'UPTD PPA - DP3APPKB Kota Bukittinggi',
+                'created_at' => now(),
+                'updated_at' => now(),
+            ]);
+        } else {
+            $ppaAdminId = $ppaAdmin->id;
+        }
+
+        $response = $this->withSession($this->counselorSession())->post('/cases/'.$this->caseNumber.'/escalate', [
+            'reason' => 'Dugaan kekerasan fisik berat dan trauma korban memerlukan pendampingan hukum dan psikologis UPTD PPA.',
+            'escalate_to' => 'CITY_PPA',
+        ]);
+
+        $response->assertRedirect();
+        $this->assertDatabaseHas('case_escalations', [
+            'case_id' => 1,
+            'notified_to' => 'UPTD PPA - DP3APPKB Kota Bukittinggi',
+        ]);
+
+        Mail::assertQueued(CaseEscalatedPrincipalMail::class, function (CaseEscalatedPrincipalMail $mail) {
+            return $mail->hasTo('ppa@sahabat.test');
+        });
+
+        // Pastikan akun UPTD PPA dapat login dan membuka kasus
+        $ppaSession = [
+            'user_id' => $ppaAdminId,
+            'user_name' => 'UPTD PPA Kota Bukittinggi',
+            'user_role' => 'CITY_ADMIN',
+            'school_npsn' => null,
+        ];
+
+        $viewResponse = $this->withSession($ppaSession)->get('/cases/'.$this->caseNumber);
+        $viewResponse->assertOk();
+        $viewResponse->assertSee($this->caseNumber);
+    }
+
+    public function test_level_3_escalation_to_satgas_gabungan_notifies_both_disdik_and_ppa(): void
+    {
+        Mail::fake();
+
+        // Pastikan akun Disdik dan PPA ada di database
+        if (! DB::table('users')->where('email', 'dinas@sahabat.test')->exists()) {
+            DB::table('users')->insert([
+                'name' => 'Dinas Pendidikan Bukittinggi',
+                'email' => 'dinas@sahabat.test',
+                'password' => Hash::make('password'),
+                'role' => 'CITY_ADMIN',
+                'school_npsn' => null,
+                'school_name' => 'Dinas Pendidikan & Kebudayaan Kota Bukittinggi',
+                'created_at' => now(),
+                'updated_at' => now(),
+            ]);
+        }
+
+        if (! DB::table('users')->where('email', 'ppa@sahabat.test')->exists()) {
+            DB::table('users')->insert([
+                'name' => 'UPTD PPA Kota Bukittinggi',
+                'email' => 'ppa@sahabat.test',
+                'password' => Hash::make('password'),
+                'role' => 'CITY_ADMIN',
+                'school_npsn' => null,
+                'school_name' => 'UPTD PPA - DP3APPKB Kota Bukittinggi',
+                'created_at' => now(),
+                'updated_at' => now(),
+            ]);
+        }
+
+        $response = $this->withSession($this->counselorSession())->post('/cases/'.$this->caseNumber.'/escalate', [
+            'reason' => 'Situasi darurat memerlukan tindakan gabungan Dinas Pendidikan dan UPTD PPA.',
+            'escalate_to' => 'CITY_SATGAS',
+        ]);
+
+        $response->assertRedirect();
+        $this->assertDatabaseHas('case_escalations', [
+            'case_id' => 1,
+            'notified_to' => 'Satgas PPKSP Kota Bukittinggi (Disdik & UPTD PPA)',
+        ]);
+
+        // Kedua instansi tingkat kota menerima notifikasi email
+        Mail::assertQueued(CaseEscalatedPrincipalMail::class, function (CaseEscalatedPrincipalMail $mail) {
+            return $mail->hasTo('dinas@sahabat.test');
+        });
+        Mail::assertQueued(CaseEscalatedPrincipalMail::class, function (CaseEscalatedPrincipalMail $mail) {
+            return $mail->hasTo('ppa@sahabat.test');
         });
     }
 
@@ -292,5 +410,105 @@ class BusinessRulesTest extends TestCase
         Mail::assertQueued(DailyDigestMail::class, function (DailyDigestMail $mail) {
             return $mail->hasTo('bk-test@example.test') && $mail->digestData['school_npsn'] === $this->schoolNpsn;
         });
+    }
+
+    public function test_reporter_can_track_case_via_anonymous_token(): void
+    {
+        $this->post('/reports', [
+            'school_npsn' => $this->schoolNpsn,
+            'reporter_role' => 'VICTIM',
+            'identity_mode' => 'ANONYMOUS',
+            'category' => 'Cyberbullying',
+            'description' => 'Laporan uji anonim untuk pengujian tracking posisi kasus.',
+        ]);
+
+        $token = session('anonymous_token');
+        $reportNumber = session('report_number');
+        $this->assertNotNull($token);
+
+        $response = $this->get(route('reports.track', ['q' => $token]));
+        $response->assertOk();
+        $response->assertSee('Posisi Penanganan Laporanmu');
+        $response->assertSee($reportNumber);
+        $response->assertSee('Laporan Masuk');
+        $response->assertSee('Ruang Obrolan Rahasia dengan Guru BK');
+        $response->assertSee('Mode Anonim Terlindungi');
+    }
+
+    public function test_reporter_can_track_case_via_report_number(): void
+    {
+        $this->post('/reports', [
+            'school_npsn' => $this->schoolNpsn,
+            'reporter_role' => 'WITNESS',
+            'identity_mode' => 'CONFIDENTIAL',
+            'reporter_name' => 'Ahmad Siswa',
+            'category' => 'Cyberbullying',
+            'description' => 'Laporan rahasia untuk pengujian tracking menggunakan nomor laporan.',
+        ]);
+
+        $reportNumber = session('report_number');
+        $this->assertNotNull($reportNumber);
+
+        $response = $this->get(route('reports.track', ['q' => $reportNumber]));
+        $response->assertOk();
+        $response->assertSee('Posisi Penanganan Laporanmu');
+        $response->assertSee($reportNumber);
+        $response->assertSee('Cyberbullying');
+        $response->assertSee('Kerahasiaan Terjaga');
+    }
+
+    public function test_tracking_page_shows_correct_five_step_progress_for_case_in_handling(): void
+    {
+        $case = DB::table('cases')->where('case_number', $this->caseNumber)->first();
+        DB::table('cases')->where('id', $case->id)->update(['status' => 'IN_HANDLING']);
+        DB::table('case_status_histories')->insert([
+            'case_id' => $case->id,
+            'old_status' => 'UNDER_VERIFICATION',
+            'new_status' => 'IN_HANDLING',
+            'reason' => 'Memulai konseling tatap muka dengan korban.',
+            'changed_by' => 'Guru BK',
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
+
+        $report = DB::table('reports')->where('id', $case->report_id)->first();
+
+        $response = $this->get(route('reports.track', ['q' => $report->report_number]));
+        $response->assertOk();
+        $response->assertSee('Tahap 3 dari 5');
+        $response->assertSee('Kasus Sedang Dalam Penanganan Aktif');
+        $response->assertSee('Memulai konseling tatap muka dengan korban.');
+    }
+
+    public function test_tracking_page_shows_friendly_not_found_message(): void
+    {
+        $response = $this->get(route('reports.track', ['q' => 'token-salah-yang-tidak-ada']));
+        $response->assertOk();
+        $response->assertSee('Laporan Tidak Ditemukan');
+        $response->assertSee('token-salah-yang-tidak-ada');
+    }
+
+    public function test_anonymous_reporter_can_send_message_from_tracking_page(): void
+    {
+        $this->post('/reports', [
+            'school_npsn' => $this->schoolNpsn,
+            'reporter_role' => 'VICTIM',
+            'identity_mode' => 'ANONYMOUS',
+            'category' => 'Cyberbullying',
+            'description' => 'Laporan uji anonim untuk pengujian kirim pesan via tracking page.',
+        ]);
+
+        $token = session('anonymous_token');
+
+        $response = $this->post(route('reports.track.message'), [
+            'token' => $token,
+            'message' => 'Ini pesan dikirim langsung dari halaman pelacak posisi laporan.',
+            'redirect_to' => 'track',
+        ]);
+
+        $response->assertRedirect(route('reports.track', ['q' => $token]));
+        $this->assertDatabaseHas('anonymous_messages', [
+            'message' => 'Ini pesan dikirim langsung dari halaman pelacak posisi laporan.',
+        ]);
     }
 }
