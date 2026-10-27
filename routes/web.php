@@ -34,13 +34,23 @@ if (! function_exists('notifyCounselor')) {
 }
 
 if (! function_exists('auditAction')) {
-    function auditAction(string $action, string $resourceType, string|int|null $resourceId = null, ?array $newValues = null, ?array $oldValues = null): void
+    function auditAction(string $action, string $resourceType, string|int|null $resourceId = null, ?array $newValues = null, ?array $oldValues = null, bool $anonymous = false): void
     {
+        $ip = $anonymous ? null : request()->ip();
+        $userAgent = $anonymous ? null : request()->userAgent();
+
         DB::table('audit_logs')->insert([
-            'user_id' => session('user_id'), 'user_name' => session('user_name'), 'action' => $action,
-            'resource_type' => $resourceType, 'resource_id' => $resourceId === null ? null : (string) $resourceId,
-            'old_values' => $oldValues ? json_encode($oldValues) : null, 'new_values' => $newValues ? json_encode($newValues) : null,
-            'ip_address' => request()->ip(), 'user_agent' => request()->userAgent(), 'created_at' => now(), 'updated_at' => now(),
+            'user_id' => $anonymous ? null : session('user_id'),
+            'user_name' => $anonymous ? 'Pelapor Anonim' : session('user_name'),
+            'action' => $action,
+            'resource_type' => $resourceType,
+            'resource_id' => $resourceId === null ? null : (string) $resourceId,
+            'old_values' => $oldValues ? json_encode($oldValues) : null,
+            'new_values' => $newValues ? json_encode($newValues) : null,
+            'ip_address' => $ip,
+            'user_agent' => $userAgent,
+            'created_at' => now(),
+            'updated_at' => now(),
         ]);
     }
 }
@@ -314,6 +324,11 @@ Route::middleware('auth.session')->group(function () {
             Route::post('/{caseNumber}/status', [CaseController::class, 'updateStatus'])->name('cases.status');
             Route::post('/{caseNumber}/action', [CaseController::class, 'processAction'])->name('cases.action');
         });
+
+        // Reassign Case Handler
+        Route::post('/{caseNumber}/reassign', [CaseController::class, 'reassign'])
+            ->middleware('role:COUNSELOR,PRINCIPAL')
+            ->name('cases.reassign');
 
         // Escalate
         Route::post('/{caseNumber}/escalate', [CaseController::class, 'escalate'])

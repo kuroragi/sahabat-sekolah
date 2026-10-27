@@ -11,8 +11,8 @@
 <div class="anonymous-shell">
     <main class="anonymous-card">
         <a class="back-link" href="{{ url('/') }}"><i data-lucide="arrow-left"></i> Kembali</a>
-        <div class="anonymous-intro"><div class="receipt-check"><i data-lucide="message-circle-heart"></i></div><span class="eyebrow">KOMUNIKASI AMAN</span><h1>Kanal anonim</h1><p>Gunakan token tanda terima Anda untuk berkomunikasi dengan Guru BK tanpa membuka identitas.</p></div>
-        <form class="token-form" method="GET" action="{{ route('anonymous.channel') }}"><label>Anonymous Token<input name="token" value="{{ $token }}" maxlength="12" placeholder="Contoh: AB12CD34EF56" required></label><button class="primary-button" type="submit"><i data-lucide="key-round"></i> Buka kanal</button></form>
+        <div class="anonymous-intro"><div class="receipt-check"><i data-lucide="message-circle-heart"></i></div><span class="eyebrow">KOMUNIKASI AMAN</span><h1>Kanal Komunikasi Anonim</h1><p>Gunakan token tanda terima Anda untuk berkomunikasi dengan Guru BK tanpa membuka identitas.</p></div>
+        <form class="token-form" method="GET" action="{{ route('anonymous.channel') }}"><label>Anonymous Token<input name="token" value="{{ $token }}" maxlength="100" placeholder="Contoh: kucing-biru-melompat-pagi atau AB12CD34EF56" required></label><button class="primary-button" type="submit"><i data-lucide="key-round"></i> Buka kanal</button></form>
         @if ($token && !$report)<div class="channel-alert"><i data-lucide="triangle-alert"></i>Token tidak valid atau sudah kedaluwarsa.</div>@endif
         @if (session('success'))<div class="channel-success"><i data-lucide="circle-check"></i>{{ session('success') }}</div>@endif
         @if ($report)

@@ -122,7 +122,62 @@ class CaseController extends Controller
             }
         }
 
-        return view('cases.show', compact('case', 'history', 'actions', 'evidences', 'resolutionDocuments', 'riskAssessment', 'riskHistory', 'notes', 'escalations', 'participants', 'parentInvolvements', 'students'));
+        $schoolStaff = DB::table('users')
+            ->where('school_npsn', $case->school_npsn)
+            ->where(function ($q) {
+                $q->where('status', 'ACTIVE')->orWhereNull('status');
+            })
+            ->orderBy('name')
+            ->get(['id', 'name', 'role']);
+
+        return view('cases.show', compact('case', 'history', 'actions', 'evidences', 'resolutionDocuments', 'riskAssessment', 'riskHistory', 'notes', 'escalations', 'participants', 'parentInvolvements', 'students', 'schoolStaff'));
+    }
+
+    public function reassign(Request $request, string $caseNumber)
+    {
+        $case = scopedCase($caseNumber);
+
+        $data = $request->validate([
+            'assigned_to' => ['required', 'string', 'max:255'],
+            'reason' => ['required', 'string', 'min:5', 'max:1000'],
+        ], [
+            'assigned_to.required' => 'Pilih atau masukkan nama penanggung jawab kasus.',
+            'reason.required' => 'Tuliskan alasan pengalihan penanggung jawab kasus.',
+            'reason.min' => 'Alasan pengalihan minimal 5 karakter.',
+        ]);
+
+        $oldAssignee = $case->assigned_to;
+
+        DB::table('cases')->where('id', $case->id)->update([
+            'assigned_to' => $data['assigned_to'],
+            'updated_at' => now(),
+        ]);
+
+        DB::table('case_notes')->insert([
+            'case_id' => $case->id,
+            'note_type' => 'INTERNAL',
+            'content' => "Pengalihan Penanggung Jawab Kasus dari '{$oldAssignee}' ke '{$data['assigned_to']}'. Alasan: {$data['reason']}",
+            'visibility' => 'PRIVATE_BK',
+            'created_by' => session('user_name', 'Staf'),
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
+
+        auditAction('REASSIGN_CASE', 'CASE', $caseNumber, [
+            'old_assignee' => $oldAssignee,
+            'new_assignee' => $data['assigned_to'],
+            'reason' => $data['reason'],
+        ]);
+
+        notifyCounselor(
+            'CASE_REASSIGNED',
+            'Pengalihan Penanggung Jawab Kasus',
+            "Kasus {$caseNumber} dialihkan kepada {$data['assigned_to']}.",
+            $caseNumber,
+            'NORMAL'
+        );
+
+        return back()->with('success', "Penanggung jawab kasus {$caseNumber} berhasil dialihkan ke {$data['assigned_to']}.");
     }
 
     public function updateParentInvolvement(Request $request, string $caseNumber)
@@ -205,33 +260,70 @@ class CaseController extends Controller
 
     public function escalate(Request $request, string $caseNumber)
     {
-        $data = $request->validate(['reason' => ['required', 'string', 'min:5', 'max:500']]);
+        $data = $request->validate([
+            'reason' => ['required', 'string', 'min:5', 'max:500'],
+            'escalate_to' => ['nullable', 'in:PRINCIPAL,CITY_ADMIN'],
+        ]);
 
         $case = scopedCase($caseNumber);
         $escalatedBy = session('user_name', 'Bu Ratna Sari');
         $now = now();
+        $target = $data['escalate_to'] ?? 'PRINCIPAL';
+        $notifiedTo = $target === 'CITY_ADMIN' ? 'Dinas Pendidikan Kota Bukittinggi' : 'Kepala Sekolah';
 
         DB::table('case_escalations')->insert([
-            'case_id' => $case->id, 'escalation_type' => 'MANUAL', 'reason' => $data['reason'],
-            'escalated_by' => $escalatedBy, 'created_at' => $now, 'updated_at' => $now,
+            'case_id' => $case->id,
+            'escalation_type' => 'MANUAL',
+            'reason' => $data['reason'],
+            'escalated_by' => $escalatedBy,
+            'notified_to' => $notifiedTo,
+            'status' => 'SENT',
+            'created_at' => $now,
+            'updated_at' => $now,
         ]);
 
         DB::table('notifications')->insert([
-            'recipient_name' => 'Kepala Sekolah', 'type' => 'MANUAL_ESCALATION',
-            'title' => 'Kasus dieskalasikan', 'message' => $case->case_number.' membutuhkan perhatian Kepala Sekolah.',
-            'priority' => 'URGENT', 'case_number' => $case->case_number, 'created_at' => $now, 'updated_at' => $now,
+            'recipient_name' => $notifiedTo,
+            'type' => 'MANUAL_ESCALATION',
+            'title' => 'Kasus dieskalasikan ke '.$notifiedTo,
+            'message' => $case->case_number.' membutuhkan perhatian '.$notifiedTo.'.',
+            'priority' => 'URGENT',
+            'case_number' => $case->case_number,
+            'created_at' => $now,
+            'updated_at' => $now,
         ]);
 
-        auditAction('ESCALATE_CASE', 'CASE', $case->case_number, ['reason' => $data['reason']]);
+        auditAction('ESCALATE_CASE', 'CASE', $case->case_number, [
+            'reason' => $data['reason'],
+            'escalate_to' => $target,
+            'notified_to' => $notifiedTo,
+        ]);
 
-        $principals = DB::table('users')
-            ->where('school_npsn', $case->school_npsn)
-            ->where('role', 'PRINCIPAL')
-            ->whereNotNull('email')
-            ->where('email', '!=', '')
-            ->get();
+        if ($target === 'CITY_ADMIN') {
+            $recipients = DB::table('users')
+                ->where('role', 'ADMIN')
+                ->whereNotNull('email')
+                ->where('email', '!=', '')
+                ->get();
+        } else {
+            $recipients = DB::table('users')
+                ->where('school_npsn', $case->school_npsn)
+                ->where('role', 'PRINCIPAL')
+                ->whereNotNull('email')
+                ->where('email', '!=', '')
+                ->get();
 
-        if ($principals->isNotEmpty()) {
+            if ($recipients->isEmpty()) {
+                $recipients = DB::table('users')
+                    ->where('role', 'ADMIN')
+                    ->whereNotNull('email')
+                    ->where('email', '!=', '')
+                    ->get();
+                $notifiedTo = 'Dinas Pendidikan Kota Bukittinggi (Fallback)';
+            }
+        }
+
+        if ($recipients->isNotEmpty()) {
             $schoolName = DB::table('users')
                 ->where('school_npsn', $case->school_npsn)
                 ->whereNotNull('school_name')
@@ -266,12 +358,12 @@ class CaseController extends Controller
                 'escalated_at' => $now,
             ];
 
-            foreach ($principals as $principal) {
+            foreach ($recipients as $principal) {
                 try {
                     Mail::to($principal->email)->queue(new CaseEscalatedPrincipalMail(
                         caseData: $caseData,
                         escalationData: $escalationData,
-                        recipientName: $principal->name ?? 'Kepala Sekolah',
+                        recipientName: $principal->name ?? ($target === 'CITY_ADMIN' ? 'Admin Dinas' : 'Kepala Sekolah'),
                     ));
                 } catch (\Throwable $e) {
                     Log::error('Gagal memasukkan notifikasi email eskalasi ke antrean (queue): '.$e->getMessage(), [
@@ -451,14 +543,15 @@ class CaseController extends Controller
     public function updateStatus(Request $request, string $caseNumber)
     {
         $data = $request->validate([
-            'status' => ['required', 'in:UNDER_VERIFICATION,IN_HANDLING,RESOLVED,CLOSED'],
+            'status' => ['required', 'in:UNDER_VERIFICATION,IN_HANDLING,WAITING_REPORTER_INFO,RESOLVED,CLOSED'],
             'reason' => ['nullable', 'string', 'max:500'],
         ]);
 
         $allowed = [
             'PENDING_RESPONSE' => ['UNDER_VERIFICATION'],
-            'UNDER_VERIFICATION' => ['IN_HANDLING', 'RESOLVED'],
-            'IN_HANDLING' => ['RESOLVED'],
+            'UNDER_VERIFICATION' => ['IN_HANDLING', 'WAITING_REPORTER_INFO', 'RESOLVED'],
+            'WAITING_REPORTER_INFO' => ['UNDER_VERIFICATION', 'IN_HANDLING'],
+            'IN_HANDLING' => ['WAITING_REPORTER_INFO', 'RESOLVED'],
             'RESOLVED' => ['CLOSED'],
         ];
 
@@ -541,7 +634,7 @@ class CaseController extends Controller
     public function processAction(Request $request, string $caseNumber)
     {
         $data = $request->validate([
-            'status' => ['nullable', 'in:UNDER_VERIFICATION,IN_HANDLING,RESOLVED,CLOSED'],
+            'status' => ['nullable', 'in:UNDER_VERIFICATION,IN_HANDLING,WAITING_REPORTER_INFO,RESOLVED,CLOSED'],
             'status_reason' => ['nullable', 'string', 'max:500'],
             'note_type' => ['nullable', 'in:VERIFICATION,HANDLING,COUNSELING,FOLLOW_UP,INTERNAL', 'required_with:note_content'],
             'note_content' => ['nullable', 'string', 'min:5', 'max:2000', 'required_with:note_type'],
@@ -558,8 +651,9 @@ class CaseController extends Controller
             if (! empty($data['status'])) {
                 $allowed = [
                     'PENDING_RESPONSE' => ['UNDER_VERIFICATION'],
-                    'UNDER_VERIFICATION' => ['IN_HANDLING', 'RESOLVED'],
-                    'IN_HANDLING' => ['RESOLVED'],
+                    'UNDER_VERIFICATION' => ['IN_HANDLING', 'WAITING_REPORTER_INFO', 'RESOLVED'],
+                    'WAITING_REPORTER_INFO' => ['UNDER_VERIFICATION', 'IN_HANDLING'],
+                    'IN_HANDLING' => ['WAITING_REPORTER_INFO', 'RESOLVED'],
                     'RESOLVED' => ['CLOSED'],
                 ];
 

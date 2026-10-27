@@ -268,17 +268,16 @@ class AdminDashboardTest extends TestCase
         $response->assertRedirect();
         $response->assertSessionHas('success');
 
-        $updatedUser = DB::table('users')->where('id', $counselorId)->first();
-        $this->assertFalse(Hash::check('passwordLama123', $updatedUser->password));
+        $resetTokenEntry = DB::table('password_reset_tokens')->where('email', 'counselor@school.test')->first();
+        $this->assertNotNull($resetTokenEntry);
 
-        Mail::assertQueued(AdminResetPasswordMail::class, function (AdminResetPasswordMail $mail) use ($updatedUser) {
+        Mail::assertQueued(AdminResetPasswordMail::class, function (AdminResetPasswordMail $mail) {
             $hasTo = $mail->hasTo('counselor@school.test');
-            $password = $mail->userData['password'];
-            $lengthIs8 = strlen($password) === 8;
-            $passwordMatchesHash = Hash::check($password, $updatedUser->password);
+            $hasUrl = str_contains($mail->userData['reset_url'], 'reset-password/');
             $roleMatches = $mail->userData['role'] === 'COUNSELOR';
+            $expiresMatches = ($mail->userData['expires_minutes'] ?? null) === 60;
 
-            return $hasTo && $lengthIs8 && $passwordMatchesHash && $roleMatches;
+            return $hasTo && $hasUrl && $roleMatches && $expiresMatches;
         });
     }
 
@@ -290,15 +289,15 @@ class AdminDashboardTest extends TestCase
                 'email' => 'counselor@school.test',
                 'role' => 'COUNSELOR',
                 'school_name' => 'SMP Negeri 2 Bukittinggi',
-                'password' => 'aB3kL9mZ',
-                'login_url' => 'http://localhost/login',
+                'reset_url' => 'http://localhost/reset-password/sample-token?email=counselor@school.test',
+                'expires_minutes' => 60,
             ],
             recipientName: 'Guru Konseling',
         );
 
         $mailable->assertSeeInHtml('Guru Konseling');
         $mailable->assertSeeInHtml('counselor@school.test');
-        $mailable->assertSeeInHtml('aB3kL9mZ');
-        $mailable->assertSeeInHtml('KATA SANDI BARU SEMENTARA');
+        $mailable->assertSeeInHtml('Atur Ulang Kata Sandi');
+        $mailable->assertSeeInHtml('60 menit');
     }
 }

@@ -31,8 +31,10 @@ class AdminResetPasswordMail extends Mailable implements ShouldQueue
      *     email: string,
      *     role: string,
      *     school_name: ?string,
-     *     password: string,
-     *     login_url: string
+     *     reset_url: string,
+     *     expires_minutes?: int,
+     *     password?: string,
+     *     login_url?: string
      * }  $userData
      */
     public function __construct(
@@ -43,7 +45,7 @@ class AdminResetPasswordMail extends Mailable implements ShouldQueue
     public function envelope(): Envelope
     {
         return new Envelope(
-            subject: '[Sahabat Sekolah] Kata Sandi Akun Anda Telah Direset oleh Administrator',
+            subject: '[Sahabat Sekolah] Tautan Reset Kata Sandi Akun oleh Administrator',
         );
     }
 

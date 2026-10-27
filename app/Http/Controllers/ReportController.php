@@ -3,6 +3,9 @@
 namespace App\Http\Controllers;
 
 use App\Helpers\AConnect;
+use App\Helpers\AnonymousTokenHelper;
+use App\Helpers\ExifHelper;
+use App\Helpers\SlaCalculator;
 use App\Mail\NewReportCounselorMail;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -12,16 +15,14 @@ use Illuminate\Support\Str;
 
 class ReportController extends Controller
 {
-    public function create()
+    public function create(Request $request)
     {
-        $schools = new AConnect;
-        $data = collect($schools->getDataSekolah()['data'])
-            ->map(fn ($item) => (object) $item)
-            ->sortBy('nama_sekolah')
-            ->values();
+        $schools = (new AConnect)->getSekolahList();
+        $selectedNpsn = (string) $request->query('npsn', '');
 
         return view('reports.create', [
-            'schools' => $data,
+            'schools' => $schools,
+            'selectedNpsn' => $selectedNpsn,
             'categories' => DB::table('bullying_categories')->where('status', true)->orderBy('name')->get()->map(function ($category) {
                 $category->subcategories = DB::table('bullying_subcategories')->where('category_id', $category->id)->where('status', true)->orderBy('name')->get();
 
@@ -155,7 +156,23 @@ class ReportController extends Controller
                 'created_at' => $now, 'updated_at' => $now,
             ]);
 
-            $risk = in_array($data['category'], ['Cyberbullying', 'Fisik', 'Perundungan Bernuansa Seksual'], true) ? 'HIGH' : 'MEDIUM';
+            $descLower = Str::lower($data['description']);
+            $crisisKeywords = ['bunuh diri', 'ingin mati', 'akhiri hidup', 'senjata tajam', 'pisau', 'celurit', 'parang', 'perkosa', 'pelecehan seksual berat', 'ancaman pembunuhan'];
+            $isCrisis = false;
+            foreach ($crisisKeywords as $kw) {
+                if (str_contains($descLower, $kw)) {
+                    $isCrisis = true;
+                    break;
+                }
+            }
+
+            if ($isCrisis) {
+                $risk = 'CRITICAL';
+            } elseif (in_array($data['category'], ['Cyberbullying', 'Fisik', 'Perundungan Bernuansa Seksual', 'Kekerasan Serius', 'Pemerasan'], true)) {
+                $risk = 'HIGH';
+            } else {
+                $risk = 'MEDIUM';
+            }
 
             $caseId = DB::table('cases')->insertGetId([
                 'school_npsn' => $data['school_npsn'], 'report_id' => $reportId, 'case_number' => $number,
@@ -164,13 +181,13 @@ class ReportController extends Controller
             ]);
 
             $config = DB::table('sla_configurations')->where('risk_level', $risk)->first();
-            $responseHours = $config ? $config->response_time_hours : 24;
+            $responseHours = $config ? $config->response_time_hours : ($risk === 'CRITICAL' ? 1 : ($risk === 'HIGH' ? 4 : 24));
             $resolutionDays = $config ? $config->resolution_time_days : 14;
 
             DB::table('case_slas')->insert([
                 'case_id' => $caseId,
                 'status' => 'ON_TIME',
-                'response_deadline' => $now->copy()->addHours($responseHours),
+                'response_deadline' => SlaCalculator::calculateDeadline($now, $responseHours, $risk),
                 'resolution_deadline' => null, // dihitung ketika direspon
                 'resolution_status' => 'ON_TRACK',
                 'created_at' => $now,
@@ -189,7 +206,7 @@ class ReportController extends Controller
 
             if ($request->hasFile('evidences')) {
                 foreach ($request->file('evidences') as $file) {
-                    $path = $file->store('evidences', 'local');
+                    $path = ExifHelper::stripAndStore($file, 'evidences', 'local');
                     DB::table('case_evidences')->insert([
                         'case_id' => $caseId,
                         'file_name' => $file->getClientOriginalName(),
@@ -203,28 +220,60 @@ class ReportController extends Controller
                 }
             }
 
-            notifyCounselor('NEW_REPORT', 'Laporan baru masuk', $number.' menunggu respons awal dalam 1 × 24 jam.', $number, 'HIGH');
+            notifyCounselor('NEW_REPORT', 'Laporan baru masuk', $number.' menunggu respons awal dalam '.$responseHours.' jam.', $number, $risk === 'CRITICAL' ? 'URGENT' : 'HIGH');
 
             $anonymousToken = null;
             if ($data['identity_mode'] === 'ANONYMOUS') {
-                $anonymousToken = Str::upper(Str::random(12));
+                $anonymousToken = AnonymousTokenHelper::generate();
                 DB::table('anonymous_report_tokens')->insert([
-                    'report_id' => $reportId, 'token_hash' => hash('sha256', $anonymousToken),
-                    'expires_at' => $now->copy()->addMonths(6), 'created_at' => $now, 'updated_at' => $now,
+                    'report_id' => $reportId,
+                    'token_hash' => AnonymousTokenHelper::hash($anonymousToken),
+                    'expires_at' => $now->copy()->addMonths(6),
+                    'created_at' => $now,
+                    'updated_at' => $now,
                 ]);
             }
 
-            return ['number' => $number, 'token' => $anonymousToken, 'risk' => $risk];
+            auditAction('CREATE_REPORT', 'REPORT', $number, [
+                'school_npsn' => $data['school_npsn'],
+                'category' => $data['category'],
+                'risk_level' => $risk,
+                'identity_mode' => $data['identity_mode'],
+            ], null, $data['identity_mode'] === 'ANONYMOUS');
+
+            return ['number' => $number, 'token' => $anonymousToken, 'risk' => $risk, 'is_crisis' => $isCrisis];
         });
 
-        $counselors = DB::table('users')
+        $recipients = DB::table('users')
             ->where('school_npsn', $data['school_npsn'])
             ->where('role', 'COUNSELOR')
             ->whereNotNull('email')
             ->where('email', '!=', '')
             ->get();
 
-        if ($counselors->isNotEmpty()) {
+        $isFallback = false;
+        if ($recipients->isEmpty()) {
+            // Fallback ke Kepala Sekolah jika belum ada Guru BK terdaftar (misal Madrasah/Sekolah Kecil)
+            $recipients = DB::table('users')
+                ->where('school_npsn', $data['school_npsn'])
+                ->where('role', 'PRINCIPAL')
+                ->whereNotNull('email')
+                ->where('email', '!=', '')
+                ->get();
+            $isFallback = true;
+        }
+
+        if ($recipients->isEmpty()) {
+            // Fallback ke Admin Kota jika sekolah belum memiliki staf terdaftar di sistem
+            $recipients = DB::table('users')
+                ->where('role', 'ADMIN')
+                ->whereNotNull('email')
+                ->where('email', '!=', '')
+                ->get();
+            $isFallback = true;
+        }
+
+        if ($recipients->isNotEmpty()) {
             $schoolName = DB::table('users')
                 ->where('school_npsn', $data['school_npsn'])
                 ->whereNotNull('school_name')
@@ -248,17 +297,19 @@ class ReportController extends Controller
                 'description' => $data['description'],
                 'submitted_at' => now(),
                 'case_url' => route('cases.show', $caseNumber['number']),
+                'is_fallback' => $isFallback,
             ];
 
-            foreach ($counselors as $counselor) {
+            foreach ($recipients as $recipient) {
                 try {
-                    Mail::to($counselor->email)->queue(new NewReportCounselorMail(
+                    $recipientLabel = $recipient->name ?? ($isFallback ? ($recipient->role === 'ADMIN' ? 'Admin Kota' : 'Kepala Sekolah') : 'Guru BK');
+                    Mail::to($recipient->email)->queue(new NewReportCounselorMail(
                         reportData: $mailData,
-                        recipientName: $counselor->name ?? 'Guru BK',
+                        recipientName: $recipientLabel,
                     ));
                 } catch (\Throwable $e) {
                     Log::error('Gagal memasukkan notifikasi email laporan baru ke antrean (queue): '.$e->getMessage(), [
-                        'counselor_email' => $counselor->email,
+                        'recipient_email' => $recipient->email,
                         'case_number' => $caseNumber['number'],
                     ]);
                 }
@@ -266,7 +317,11 @@ class ReportController extends Controller
         }
 
         if ($caseNumber['token']) {
-            return redirect()->route('reports.receipt')->with(['report_number' => $caseNumber['number'], 'anonymous_token' => $caseNumber['token']]);
+            return redirect()->route('reports.receipt')->with([
+                'report_number' => $caseNumber['number'],
+                'anonymous_token' => $caseNumber['token'],
+                'is_crisis' => $caseNumber['is_crisis'] ?? false,
+            ]);
         }
 
         return redirect()->route('cases.show', $caseNumber['number'])
@@ -280,6 +335,7 @@ class ReportController extends Controller
         return view('reports.receipt', [
             'reportNumber' => session('report_number'),
             'anonymousToken' => session('anonymous_token'),
+            'isCrisis' => session('is_crisis', false),
         ]);
     }
 }

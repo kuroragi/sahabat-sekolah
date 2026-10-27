@@ -49,6 +49,17 @@
                         <small>Batas respons awal</small>
                         <strong>{{ \Illuminate\Support\Carbon::parse($case->response_deadline)->format('d M Y, H:i') }}</strong>
                     </div>
+                    <div>
+                        <small>Penanggung jawab kasus</small>
+                        <div style="display: flex; align-items: center; justify-content: space-between; gap: 8px;">
+                            <strong>{{ $case->assigned_to ?: 'Belum ditentukan' }}</strong>
+                            @if (in_array(session('user_role'), ['COUNSELOR', 'PRINCIPAL']))
+                                <button type="button" onclick="document.getElementById('reassign-modal').style.display='flex'" style="background: none; border: none; color: #1878e3; cursor: pointer; padding: 2px 6px; font-size: 11px; font-weight: 600; display: inline-flex; align-items: center; gap: 4px; border-radius: 4px;">
+                                    <i data-lucide="user-cog" style="width: 13px; height: 13px;"></i> Alihkan
+                                </button>
+                            @endif
+                        </div>
+                    </div>
                 </div>
                 <div class="description-block">
                     <small>Kronologi laporan</small>
@@ -724,13 +735,19 @@
 
             @if (session('user_role') === 'COUNSELOR')
                 <div class="case-panel escalation-panel">
-                    <h2>Eskalasi manual</h2>
-                    <p>Kirim notifikasi prioritas kepada Kepala Sekolah untuk kasus yang membutuhkan perhatian.</p>
+                    <h2>Eskalasi Kasus</h2>
+                    <p>Kirim notifikasi prioritas kepada Kepala Sekolah atau Dinas Pendidikan Kota Bukittinggi.</p>
                     <form method="POST" action="{{ route('cases.escalate', $case->case_number) }}">
                         @csrf
-                        <textarea name="reason" rows="3" minlength="5" required placeholder="Jelaskan alasan eskalasi..."></textarea>
-                        <button class="secondary-button" type="submit"><i data-lucide="arrow-up-right"></i> Eskalasikan
-                            kasus</button>
+                        <div style="margin-bottom: 8px;">
+                            <label style="font-size: 11px; font-weight: 600; color: #475569; display: block; margin-bottom: 4px;">Tujuan Eskalasi</label>
+                            <select name="escalate_to" style="width: 100%; padding: 6px 10px; border-radius: 6px; border: 1px solid #cbd5e1; font-size: 12px; background: #fff;">
+                                <option value="PRINCIPAL">Jenjang 2: Kepala Sekolah</option>
+                                <option value="CITY_ADMIN">Jenjang 3: Dinas Pendidikan Kota Bukittinggi</option>
+                            </select>
+                        </div>
+                        <textarea name="reason" rows="3" minlength="5" required placeholder="Jelaskan alasan eskalasi (misal: penanganan tingkat kota, situasi kritis, atau konflik internal)..."></textarea>
+                        <button class="secondary-button" type="submit"><i data-lucide="arrow-up-right"></i> Eskalasikan kasus</button>
                     </form>
                 </div>
             @endif
@@ -1207,5 +1224,47 @@
             }
         }
     </script>
+
+    {{-- Modal Alihkan Penanggung Jawab --}}
+    @if (in_array(session('user_role'), ['COUNSELOR', 'PRINCIPAL']))
+        <div id="reassign-modal" style="display: none; position: fixed; inset: 0; background: rgba(15, 23, 42, 0.6); backdrop-filter: blur(4px); z-index: 9999; align-items: center; justify-content: center; padding: 16px;">
+            <div style="background: #ffffff; border-radius: 12px; max-width: 480px; width: 100%; padding: 24px; box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.2);">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
+                    <h3 style="margin: 0; font-size: 16px; font-weight: 700; color: #1e293b; display: flex; align-items: center; gap: 8px;">
+                        <i data-lucide="user-check" style="width: 18px; height: 18px; color: #1878e3;"></i>
+                        Alihkan Penanggung Jawab Kasus
+                    </h3>
+                    <button type="button" onclick="document.getElementById('reassign-modal').style.display='none'" style="background: none; border: none; cursor: pointer; color: #64748b;">
+                        <i data-lucide="x" style="width: 18px; height: 18px;"></i>
+                    </button>
+                </div>
+                <form method="POST" action="{{ route('cases.reassign', $case->case_number) }}">
+                    @csrf
+                    <p style="font-size: 12px; color: #64748b; margin-top: 0; margin-bottom: 14px;">
+                        Saat ini kasus ditangani oleh: <strong>{{ $case->assigned_to ?: 'Belum ditentukan' }}</strong>. Anda dapat mengalihkan penanganan ke rekan guru/staf lain di sekolah.
+                    </p>
+                    <div style="margin-bottom: 12px;">
+                        <label style="display: block; font-size: 12px; font-weight: 600; color: #334155; margin-bottom: 4px;">Pilih Staf Sekolah atau Ketik Nama</label>
+                        <input list="staff-options" name="assigned_to" required placeholder="Pilih atau ketik nama penanggung jawab baru" style="width: 100%; padding: 8px 12px; border: 1px solid #cbd5e1; border-radius: 6px; font-size: 13px;">
+                        <datalist id="staff-options">
+                            @if (!empty($schoolStaff))
+                                @foreach ($schoolStaff as $staff)
+                                    <option value="{{ $staff->name }} ({{ $staff->role === 'COUNSELOR' ? 'Guru BK' : ($staff->role === 'PRINCIPAL' ? 'Kepala Sekolah' : 'Staf') }})"></option>
+                                @endforeach
+                            @endif
+                        </datalist>
+                    </div>
+                    <div style="margin-bottom: 16px;">
+                        <label style="display: block; font-size: 12px; font-weight: 600; color: #334155; margin-bottom: 4px;">Alasan Pengalihan</label>
+                        <textarea name="reason" rows="3" required minlength="5" placeholder="Contoh: Guru BK berhalangan / Kasus ditangani langsung oleh Wali Kelas." style="width: 100%; padding: 8px 12px; border: 1px solid #cbd5e1; border-radius: 6px; font-size: 13px;"></textarea>
+                    </div>
+                    <div style="display: flex; justify-content: flex-end; gap: 8px;">
+                        <button type="button" onclick="document.getElementById('reassign-modal').style.display='none'" style="padding: 8px 16px; border-radius: 6px; border: 1px solid #cbd5e1; background: #ffffff; color: #475569; font-size: 13px; font-weight: 500; cursor: pointer;">Batal</button>
+                        <button type="submit" style="padding: 8px 16px; border-radius: 6px; border: none; background: #1878e3; color: #ffffff; font-size: 13px; font-weight: 600; cursor: pointer;">Simpan Pengalihan</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    @endif
 @endsection
 

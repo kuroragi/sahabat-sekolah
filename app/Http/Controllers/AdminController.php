@@ -142,6 +142,32 @@ class AdminController extends Controller
                 return $user;
             });
 
+        // Escalated cases (Jenjang 2 & Jenjang 3 Dinas)
+        $escalatedCases = DB::table('case_escalations')
+            ->join('cases', 'case_escalations.case_id', '=', 'cases.id')
+            ->leftJoin('reports', 'cases.report_id', '=', 'reports.id')
+            ->select(
+                'cases.case_number',
+                'cases.school_npsn',
+                'cases.category',
+                'cases.risk_level',
+                'cases.status as case_status',
+                'case_escalations.escalation_type',
+                'case_escalations.reason',
+                'case_escalations.escalated_by',
+                'case_escalations.notified_to',
+                'case_escalations.created_at'
+            )
+            ->orderByDesc('case_escalations.created_at')
+            ->limit(10)
+            ->get()
+            ->map(function ($item) use ($schoolsMap) {
+                $item->school_name = $schoolsMap[$item->school_npsn] ?? $item->school_npsn;
+
+                return $item;
+            });
+        $totalEscalatedCases = DB::table('case_escalations')->count();
+
         return view('admin.index', [
             'totalUsers' => $totalUsers,
             'totalReports' => $totalReports,
@@ -159,6 +185,8 @@ class AdminController extends Controller
             'slaChartData' => $slaChartData,
             'statusChartData' => $statusChartData,
             'recentUsers' => $recentUsers,
+            'escalatedCases' => $escalatedCases,
+            'totalEscalatedCases' => $totalEscalatedCases,
         ]);
     }
 
@@ -288,11 +316,20 @@ class AdminController extends Controller
     {
         $user = DB::table('users')->where('id', $id)->firstOrFail();
 
-        $randomPassword = Str::random(8);
+        $token = Str::random(64);
+        $now = now();
 
-        DB::table('users')->where('id', $id)->update([
-            'password' => Hash::make($randomPassword),
-            'updated_at' => now(),
+        DB::table('password_reset_tokens')->updateOrInsert(
+            ['email' => $user->email],
+            [
+                'token' => Hash::make($token),
+                'created_at' => $now,
+            ]
+        );
+
+        $resetUrl = route('password.reset', [
+            'token' => $token,
+            'email' => $user->email,
         ]);
 
         $schoolsMap = (new AConnect)->getSekolahMap();
@@ -305,8 +342,8 @@ class AdminController extends Controller
                     'email' => $user->email,
                     'role' => $user->role,
                     'school_name' => $schoolName,
-                    'password' => $randomPassword,
-                    'login_url' => route('login'),
+                    'reset_url' => $resetUrl,
+                    'expires_minutes' => 60,
                 ],
                 recipientName: $user->name,
             ));
@@ -320,7 +357,7 @@ class AdminController extends Controller
 
         auditAction('RESET_USER_PASSWORD', 'USER', $id, ['email' => $user->email]);
 
-        return back()->with('success', "Password untuk pengguna {$user->name} ({$user->email}) berhasil direset. Password acak 8 karakter baru telah dikirimkan ke email.");
+        return back()->with('success', "Tautan reset kata sandi untuk {$user->name} ({$user->email}) berhasil dikirimkan ke email. Berlaku selama 60 menit.");
     }
 
     public function deleteUser(int $id)

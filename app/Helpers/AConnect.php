@@ -28,7 +28,11 @@ class AConnect
      */
     public function getDataSiswa(string $npsn, string $semester, string $nisn): array
     {
-        return $this->client()->get("/v1/data-siswa/{$npsn}/{$semester}/{$nisn}")->json() ?? [];
+        try {
+            return $this->client()->timeout(5)->get("/v1/data-siswa/{$npsn}/{$semester}/{$nisn}")->json() ?? [];
+        } catch (\Throwable $e) {
+            return [];
+        }
     }
 
     /**
@@ -36,7 +40,11 @@ class AConnect
      */
     public function getDataKelas(string $npsn, string $semester): array
     {
-        return $this->client()->get("/v1/data-kelas/{$npsn}/{$semester}")->json() ?? [];
+        try {
+            return $this->client()->timeout(5)->get("/v1/data-kelas/{$npsn}/{$semester}")->json() ?? [];
+        } catch (\Throwable $e) {
+            return [];
+        }
     }
 
     public function getDataSekolah()
@@ -78,7 +86,11 @@ class AConnect
      */
     public function getDataSiswaKelas(string $npsn, string $semester, string $rombonganBelajarId): array
     {
-        return $this->client()->get("/v1/data-kelas/{$npsn}/{$semester}/{$rombonganBelajarId}")->json() ?? [];
+        try {
+            return $this->client()->timeout(5)->get("/v1/data-kelas/{$npsn}/{$semester}/{$rombonganBelajarId}")->json() ?? [];
+        } catch (\Throwable $e) {
+            return [];
+        }
     }
 
     /**
@@ -151,7 +163,11 @@ class AConnect
      */
     public function healthCheck(): array
     {
-        return $this->client()->get('/v1/health-check')->json() ?? [];
+        try {
+            return $this->client()->timeout(5)->get('/v1/health-check')->json() ?? [];
+        } catch (\Throwable $e) {
+            return ['status' => 'error', 'message' => $e->getMessage()];
+        }
     }
 
     /**

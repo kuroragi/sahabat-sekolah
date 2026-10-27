@@ -3,6 +3,7 @@
 namespace App\Console\Commands;
 
 use Illuminate\Console\Command;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 
 class ScanSla extends Command
@@ -97,6 +98,9 @@ class ScanSla extends Command
                 $updated++;
             }
         }
+
+        Cache::put('sahabat_sla_last_scan_at', $now->toIso8601String(), 86400);
+        Cache::put('sahabat_sla_last_scan_updated', $updated, 86400);
 
         $this->info("SLA scan selesai: {$updated} status diperbarui.");
 

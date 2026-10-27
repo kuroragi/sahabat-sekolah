@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Api\V1;
 
 use App\Helpers\AConnect;
+use App\Helpers\SlaCalculator;
 use App\Http\Controllers\Controller;
 use App\Mail\NewReportCounselorMail;
 use Illuminate\Http\JsonResponse;
@@ -125,7 +126,7 @@ class PublicReportController extends Controller
             DB::table('case_slas')->insert([
                 'case_id' => $caseId,
                 'status' => 'ON_TIME',
-                'response_deadline' => $now->copy()->addHours($responseHours),
+                'response_deadline' => SlaCalculator::calculateDeadline($now, $responseHours, $risk),
                 'resolution_deadline' => null,
                 'resolution_status' => 'ON_TRACK',
                 'created_at' => $now,
@@ -196,14 +197,34 @@ class PublicReportController extends Controller
 
         // Send email to counselors asynchronously if configured
         try {
-            $counselors = DB::table('users')
+            $recipients = DB::table('users')
                 ->where('school_npsn', $data['school_npsn'])
                 ->where('role', 'COUNSELOR')
                 ->whereNotNull('email')
                 ->where('email', '!=', '')
                 ->get();
 
-            if ($counselors->isNotEmpty()) {
+            $isFallback = false;
+            if ($recipients->isEmpty()) {
+                $recipients = DB::table('users')
+                    ->where('school_npsn', $data['school_npsn'])
+                    ->where('role', 'PRINCIPAL')
+                    ->whereNotNull('email')
+                    ->where('email', '!=', '')
+                    ->get();
+                $isFallback = true;
+            }
+
+            if ($recipients->isEmpty()) {
+                $recipients = DB::table('users')
+                    ->where('role', 'ADMIN')
+                    ->whereNotNull('email')
+                    ->where('email', '!=', '')
+                    ->get();
+                $isFallback = true;
+            }
+
+            if ($recipients->isNotEmpty()) {
                 $schoolName = DB::table('users')
                     ->where('school_npsn', $data['school_npsn'])
                     ->value('school_name') ?? $data['school_npsn'];
@@ -218,10 +239,12 @@ class PublicReportController extends Controller
                     'description' => $data['description'],
                     'risk_level' => $result['risk_level'],
                     'submitted_at' => now()->toDateTimeString(),
+                    'is_fallback' => $isFallback,
                 ];
 
-                foreach ($counselors as $counselor) {
-                    Mail::to($counselor->email)->queue(new NewReportCounselorMail($reportPayload, $counselor->name));
+                foreach ($recipients as $recipient) {
+                    $recipientLabel = $recipient->name ?? ($isFallback ? ($recipient->role === 'ADMIN' ? 'Admin Kota' : 'Kepala Sekolah') : 'Guru BK');
+                    Mail::to($recipient->email)->queue(new NewReportCounselorMail($reportPayload, $recipientLabel));
                 }
             }
         } catch (\Throwable $e) {

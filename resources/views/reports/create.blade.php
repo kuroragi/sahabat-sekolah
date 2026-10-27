@@ -18,18 +18,23 @@
 </head>
 
 <body>
+    <!-- Tombol Keluar Cepat (Panic Exit) -->
+    <a href="https://www.google.com" id="panic-exit-btn" class="fixed top-3 right-3 md:top-5 md:right-5 z-50 flex items-center gap-2 bg-rose-600 hover:bg-rose-700 text-white font-medium text-xs md:text-sm px-3.5 py-2 rounded-full shadow-lg transition-all duration-200 cursor-pointer" title="Klik tombol ini untuk segera menutup halaman jika ada orang mendekat">
+        <i data-lucide="shield-alert" class="w-4 h-4"></i>
+        <span>Keluar Cepat</span>
+    </a>
+
     <div class="form-shell">
-        <a class="back-link" href="{{ url('/') }}"><i data-lucide="arrow-left"></i> Kembali ke dashboard</a>
+        <a class="back-link" href="{{ url('/') }}"><i data-lucide="arrow-left"></i> Kembali ke beranda</a>
         <div class="form-layout">
             <section class="form-intro">
                 <span class="pill">KANAL PELAPORAN AMAN</span>
                 <h1>Mulai dari cerita yang ingin Anda sampaikan.</h1>
-                <p>Setiap laporan akan diterima Guru BK dan ditangani dengan prinsip kerahasiaan serta perlindungan
-                    peserta didik.</p>
+                <p>Setiap laporan akan diterima Guru BK dan ditangani dengan prinsip kerahasiaan serta perlindungan peserta didik.</p>
                 <div class="trust-list">
                     <span><i data-lucide="shield-check"></i> Identitas dilindungi</span>
-                    <span><i data-lucide="clock-3"></i> Respons awal maksimal 1 × 24 jam</span>
-                    <span><i data-lucide="message-circle-heart"></i> Komunikasi yang aman</span>
+                    <span><i data-lucide="clock-3"></i> Respons awal terukur</span>
+                    <span><i data-lucide="message-circle-heart"></i> Komunikasi dua arah yang aman</span>
                 </div>
             </section>
 
@@ -55,12 +60,19 @@
                     </div>
                 @endif
 
+                @if (!empty($selectedNpsn))
+                    <div class="mb-3 p-3 bg-blue-50 border border-blue-200 rounded-lg flex items-center gap-2 text-xs text-blue-800">
+                        <i data-lucide="qr-code" class="w-4 h-4 flex-none text-blue-600"></i>
+                        <span><strong>Sekolah Terpilih Otomatis:</strong> Sesuai poster QR Code sekolah yang Anda pindai.</span>
+                    </div>
+                @endif
+
                 <label>Sekolah <span>*</span>
                     <div class="tw-select-container relative w-full mt-1" data-name="school_npsn">
                         <select name="school_npsn" style="opacity: 0; position: absolute; z-index: -1;" required>
                             <option value="">Pilih sekolah</option>
                             @foreach ($schools as $school)
-                                <option value="{{ $school->npsn }}" @selected(old('school_npsn') == $school->npsn)>{{ $school->nama_sekolah }}</option>
+                                <option value="{{ $school->npsn }}" @selected(old('school_npsn', $selectedNpsn ?? '') == $school->npsn)>{{ $school->nama_sekolah }}</option>
                             @endforeach
                         </select>
                         <button type="button" class="tw-select-trigger w-full flex items-center justify-between bg-white border border-gray-300 rounded-lg px-4 py-2.5 text-sm text-left focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-colors">
@@ -86,17 +98,23 @@
                             <option value="">Pilih peran</option>
                             <option value="VICTIM" @selected(old('reporter_role') === 'VICTIM')>Saya korban</option>
                             <option value="WITNESS" @selected(old('reporter_role') === 'WITNESS')>Saya saksi</option>
-                            <option value="CONCERNED_PERSON" @selected(old('reporter_role') === 'CONCERNED_PERSON')>Saya mengetahui kejadian
-                            </option>
+                            <option value="CONCERNED_PERSON" @selected(old('reporter_role') === 'CONCERNED_PERSON')>Saya mengetahui kejadian</option>
                         </select>
                     </label>
                     <label>Mode identitas <span>*</span>
                         <select name="identity_mode" id="identity-mode-select" required>
-                            <option value="CONFIDENTIAL" @selected(old('identity_mode', 'CONFIDENTIAL') === 'CONFIDENTIAL')>Rahasia (Hanya Guru BK)</option>
+                            <option value="CONFIDENTIAL" @selected(old('identity_mode', 'CONFIDENTIAL') === 'CONFIDENTIAL')>Rahasia (Hanya Guru BK yang tahu)</option>
                             <option value="IDENTIFIED" @selected(old('identity_mode') === 'IDENTIFIED')>Terbuka (Nama Jelas)</option>
-                            <option value="ANONYMOUS" @selected(old('identity_mode') === 'ANONYMOUS')>Anonim (Tanpa Nama)</option>
+                            <option value="ANONYMOUS" @selected(old('identity_mode') === 'ANONYMOUS')>Anonim (Tanpa Nama & Nomor HP)</option>
                         </select>
                     </label>
+                </div>
+
+                <div id="anonymous-privacy-banner" class="p-3 bg-emerald-50 border border-emerald-200 rounded-lg text-xs text-emerald-800 flex items-start gap-2.5 my-2 hidden">
+                    <i data-lucide="shield-check" class="w-4 h-4 flex-none text-emerald-600 mt-0.5"></i>
+                    <div>
+                        <strong>Jaminan Privasi Total:</strong> Dalam mode Anonim, kamu tidak perlu menulis nama atau nomor HP. Foto bukti yang diunggah akan otomatis dibersihkan dari informasi GPS lokasi HP. Kamu akan diberikan 4 kata rahasia untuk membaca balasan Guru BK.
+                    </div>
                 </div>
 
                 <div id="reporter-identity-container" class="flex flex-col gap-4 mb-4">
@@ -137,8 +155,17 @@
 
                 <div class="two-fields">
                     <label>Kategori kejadian <span>*</span>
+                        <div class="category-quick-chips flex flex-wrap gap-1.5 my-1.5">
+                            <span class="text-xs text-gray-500 w-full mb-0.5">Pilih cepat yang paling sesuai:</span>
+                            <button type="button" class="quick-chip text-xs bg-slate-100 hover:bg-blue-50 hover:text-blue-600 border border-slate-200 rounded-full px-2.5 py-1 transition-colors" data-cat="Perundungan Verbal">🗣️ Ejekan / Hinaan</button>
+                            <button type="button" class="quick-chip text-xs bg-slate-100 hover:bg-blue-50 hover:text-blue-600 border border-slate-200 rounded-full px-2.5 py-1 transition-colors" data-cat="Perundungan Fisik">🥊 Pukulan / Kekerasan</button>
+                            <button type="button" class="quick-chip text-xs bg-slate-100 hover:bg-blue-50 hover:text-blue-600 border border-slate-200 rounded-full px-2.5 py-1 transition-colors" data-cat="Sosial/Psikologis">👥 Dikucilkan / Dijauhi</button>
+                            <button type="button" class="quick-chip text-xs bg-slate-100 hover:bg-blue-50 hover:text-blue-600 border border-slate-200 rounded-full px-2.5 py-1 transition-colors" data-cat="Cyberbullying">📱 Di Medsos / Game / HP</button>
+                            <button type="button" class="quick-chip text-xs bg-slate-100 hover:bg-blue-50 hover:text-blue-600 border border-slate-200 rounded-full px-2.5 py-1 transition-colors" data-cat="Pemerasan">💰 Dipalak / Uang</button>
+                            <button type="button" class="quick-chip text-xs bg-slate-100 hover:bg-blue-50 hover:text-blue-600 border border-slate-200 rounded-full px-2.5 py-1 transition-colors" data-cat="Indikasi/Kekhawatiran">❓ Belum Yakin / Takut</button>
+                        </div>
                         <select name="category" id="category-select" required>
-                            <option value="">Pilih kategori</option>
+                            <option value="">Pilih kategori resmi</option>
                             @foreach ($categories as $category)
                                 <option value="{{ $category->name }}" data-category-id="{{ $category->id }}"
                                     @selected(old('category') === $category->name)>{{ $category->name }}</option>
@@ -158,17 +185,24 @@
                     </label>
                 </div>
 
-                <label>Ceritakan kejadian <span>*</span>
-                    <textarea name="description" rows="6" minlength="20" required
-                        placeholder="Tuliskan apa yang terjadi, kapan, dan di mana. Ceritakan fakta yang Anda lihat atau alami.">{{ old('description') }}</textarea>
-                    <small>Minimal 20 karakter. Ceritakan fakta yang Anda lihat atau alami.</small>
+                <label>
+                    <div class="flex items-center justify-between mb-1">
+                        <span>Ceritakan kejadian <span>*</span></span>
+                        <button type="button" id="voice-input-btn" class="inline-flex items-center gap-1.5 text-xs font-medium text-blue-600 hover:text-blue-700 bg-blue-50 hover:bg-blue-100 px-2.5 py-1 rounded-md transition-colors">
+                            <i data-lucide="mic" class="w-3.5 h-3.5"></i>
+                            <span id="voice-btn-label">Bicara / Dikte Suara</span>
+                        </button>
+                    </div>
+                    <textarea name="description" id="description-textarea" rows="6" minlength="20" required
+                        placeholder="Tuliskan apa yang terjadi, kapan, dan di mana. Ceritakan fakta yang Anda lihat atau alami. Jika sulit mengetik, klik tombol 'Bicara / Dikte Suara' di atas.">{{ old('description') }}</textarea>
+                    <small>Minimal 20 karakter. Ceritakan fakta yang Anda lihat atau alami secara jujur dan tenang.</small>
                 </label>
 
                 <div class="flex flex-col gap-1 mb-6">
                     <label class="text-sm font-semibold text-gray-700" style="margin-bottom: 4px;">Bukti / Dokumen Pendukung (Opsional)</label>
                     <input type="file" name="evidences[]" multiple accept="image/*,application/pdf"
                         class="w-full px-4 py-2 bg-white border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all" style="font-size: 14px;">
-                    <small class="text-xs text-gray-500 mt-1">Bisa upload hingga 5 file (Gambar atau PDF). Maksimal 2MB per file.</small>
+                    <small class="text-xs text-gray-500 mt-1">Bisa upload hingga 5 file (Foto atau PDF). Metadata lokasi foto HP Anda otomatis dibersihkan demi privasi.</small>
                     @error('evidences')
                         <small class="text-xs text-red-500">{{ $message }}</small>
                     @enderror
@@ -191,11 +225,94 @@
         const reporterNameAsterisk = document.getElementById('reporter-name-asterisk');
         const reporterNameInput = document.getElementById('reporter-name-input');
         const reporterNameHelp = document.getElementById('reporter-name-help');
+        const anonymousBanner = document.getElementById('anonymous-privacy-banner');
+        const panicBtn = document.getElementById('panic-exit-btn');
+        const descTextarea = document.getElementById('description-textarea');
+        const voiceBtn = document.getElementById('voice-input-btn');
+        const voiceLabel = document.getElementById('voice-btn-label');
+
+        // Quick Category Chips
+        document.querySelectorAll('.quick-chip').forEach(chip => {
+            chip.addEventListener('click', function() {
+                const targetCat = this.dataset.cat;
+                for (let i = 0; i < categorySelect.options.length; i++) {
+                    if (categorySelect.options[i].value === targetCat || categorySelect.options[i].text.includes(targetCat)) {
+                        categorySelect.selectedIndex = i;
+                        filterSubcategories();
+                        break;
+                    }
+                }
+            });
+        });
+
+        // Panic Exit
+        if (panicBtn) {
+            panicBtn.addEventListener('click', function(e) {
+                e.preventDefault();
+                window.location.replace('https://www.google.com');
+            });
+        }
+
+        // Voice Input (Speech to Text in Indonesian)
+        const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+        if (SpeechRecognition && voiceBtn) {
+            const recognition = new SpeechRecognition();
+            recognition.lang = 'id-ID';
+            recognition.continuous = false;
+            recognition.interimResults = false;
+
+            let isRecording = false;
+
+            voiceBtn.addEventListener('click', function() {
+                if (!isRecording) {
+                    try {
+                        recognition.start();
+                        isRecording = true;
+                        voiceBtn.classList.remove('bg-blue-50', 'text-blue-600');
+                        voiceBtn.classList.add('bg-red-500', 'text-white', 'animate-pulse');
+                        voiceLabel.textContent = 'Mendengarkan... Bicara sekarang';
+                    } catch (err) {
+                        console.log(err);
+                    }
+                } else {
+                    recognition.stop();
+                    isRecording = false;
+                    resetVoiceBtn();
+                }
+            });
+
+            recognition.onresult = function(event) {
+                const transcript = event.results[0][0].transcript;
+                if (descTextarea.value.trim().length > 0) {
+                    descTextarea.value += ' ' + transcript;
+                } else {
+                    descTextarea.value = transcript;
+                }
+            };
+
+            recognition.onspeechend = function() {
+                recognition.stop();
+                isRecording = false;
+                resetVoiceBtn();
+            };
+
+            recognition.onerror = function() {
+                isRecording = false;
+                resetVoiceBtn();
+            };
+
+            function resetVoiceBtn() {
+                voiceBtn.classList.remove('bg-red-500', 'text-white', 'animate-pulse');
+                voiceBtn.classList.add('bg-blue-50', 'text-blue-600');
+                voiceLabel.textContent = 'Bicara / Dikte Suara';
+            }
+        } else if (voiceBtn) {
+            voiceBtn.style.display = 'none';
+        }
 
         function filterSubcategories() {
             const selectedOption = categorySelect.options[categorySelect.selectedIndex];
             const id = selectedOption?.dataset.categoryId;
-            const currentSub = subcategorySelect.value;
 
             Array.from(subcategorySelect.options).forEach(option => {
                 if (!option.value) return;
@@ -209,9 +326,11 @@
 
             if (mode === 'ANONYMOUS') {
                 container.style.display = 'none';
+                if (anonymousBanner) anonymousBanner.classList.remove('hidden');
                 reporterNameInput.removeAttribute('required');
             } else {
                 container.style.display = 'block';
+                if (anonymousBanner) anonymousBanner.classList.add('hidden');
                 reporterNameInput.setAttribute('required', 'required');
             }
         }
