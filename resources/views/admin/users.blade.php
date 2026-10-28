@@ -14,9 +14,9 @@
         <div class="relative">
             <i data-lucide="search" class="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[#8ba0b3]"></i>
             <input id="user-search" type="text" placeholder="Cari nama atau email..."
-                class="pl-9 pr-4 py-2 border border-[#dfe8f1] rounded-lg text-[11px] bg-white text-[#315675] focus:outline-none focus:border-[#4d9ae4] w-64">
+                class="pl-9 pr-4 py-2 border border-[#dfe8f1] rounded-lg text-[13px] bg-white text-[#315675] focus:outline-none focus:border-[#4d9ae4] w-64">
         </div>
-        <select id="role-filter" class="border border-[#dfe8f1] rounded-lg text-[11px] bg-white text-[#315675] px-3 py-2 focus:outline-none focus:border-[#4d9ae4]">
+        <select id="role-filter" class="border border-[#dfe8f1] rounded-lg text-[13px] bg-white text-[#315675] px-3 py-2 focus:outline-none focus:border-[#4d9ae4]">
             <option value="">Semua Role</option>
             <option value="ADMIN">Administrator</option>
             <option value="CITY_ADMIN">Instansi Kota: Disdik & UPTD PPA (City Admin)</option>
@@ -25,22 +25,22 @@
         </select>
     </div>
     <button id="btn-add-user"
-        class="flex items-center gap-2 bg-[#1675e8] text-white text-[11px] font-bold px-4 py-2 rounded-lg shadow-[0_6px_15px_rgba(24,120,227,.2)] hover:bg-[#1262c8] transition-colors">
+        class="flex items-center gap-2 bg-[#1675e8] text-white text-[13px] font-bold px-4 py-2 rounded-lg shadow-[0_6px_15px_rgba(24,120,227,.2)] hover:bg-[#1262c8] transition-colors">
         <i data-lucide="user-plus" class="w-4 h-4"></i> Tambah Pengguna
     </button>
 </div>
 
 {{-- ======================== TABLE ======================== --}}
 <div class="bg-white border border-[#e8eef5] rounded-xl overflow-hidden">
-    <table class="w-full text-[11px]" id="users-table">
+    <table class="w-full text-[13px]" id="users-table">
         <thead>
             <tr class="bg-[#f8fafc]">
-                <th class="text-left text-[9px] font-medium text-[#9aa9ba] px-5 py-3">PENGGUNA</th>
-                <th class="text-left text-[9px] font-medium text-[#9aa9ba] px-3 py-3">ROLE</th>
-                <th class="text-left text-[9px] font-medium text-[#9aa9ba] px-3 py-3">SEKOLAH</th>
-                <th class="text-left text-[9px] font-medium text-[#9aa9ba] px-3 py-3">STATUS</th>
-                <th class="text-left text-[9px] font-medium text-[#9aa9ba] px-3 py-3">BERGABUNG</th>
-                <th class="text-left text-[9px] font-medium text-[#9aa9ba] px-3 py-3">AKSI</th>
+                <th class="text-left text-[11px] font-medium text-[#9aa9ba] px-5 py-3">PENGGUNA</th>
+                <th class="text-left text-[11px] font-medium text-[#9aa9ba] px-3 py-3">ROLE</th>
+                <th class="text-left text-[11px] font-medium text-[#9aa9ba] px-3 py-3">SEKOLAH</th>
+                <th class="text-left text-[11px] font-medium text-[#9aa9ba] px-3 py-3">STATUS</th>
+                <th class="text-left text-[11px] font-medium text-[#9aa9ba] px-3 py-3">BERGABUNG</th>
+                <th class="text-left text-[11px] font-medium text-[#9aa9ba] px-3 py-3">AKSI</th>
             </tr>
         </thead>
         <tbody>
@@ -51,12 +51,12 @@
                 data-role="{{ $user->role }}">
                 <td class="px-5 py-3">
                     <div class="flex items-center gap-3">
-                        <div class="w-8 h-8 rounded-full bg-[#dbeafe] text-[#1d4ed8] flex items-center justify-center text-[10px] font-bold flex-none">
+                        <div class="w-8 h-8 rounded-full bg-[#dbeafe] text-[#1d4ed8] flex items-center justify-center text-[12px] font-bold flex-none">
                             {{ strtoupper(substr($user->name, 0, 2)) }}
                         </div>
                         <div>
                             <strong class="block text-[#1d4c7e]">{{ $user->name }}</strong>
-                            <small class="text-[#a1adbb] text-[9px]">{{ $user->email }}</small>
+                            <small class="text-[#a1adbb] text-[11px]">{{ $user->email }}</small>
                         </div>
                     </div>
                 </td>
@@ -76,7 +76,7 @@
                             'COUNSELOR' => 'Guru BK',
                         ];
                     @endphp
-                    <span class="px-2 py-1 rounded text-[9px] font-semibold {{ $roleColors[$user->role] ?? 'bg-gray-100 text-gray-600' }}">
+                    <span class="px-2 py-1 rounded text-[11px] font-semibold {{ $roleColors[$user->role] ?? 'bg-gray-100 text-gray-600' }}">
                         {{ $roleLabels[$user->role] ?? $user->role }}
                     </span>
                 </td>
@@ -87,18 +87,18 @@
                 </td>
                 <td class="px-3 py-3">
                     @php $status = $user->status ?? 'ACTIVE'; @endphp
-                    <span class="flex items-center gap-1.5 text-[9px] font-semibold {{ $status === 'ACTIVE' ? 'text-emerald-600' : 'text-gray-400' }}">
+                    <span class="flex items-center gap-1.5 text-[11px] font-semibold {{ $status === 'ACTIVE' ? 'text-emerald-600' : 'text-gray-400' }}">
                         <span class="w-1.5 h-1.5 rounded-full {{ $status === 'ACTIVE' ? 'bg-emerald-500' : 'bg-gray-300' }}"></span>
                         {{ $status === 'ACTIVE' ? 'Aktif' : 'Nonaktif' }}
                     </span>
                 </td>
-                <td class="px-3 py-3 text-[#9aaaba] text-[9px] whitespace-nowrap">
+                <td class="px-3 py-3 text-[#9aaaba] text-[11px] whitespace-nowrap">
                     {{ \Carbon\Carbon::parse($user->created_at)->locale('id')->isoFormat('D MMM Y') }}
                 </td>
                 <td class="px-3 py-3">
                     <div class="flex items-center gap-2">
                         <button
-                            class="btn-edit flex items-center gap-1 bg-[#edf5ff] text-[#1675e8] text-[9px] font-semibold px-2.5 py-1.5 rounded-lg hover:bg-[#dbeafe] transition-colors"
+                            class="btn-edit flex items-center gap-1 bg-[#edf5ff] text-[#1675e8] text-[11px] font-semibold px-2.5 py-1.5 rounded-lg hover:bg-[#dbeafe] transition-colors"
                             data-id="{{ $user->id }}"
                             data-name="{{ $user->name }}"
                             data-email="{{ $user->email }}"
@@ -109,7 +109,7 @@
                             <i data-lucide="pencil" class="w-3 h-3"></i> Edit
                         </button>
                         <button
-                            class="btn-reset-password flex items-center gap-1 bg-[#fff8eb] text-[#d97706] text-[9px] font-semibold px-2.5 py-1.5 rounded-lg hover:bg-[#fef3c7] transition-colors"
+                            class="btn-reset-password flex items-center gap-1 bg-[#fff8eb] text-[#d97706] text-[11px] font-semibold px-2.5 py-1.5 rounded-lg hover:bg-[#fef3c7] transition-colors"
                             data-id="{{ $user->id }}"
                             data-name="{{ $user->name }}"
                             data-email="{{ $user->email }}"
@@ -117,7 +117,7 @@
                             <i data-lucide="key-round" class="w-3 h-3"></i> Reset
                         </button>
                         <button
-                            class="btn-delete flex items-center gap-1 bg-[#fff0f0] text-[#e6636a] text-[9px] font-semibold px-2.5 py-1.5 rounded-lg hover:bg-[#ffe2e3] transition-colors"
+                            class="btn-delete flex items-center gap-1 bg-[#fff0f0] text-[#e6636a] text-[11px] font-semibold px-2.5 py-1.5 rounded-lg hover:bg-[#ffe2e3] transition-colors"
                             data-id="{{ $user->id }}"
                             data-name="{{ $user->name }}">
                             <i data-lucide="trash-2" class="w-3 h-3"></i>
@@ -128,7 +128,7 @@
             @endforeach
         </tbody>
     </table>
-    <div id="no-results" class="hidden text-center text-[#9aaaba] py-10 text-[11px]">
+    <div id="no-results" class="hidden text-center text-[#9aaaba] py-10 text-[13px]">
         <i data-lucide="search-x" class="w-7 h-7 mx-auto mb-2 text-[#c0d0de]"></i>
         <p>Tidak ada pengguna yang cocok.</p>
     </div>
@@ -140,8 +140,8 @@
     <div class="relative bg-white rounded-2xl shadow-2xl w-full max-w-md p-7 animate-modal">
         <div class="flex items-center justify-between mb-5">
             <div>
-                <h2 id="modal-add-title" class="font-extrabold text-[17px] text-[#193d6c]" style="font-family:'Plus Jakarta Sans'">Tambah Pengguna</h2>
-                <p class="text-[10px] text-[#8494a9] mt-1">Kata sandi acak 8 karakter akan dibuat dan otomatis dikirimkan ke email pengguna.</p>
+                <h2 id="modal-add-title" class="font-extrabold text-[19px] text-[#193d6c]" style="font-family:'Plus Jakarta Sans'">Tambah Pengguna</h2>
+                <p class="text-[12px] text-[#8494a9] mt-1">Kata sandi acak 8 karakter akan dibuat dan otomatis dikirimkan ke email pengguna.</p>
             </div>
             <button id="modal-add-close" class="w-8 h-8 rounded-full bg-[#f3f7fb] text-[#7390b4] flex items-center justify-center hover:bg-[#e8eef5] transition-colors">
                 <i data-lucide="x" class="w-4 h-4"></i>
@@ -150,25 +150,25 @@
         <form id="form-add-user" method="POST" action="{{ route('admin.users.store') }}" class="grid gap-3">
             @csrf
             <div>
-                <label class="block text-[10px] font-semibold text-[#496985] mb-1.5">Nama Lengkap <span class="text-red-500">*</span></label>
+                <label class="block text-[12px] font-semibold text-[#496985] mb-1.5">Nama Lengkap <span class="text-red-500">*</span></label>
                 <input name="name" required placeholder="Contoh: Budi Santoso" value="{{ old('name') }}"
-                    class="w-full border @error('name') border-red-400 bg-red-50/20 @else border-[#dfe8f1] bg-[#fbfdff] @enderror rounded-lg px-3 py-2.5 text-[11px] text-[#315675] focus:outline-none focus:border-[#4d9ae4] focus:ring-2 focus:ring-[#e7f3ff]">
+                    class="w-full border @error('name') border-red-400 bg-red-50/20 @else border-[#dfe8f1] bg-[#fbfdff] @enderror rounded-lg px-3 py-2.5 text-[13px] text-[#315675] focus:outline-none focus:border-[#4d9ae4] focus:ring-2 focus:ring-[#e7f3ff]">
                 @error('name')
-                    <p class="text-[10px] text-red-500 mt-1 font-medium">{{ $message }}</p>
+                    <p class="text-[12px] text-red-500 mt-1 font-medium">{{ $message }}</p>
                 @enderror
             </div>
             <div>
-                <label class="block text-[10px] font-semibold text-[#496985] mb-1.5">Email <span class="text-red-500">*</span></label>
+                <label class="block text-[12px] font-semibold text-[#496985] mb-1.5">Email <span class="text-red-500">*</span></label>
                 <input type="email" name="email" required placeholder="email@contoh.com" value="{{ old('email') }}"
-                    class="w-full border @error('email') border-red-400 bg-red-50/20 @else border-[#dfe8f1] bg-[#fbfdff] @enderror rounded-lg px-3 py-2.5 text-[11px] text-[#315675] focus:outline-none focus:border-[#4d9ae4] focus:ring-2 focus:ring-[#e7f3ff]">
+                    class="w-full border @error('email') border-red-400 bg-red-50/20 @else border-[#dfe8f1] bg-[#fbfdff] @enderror rounded-lg px-3 py-2.5 text-[13px] text-[#315675] focus:outline-none focus:border-[#4d9ae4] focus:ring-2 focus:ring-[#e7f3ff]">
                 @error('email')
-                    <p class="text-[10px] text-red-500 mt-1 font-medium">{{ $message }}</p>
+                    <p class="text-[12px] text-red-500 mt-1 font-medium">{{ $message }}</p>
                 @enderror
             </div>
             <div class="grid grid-cols-2 gap-3">
                 <div>
-                    <label class="block text-[10px] font-semibold text-[#496985] mb-1.5">Role <span class="text-red-500">*</span></label>
-                    <select id="add-role" name="role" class="w-full border border-[#dfe8f1] rounded-lg px-3 py-2.5 text-[11px] text-[#315675] bg-[#fbfdff] focus:outline-none focus:border-[#4d9ae4]">
+                    <label class="block text-[12px] font-semibold text-[#496985] mb-1.5">Role <span class="text-red-500">*</span></label>
+                    <select id="add-role" name="role" class="w-full border border-[#dfe8f1] rounded-lg px-3 py-2.5 text-[13px] text-[#315675] bg-[#fbfdff] focus:outline-none focus:border-[#4d9ae4]">
                         <option value="COUNSELOR" {{ old('role') === 'COUNSELOR' ? 'selected' : '' }}>Guru BK</option>
                         <option value="PRINCIPAL" {{ old('role') === 'PRINCIPAL' ? 'selected' : '' }}>Kepala Sekolah</option>
                         <option value="CITY_ADMIN" {{ old('role') === 'CITY_ADMIN' ? 'selected' : '' }}>Instansi Kota / Satgas PPKSP (City Admin)</option>
@@ -176,7 +176,7 @@
                     </select>
                 </div>
                 <div id="add-school-wrapper">
-                    <label class="block text-[10px] font-semibold text-[#496985] mb-1.5">Sekolah</label>
+                    <label class="block text-[12px] font-semibold text-[#496985] mb-1.5">Sekolah</label>
                     <div class="tw-select-container relative w-full" data-name="school_npsn">
                         <select name="school_npsn" class="hidden">
                             <option value="">Tanpa sekolah</option>
@@ -184,7 +184,7 @@
                                 <option value="{{ $school->npsn }}" {{ old('school_npsn') === $school->npsn ? 'selected' : '' }}>{{ $school->nama_sekolah }}</option>
                             @endforeach
                         </select>
-                        <button type="button" class="tw-select-trigger w-full flex items-center justify-between bg-[#fbfdff] border border-[#dfe8f1] rounded-lg px-3 py-2.5 text-[11px] text-left focus:outline-none focus:border-[#4d9ae4] focus:ring-2 focus:ring-[#e7f3ff] transition-colors">
+                        <button type="button" class="tw-select-trigger w-full flex items-center justify-between bg-[#fbfdff] border border-[#dfe8f1] rounded-lg px-3 py-2.5 text-[13px] text-left focus:outline-none focus:border-[#4d9ae4] focus:ring-2 focus:ring-[#e7f3ff] transition-colors">
                             <span class="tw-select-text text-[#315675] truncate">Pilih sekolah...</span>
                             <svg class="w-3 h-3 text-[#7390b4] pointer-events-none flex-none" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
                         </button>
@@ -192,18 +192,18 @@
                             <div class="p-2 border-b border-[#edf2f7]">
                                 <div class="relative">
                                     <svg class="w-3 h-3 text-[#7390b4] absolute left-2.5 top-1/2 -translate-y-1/2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
-                                    <input type="text" class="tw-select-search w-full bg-[#f8fafc] border-none text-[11px] rounded pl-7 pr-2 py-1.5 focus:outline-none focus:ring-1 focus:ring-[#4d9ae4]" placeholder="Cari sekolah...">
+                                    <input type="text" class="tw-select-search w-full bg-[#f8fafc] border-none text-[13px] rounded pl-7 pr-2 py-1.5 focus:outline-none focus:ring-1 focus:ring-[#4d9ae4]" placeholder="Cari sekolah...">
                                 </div>
                             </div>
                             <ul class="tw-select-list max-h-48 overflow-y-auto custom-scrollbar p-1" role="listbox"></ul>
-                            <div class="tw-select-empty hidden p-3 text-center text-[10px] text-[#7390b4]">Pencarian tidak ditemukan.</div>
+                            <div class="tw-select-empty hidden p-3 text-center text-[12px] text-[#7390b4]">Pencarian tidak ditemukan.</div>
                         </div>
                     </div>
                 </div>
             </div>
             <div id="add-city-agency-wrapper" class="hidden">
-                <label class="block text-[10px] font-semibold text-[#496985] mb-1.5">Instansi Tingkat Kota <span class="text-red-500">*</span></label>
-                <select name="city_agency" id="add-city-agency" class="w-full border border-[#dfe8f1] rounded-lg px-3 py-2.5 text-[11px] text-[#315675] bg-[#fbfdff] focus:outline-none focus:border-[#4d9ae4]">
+                <label class="block text-[12px] font-semibold text-[#496985] mb-1.5">Instansi Tingkat Kota <span class="text-red-500">*</span></label>
+                <select name="city_agency" id="add-city-agency" class="w-full border border-[#dfe8f1] rounded-lg px-3 py-2.5 text-[13px] text-[#315675] bg-[#fbfdff] focus:outline-none focus:border-[#4d9ae4]">
                     <option value="Dinas Pendidikan & Kebudayaan Kota Bukittinggi">Dinas Pendidikan & Kebudayaan Kota Bukittinggi</option>
                     <option value="UPTD PPA - DP3APPKB Kota Bukittinggi">UPTD PPA (DP3APPKB Kota Bukittinggi)</option>
                     <option value="Satgas PPKSP Kota Bukittinggi">Satgas PPKSP Kota Bukittinggi</option>
@@ -211,11 +211,11 @@
             </div>
             <div class="flex justify-end gap-2 pt-2 mt-1">
                 <button type="button" id="modal-add-cancel"
-                    class="px-4 py-2 text-[11px] font-semibold text-[#5c7b98] bg-[#f3f8fd] border border-[#dfebf5] rounded-lg hover:bg-[#e8f0f8] transition-colors">
+                    class="px-4 py-2 text-[13px] font-semibold text-[#5c7b98] bg-[#f3f8fd] border border-[#dfebf5] rounded-lg hover:bg-[#e8f0f8] transition-colors">
                     Batal
                 </button>
                 <button type="submit" id="btn-submit-add-user"
-                    class="flex items-center gap-2 px-4 py-2 text-[11px] font-bold bg-[#1675e8] text-white rounded-lg shadow-[0_4px_12px_rgba(24,120,227,.25)] hover:bg-[#1262c8] transition-colors">
+                    class="flex items-center gap-2 px-4 py-2 text-[13px] font-bold bg-[#1675e8] text-white rounded-lg shadow-[0_4px_12px_rgba(24,120,227,.25)] hover:bg-[#1262c8] transition-colors">
                     <i data-lucide="user-plus" class="w-4 h-4"></i> Buat Pengguna
                 </button>
             </div>
@@ -229,8 +229,8 @@
     <div class="relative bg-white rounded-2xl shadow-2xl w-full max-w-md p-7 animate-modal">
         <div class="flex items-center justify-between mb-5">
             <div>
-                <h2 id="modal-edit-title" class="font-extrabold text-[17px] text-[#193d6c]" style="font-family:'Plus Jakarta Sans'">Edit Pengguna</h2>
-                <p id="edit-subtitle" class="text-[10px] text-[#8494a9] mt-1">Ubah detail akun pengguna</p>
+                <h2 id="modal-edit-title" class="font-extrabold text-[19px] text-[#193d6c]" style="font-family:'Plus Jakarta Sans'">Edit Pengguna</h2>
+                <p id="edit-subtitle" class="text-[12px] text-[#8494a9] mt-1">Ubah detail akun pengguna</p>
             </div>
             <button id="modal-edit-close" class="w-8 h-8 rounded-full bg-[#f3f7fb] text-[#7390b4] flex items-center justify-center hover:bg-[#e8eef5] transition-colors">
                 <i data-lucide="x" class="w-4 h-4"></i>
@@ -239,19 +239,19 @@
         <form id="edit-form" method="POST" class="grid gap-3">
             @csrf
             <div>
-                <label class="block text-[10px] font-semibold text-[#496985] mb-1.5">Nama Lengkap <span class="text-red-500">*</span></label>
+                <label class="block text-[12px] font-semibold text-[#496985] mb-1.5">Nama Lengkap <span class="text-red-500">*</span></label>
                 <input id="edit-name" name="name" required
-                    class="w-full border border-[#dfe8f1] rounded-lg px-3 py-2.5 text-[11px] text-[#315675] bg-[#fbfdff] focus:outline-none focus:border-[#4d9ae4] focus:ring-2 focus:ring-[#e7f3ff]">
+                    class="w-full border border-[#dfe8f1] rounded-lg px-3 py-2.5 text-[13px] text-[#315675] bg-[#fbfdff] focus:outline-none focus:border-[#4d9ae4] focus:ring-2 focus:ring-[#e7f3ff]">
             </div>
             <div>
-                <label class="block text-[10px] font-semibold text-[#496985] mb-1.5">Email</label>
+                <label class="block text-[12px] font-semibold text-[#496985] mb-1.5">Email</label>
                 <input id="edit-email" type="email" disabled
-                    class="w-full border border-[#e8eef5] rounded-lg px-3 py-2.5 text-[11px] text-[#9aa9ba] bg-[#f8fafc] cursor-not-allowed">
+                    class="w-full border border-[#e8eef5] rounded-lg px-3 py-2.5 text-[13px] text-[#9aa9ba] bg-[#f8fafc] cursor-not-allowed">
             </div>
             <div class="grid grid-cols-2 gap-3">
                 <div>
-                    <label class="block text-[10px] font-semibold text-[#496985] mb-1.5">Role <span class="text-red-500">*</span></label>
-                    <select id="edit-role" name="role" class="w-full border border-[#dfe8f1] rounded-lg px-3 py-2.5 text-[11px] text-[#315675] bg-[#fbfdff] focus:outline-none focus:border-[#4d9ae4]">
+                    <label class="block text-[12px] font-semibold text-[#496985] mb-1.5">Role <span class="text-red-500">*</span></label>
+                    <select id="edit-role" name="role" class="w-full border border-[#dfe8f1] rounded-lg px-3 py-2.5 text-[13px] text-[#315675] bg-[#fbfdff] focus:outline-none focus:border-[#4d9ae4]">
                         <option value="COUNSELOR">Guru BK</option>
                         <option value="PRINCIPAL">Kepala Sekolah</option>
                         <option value="CITY_ADMIN">Instansi Kota / Satgas PPKSP (City Admin)</option>
@@ -259,23 +259,23 @@
                     </select>
                 </div>
                 <div>
-                    <label class="block text-[10px] font-semibold text-[#496985] mb-1.5">Status <span class="text-red-500">*</span></label>
-                    <select id="edit-status" name="status" class="w-full border border-[#dfe8f1] rounded-lg px-3 py-2.5 text-[11px] text-[#315675] bg-[#fbfdff] focus:outline-none focus:border-[#4d9ae4]">
+                    <label class="block text-[12px] font-semibold text-[#496985] mb-1.5">Status <span class="text-red-500">*</span></label>
+                    <select id="edit-status" name="status" class="w-full border border-[#dfe8f1] rounded-lg px-3 py-2.5 text-[13px] text-[#315675] bg-[#fbfdff] focus:outline-none focus:border-[#4d9ae4]">
                         <option value="ACTIVE">Aktif</option>
                         <option value="INACTIVE">Nonaktif</option>
                     </select>
                 </div>
             </div>
             <div id="edit-city-agency-wrapper" class="hidden">
-                <label class="block text-[10px] font-semibold text-[#496985] mb-1.5">Instansi Tingkat Kota <span class="text-red-500">*</span></label>
-                <select name="city_agency" id="edit-city-agency" class="w-full border border-[#dfe8f1] rounded-lg px-3 py-2.5 text-[11px] text-[#315675] bg-[#fbfdff] focus:outline-none focus:border-[#4d9ae4]">
+                <label class="block text-[12px] font-semibold text-[#496985] mb-1.5">Instansi Tingkat Kota <span class="text-red-500">*</span></label>
+                <select name="city_agency" id="edit-city-agency" class="w-full border border-[#dfe8f1] rounded-lg px-3 py-2.5 text-[13px] text-[#315675] bg-[#fbfdff] focus:outline-none focus:border-[#4d9ae4]">
                     <option value="Dinas Pendidikan & Kebudayaan Kota Bukittinggi">Dinas Pendidikan & Kebudayaan Kota Bukittinggi</option>
                     <option value="UPTD PPA - DP3APPKB Kota Bukittinggi">UPTD PPA (DP3APPKB Kota Bukittinggi)</option>
                     <option value="Satgas PPKSP Kota Bukittinggi">Satgas PPKSP Kota Bukittinggi</option>
                 </select>
             </div>
             <div id="edit-school-wrapper">
-                <label class="block text-[10px] font-semibold text-[#496985] mb-1.5">Sekolah</label>
+                <label class="block text-[12px] font-semibold text-[#496985] mb-1.5">Sekolah</label>
                 <div class="tw-select-container relative w-full" data-name="school_npsn">
                     <select id="edit-school" name="school_npsn" class="hidden">
                         <option value="">Tanpa sekolah (Platform)</option>
@@ -283,7 +283,7 @@
                             <option value="{{ $school->npsn }}">{{ $school->nama_sekolah }}</option>
                         @endforeach
                     </select>
-                    <button type="button" class="tw-select-trigger w-full flex items-center justify-between bg-[#fbfdff] border border-[#dfe8f1] rounded-lg px-3 py-2.5 text-[11px] text-left focus:outline-none focus:border-[#4d9ae4] focus:ring-2 focus:ring-[#e7f3ff] transition-colors">
+                    <button type="button" class="tw-select-trigger w-full flex items-center justify-between bg-[#fbfdff] border border-[#dfe8f1] rounded-lg px-3 py-2.5 text-[13px] text-left focus:outline-none focus:border-[#4d9ae4] focus:ring-2 focus:ring-[#e7f3ff] transition-colors">
                         <span class="tw-select-text text-[#315675] truncate">Pilih sekolah...</span>
                         <svg class="w-3 h-3 text-[#7390b4] pointer-events-none flex-none" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
                     </button>
@@ -291,21 +291,21 @@
                         <div class="p-2 border-b border-[#edf2f7]">
                             <div class="relative">
                                 <svg class="w-3 h-3 text-[#7390b4] absolute left-2.5 top-1/2 -translate-y-1/2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
-                                <input type="text" class="tw-select-search w-full bg-[#f8fafc] border-none text-[11px] rounded pl-7 pr-2 py-1.5 focus:outline-none focus:ring-1 focus:ring-[#4d9ae4]" placeholder="Cari sekolah...">
+                                <input type="text" class="tw-select-search w-full bg-[#f8fafc] border-none text-[13px] rounded pl-7 pr-2 py-1.5 focus:outline-none focus:ring-1 focus:ring-[#4d9ae4]" placeholder="Cari sekolah...">
                             </div>
                         </div>
                         <ul class="tw-select-list max-h-48 overflow-y-auto custom-scrollbar p-1" role="listbox"></ul>
-                        <div class="tw-select-empty hidden p-3 text-center text-[10px] text-[#7390b4]">Pencarian tidak ditemukan.</div>
+                        <div class="tw-select-empty hidden p-3 text-center text-[12px] text-[#7390b4]">Pencarian tidak ditemukan.</div>
                     </div>
                 </div>
             </div>
             <div class="flex justify-end gap-2 pt-2 mt-1">
                 <button type="button" id="modal-edit-cancel"
-                    class="px-4 py-2 text-[11px] font-semibold text-[#5c7b98] bg-[#f3f8fd] border border-[#dfebf5] rounded-lg hover:bg-[#e8f0f8] transition-colors">
+                    class="px-4 py-2 text-[13px] font-semibold text-[#5c7b98] bg-[#f3f8fd] border border-[#dfebf5] rounded-lg hover:bg-[#e8f0f8] transition-colors">
                     Batal
                 </button>
                 <button type="submit"
-                    class="flex items-center gap-2 px-4 py-2 text-[11px] font-bold bg-[#1675e8] text-white rounded-lg shadow-[0_4px_12px_rgba(24,120,227,.25)] hover:bg-[#1262c8] transition-colors">
+                    class="flex items-center gap-2 px-4 py-2 text-[13px] font-bold bg-[#1675e8] text-white rounded-lg shadow-[0_4px_12px_rgba(24,120,227,.25)] hover:bg-[#1262c8] transition-colors">
                     <i data-lucide="save" class="w-4 h-4"></i> Simpan Perubahan
                 </button>
             </div>
@@ -320,17 +320,17 @@
         <div class="w-14 h-14 rounded-full bg-[#ffe2e3] flex items-center justify-center mx-auto mb-4">
             <i data-lucide="trash-2" class="w-7 h-7 text-[#e6636a]"></i>
         </div>
-        <h2 class="font-extrabold text-[17px] text-[#193d6c] mb-2" style="font-family:'Plus Jakarta Sans'">Hapus Pengguna?</h2>
-        <p class="text-[11px] text-[#8494a9] mb-5">Akun <strong id="delete-name" class="text-[#315675]"></strong> akan dihapus secara permanen dan tidak dapat dipulihkan.</p>
+        <h2 class="font-extrabold text-[19px] text-[#193d6c] mb-2" style="font-family:'Plus Jakarta Sans'">Hapus Pengguna?</h2>
+        <p class="text-[13px] text-[#8494a9] mb-5">Akun <strong id="delete-name" class="text-[#315675]"></strong> akan dihapus secara permanen dan tidak dapat dipulihkan.</p>
         <form id="delete-form" method="POST">
             @csrf
             <div class="flex justify-center gap-3">
                 <button type="button" id="modal-delete-cancel"
-                    class="px-5 py-2 text-[11px] font-semibold text-[#5c7b98] bg-[#f3f8fd] border border-[#dfebf5] rounded-lg hover:bg-[#e8f0f8] transition-colors">
+                    class="px-5 py-2 text-[13px] font-semibold text-[#5c7b98] bg-[#f3f8fd] border border-[#dfebf5] rounded-lg hover:bg-[#e8f0f8] transition-colors">
                     Batal
                 </button>
                 <button type="submit"
-                    class="flex items-center gap-2 px-5 py-2 text-[11px] font-bold bg-[#e6636a] text-white rounded-lg hover:bg-[#d4565c] transition-colors">
+                    class="flex items-center gap-2 px-5 py-2 text-[13px] font-bold bg-[#e6636a] text-white rounded-lg hover:bg-[#d4565c] transition-colors">
                     <i data-lucide="trash-2" class="w-4 h-4"></i> Ya, Hapus
                 </button>
             </div>
@@ -345,19 +345,19 @@
         <div class="w-14 h-14 rounded-full bg-[#fef3c7] text-[#d97706] flex items-center justify-center mx-auto mb-4">
             <i data-lucide="key-round" class="w-7 h-7"></i>
         </div>
-        <h2 id="modal-reset-title" class="font-extrabold text-[17px] text-[#193d6c] mb-2" style="font-family:'Plus Jakarta Sans'">Reset Kata Sandi?</h2>
-        <p class="text-[11px] text-[#8494a9] mb-4">
+        <h2 id="modal-reset-title" class="font-extrabold text-[19px] text-[#193d6c] mb-2" style="font-family:'Plus Jakarta Sans'">Reset Kata Sandi?</h2>
+        <p class="text-[13px] text-[#8494a9] mb-4">
             Kata sandi untuk <strong id="reset-user-name" class="text-[#315675]"></strong> akan direset menjadi <strong class="text-[#193d6c]">kata sandi acak 8 karakter</strong> baru dan langsung dikirimkan ke email <span id="reset-user-email" class="font-mono text-[#1675e8]"></span>.
         </p>
         <form id="reset-password-form" method="POST">
             @csrf
             <div class="flex justify-center gap-3">
                 <button type="button" id="modal-reset-cancel"
-                    class="px-5 py-2 text-[11px] font-semibold text-[#5c7b98] bg-[#f3f8fd] border border-[#dfebf5] rounded-lg hover:bg-[#e8f0f8] transition-colors">
+                    class="px-5 py-2 text-[13px] font-semibold text-[#5c7b98] bg-[#f3f8fd] border border-[#dfebf5] rounded-lg hover:bg-[#e8f0f8] transition-colors">
                     Batal
                 </button>
                 <button type="submit"
-                    class="flex items-center gap-2 px-5 py-2 text-[11px] font-bold bg-[#d97706] text-white rounded-lg hover:bg-[#b45309] transition-colors shadow-sm">
+                    class="flex items-center gap-2 px-5 py-2 text-[13px] font-bold bg-[#d97706] text-white rounded-lg hover:bg-[#b45309] transition-colors shadow-sm">
                     <i data-lucide="key-round" class="w-4 h-4"></i> Ya, Reset Kata Sandi
                 </button>
             </div>

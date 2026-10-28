@@ -175,21 +175,21 @@
                 <div style="flex: 1; display: flex; flex-direction: column; align-items: center; gap: 8px;">
                     <div style="width: 100%; height: 150px; background: #f0f0f0; border-radius: 4px; display: flex; flex-direction: column; justify-content: flex-end; overflow: hidden;">
                         @if($overduePct > 0)
-                            <div style="height: {{ $overduePct }}%; background: #ff4d4f; width: 100%; display: flex; align-items: center; justify-content: center; color: white; font-size: 10px;" title="Overdue: {{ $slaStats[$risk]['overdue'] }}">
+                            <div style="height: {{ $overduePct }}%; background: #ff4d4f; width: 100%; display: flex; align-items: center; justify-content: center; color: white; font-size: 12px;" title="Overdue: {{ $slaStats[$risk]['overdue'] }}">
                                 {{ $slaStats[$risk]['overdue'] }}
                             </div>
                         @endif
                         @if($onTimePct > 0)
-                            <div style="height: {{ $onTimePct }}%; background: #52c41a; width: 100%; display: flex; align-items: center; justify-content: center; color: white; font-size: 10px;" title="On Time: {{ $slaStats[$risk]['on_time'] }}">
+                            <div style="height: {{ $onTimePct }}%; background: #52c41a; width: 100%; display: flex; align-items: center; justify-content: center; color: white; font-size: 12px;" title="On Time: {{ $slaStats[$risk]['on_time'] }}">
                                 {{ $slaStats[$risk]['on_time'] }}
                             </div>
                         @endif
                     </div>
-                    <strong style="font-size: 12px; text-align: center;">{{ $risk }}</strong>
+                    <strong style="font-size: 14px; text-align: center;">{{ $risk }}</strong>
                 </div>
             @endforeach
         </div>
-        <div class="legend" style="margin-top: 15px; display: flex; gap: 15px; justify-content: center; font-size: 12px;">
+        <div class="legend" style="margin-top: 15px; display: flex; gap: 15px; justify-content: center; font-size: 14px;">
             <span style="display: flex; align-items: center; gap: 5px;"><i style="display: inline-block; width: 10px; height: 10px; border-radius: 50%; background: #52c41a;"></i> SLA Terpenuhi (On Time)</span>
             <span style="display: flex; align-items: center; gap: 5px;"><i style="display: inline-block; width: 10px; height: 10px; border-radius: 50%; background: #ff4d4f;"></i> SLA Terlewati (Overdue)</span>
         </div>
@@ -282,15 +282,15 @@
                 <div style="width:28px;height:28px;border-radius:8px;background:#fef3c7;color:#b45309;display:flex;align-items:center;justify-content:center;">
                     <i data-lucide="trophy" style="width:16px;height:16px;"></i>
                 </div>
-                <h3 style="margin:0;font-size:15px;font-weight:700;color:#183b68;">Prestasi Siswa Terkini</h3>
+                <h3 style="margin:0;font-size:17px;font-weight:700;color:#183b68;">Prestasi Siswa Terkini</h3>
             </div>
-            <p style="margin:4px 0 0;font-size:11px;color:#73869e;">Capaian membanggakan siswa di sekolah Anda yang telah terdata.</p>
+            <p style="margin:4px 0 0;font-size:13px;color:#73869e;">Capaian membanggakan siswa di sekolah Anda yang telah terdata.</p>
         </div>
         <div style="display:flex;align-items:center;gap:10px;">
-            <a class="text-link" href="{{ route('achievements.index') }}" style="font-size:12px;font-weight:600;display:flex;align-items:center;gap:4px;color:#1675e8;text-decoration:none;">
+            <a class="text-link" href="{{ route('achievements.index') }}" style="font-size:14px;font-weight:600;display:flex;align-items:center;gap:4px;color:#1675e8;text-decoration:none;">
                 Lihat Semua ({{ $achievementStats['total'] }}) <i data-lucide="arrow-up-right" style="width:14px;height:14px;"></i>
             </a>
-            <a href="{{ route('achievements.create') }}" class="primary-button" style="padding:7px 14px;font-size:12px;display:flex;align-items:center;gap:6px;">
+            <a href="{{ route('achievements.create') }}" class="primary-button" style="padding:7px 14px;font-size:14px;display:flex;align-items:center;gap:6px;">
                 <i data-lucide="plus" style="width:14px;height:14px;"></i> Catat Prestasi
             </a>
         </div>
@@ -326,21 +326,21 @@
                                 <small style="color:#73869e;">Kelas {{ $ach->class_name ?? '-' }} &bull; NISN: {{ $ach->nisn }}</small>
                             </td>
                             <td>
-                                <strong style="color:#1675e8;font-size:12px;">{{ $ach->ranking }}</strong>
-                                <div style="font-size:11px;color:#334155;margin-top:2px;">{{ $ach->achievement_name }}</div>
+                                <strong style="color:#1675e8;font-size:14px;">{{ $ach->ranking }}</strong>
+                                <div style="font-size:13px;color:#334155;margin-top:2px;">{{ $ach->achievement_name }}</div>
                             </td>
                             <td>
-                                <span class="category-tag" style="background:#f1f5f9;color:#334155;padding:3px 8px;border-radius:6px;font-size:10px;font-weight:600;">
+                                <span class="category-tag" style="background:#f1f5f9;color:#334155;padding:3px 8px;border-radius:6px;font-size:12px;font-weight:600;">
                                     {{ $ach->category?->name ?? 'Prestasi' }}
                                 </span>
                             </td>
                             <td>
-                                <span style="display:inline-block;padding:2px 8px;border-radius:6px;font-size:10px;font-weight:700;letter-spacing:.02em;{{ $badgeStyles }}">
+                                <span style="display:inline-block;padding:2px 8px;border-radius:6px;font-size:12px;font-weight:700;letter-spacing:.02em;{{ $badgeStyles }}">
                                     {{ $ach->achievement_level }}
                                 </span>
                             </td>
                             <td>
-                                <span style="font-size:11px;color:#64748b;">
+                                <span style="font-size:13px;color:#64748b;">
                                     {{ \Illuminate\Support\Carbon::parse($ach->achievement_date)->format('d M Y') }}
                                 </span>
                             </td>
@@ -359,9 +359,9 @@
             <div style="width:48px;height:48px;border-radius:12px;background:#fef3c7;color:#b45309;display:grid;place-items:center;margin:0 auto 12px;">
                 <i data-lucide="trophy" style="width:24px;height:24px;"></i>
             </div>
-            <strong style="display:block;color:#183b68;font-size:14px;margin-bottom:4px;">Belum Ada Data Prestasi Siswa</strong>
-            <p style="font-size:12px;color:#64748b;max-width:380px;margin:0 auto 16px;">Catat prestasi akademik, olahraga, seni budaya, atau keagamaan yang diraih siswa untuk membangun portofolio kebanggaan sekolah.</p>
-            <a href="{{ route('achievements.create') }}" class="primary-button" style="display:inline-flex;align-items:center;gap:6px;padding:8px 16px;font-size:12px;">
+            <strong style="display:block;color:#183b68;font-size:16px;margin-bottom:4px;">Belum Ada Data Prestasi Siswa</strong>
+            <p style="font-size:14px;color:#64748b;max-width:380px;margin:0 auto 16px;">Catat prestasi akademik, olahraga, seni budaya, atau keagamaan yang diraih siswa untuk membangun portofolio kebanggaan sekolah.</p>
+            <a href="{{ route('achievements.create') }}" class="primary-button" style="display:inline-flex;align-items:center;gap:6px;padding:8px 16px;font-size:14px;">
                 <i data-lucide="plus" style="width:14px;height:14px;"></i> Catat Prestasi Pertama Siswa
             </a>
         </div>
@@ -423,7 +423,7 @@
 
     .sla-strip-left p {
         margin: 0;
-        font-size: 11px;
+        font-size: 13px;
         color: #7f1d1d;
         line-height: 1.4;
     }

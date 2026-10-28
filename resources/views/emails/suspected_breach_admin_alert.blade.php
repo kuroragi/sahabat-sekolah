@@ -2,16 +2,16 @@
 
 @section('content')
     <div style="background-color: #fee2e2; border-left: 4px solid #ef4444; padding: 14px 18px; margin-bottom: 20px; border-radius: 6px;">
-        <strong style="color: #991b1b; font-size: 13px;">🚨 PERINGATAN INSIDEN KEAMANAN (URGENT)</strong>
-        <p style="margin: 4px 0 0; color: #b91c1c; font-size: 12px; line-height: 1.5;">
+        <strong style="color: #991b1b; font-size: 15px;">🚨 PERINGATAN INSIDEN KEAMANAN (URGENT)</strong>
+        <p style="margin: 4px 0 0; color: #b91c1c; font-size: 14px; line-height: 1.5;">
             Pengguna telah melaporkan perubahan kata sandi tidak sah. Akun telah <strong>dinonaktifkan secara otomatis</strong> oleh sistem untuk mencegah peretasan lebih lanjut.
         </p>
     </div>
 
-    <h2 style="font-size: 17px; color: #12386a; margin: 0 0 10px; font-weight: 800;">
+    <h2 style="font-size: 19px; color: #12386a; margin: 0 0 10px; font-weight: 800;">
         Halo, {{ $recipientName }}
     </h2>
-    <p style="font-size: 13px; color: #526b84; line-height: 1.6; margin: 0 0 18px;">
+    <p style="font-size: 15px; color: #526b84; line-height: 1.6; margin: 0 0 18px;">
         Sistem <strong>Sahabat Sekolah</strong> mendeteksi bahwa pengguna berikut mengonfirmasi bahwa mereka <strong>tidak melakukan perubahan kata sandi</strong> yang baru saja terjadi. Akses login akun ini telah dinonaktifkan secara langsung.
     </p>
 
@@ -24,7 +24,7 @@
             <tr class="info-row">
                 <td class="info-label">Alamat Email</td>
                 <td class="info-value">
-                    <span style="font-family: monospace; font-size: 13px; color: #1e3a58;">
+                    <span style="font-family: monospace; font-size: 15px; color: #1e3a58;">
                         {{ $incidentData['victim_email'] }}
                     </span>
                 </td>
@@ -53,14 +53,14 @@
     </div>
 
     <div style="text-align: center; margin: 26px 0 20px;">
-        <a href="{{ $incidentData['admin_users_url'] }}" class="btn-primary" style="background-color: #1878e3; font-size: 13px; padding: 12px 26px;">
+        <a href="{{ $incidentData['admin_users_url'] }}" class="btn-primary" style="background-color: #1878e3; font-size: 15px; padding: 12px 26px;">
             Buka Manajemen Pengguna &rarr;
         </a>
     </div>
 
     <div class="alert-box alert-warning">
         <strong>📋 Rekomendasi Tindakan Administrator:</strong>
-        <ol style="margin: 8px 0 0; padding-left: 18px; font-size: 12px; line-height: 1.6;">
+        <ol style="margin: 8px 0 0; padding-left: 18px; font-size: 14px; line-height: 1.6;">
             <li>Hubungi pengguna secara langsung melalui saluran resmi sekolah/telepon untuk memverifikasi identitas pemilik sah.</li>
             <li>Periksa catatan log audit aktivitas terakhir untuk memastikan tidak ada data laporan siswa yang diubah atau disalahgunakan.</li>
             <li>Gunakan fitur <strong>Reset Password</strong> di menu Manajemen Pengguna untuk menerbitkan kredensial acak baru setelah diverifikasi.</li>

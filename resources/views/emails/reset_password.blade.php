@@ -1,15 +1,15 @@
 @extends('emails.layout', ['title' => 'Atur Ulang Kata Sandi - Sahabat Sekolah'])
 
 @section('content')
-    <h2 style="font-size: 18px; color: #12386a; margin: 0 0 10px; font-weight: 800;">
+    <h2 style="font-size: 20px; color: #12386a; margin: 0 0 10px; font-weight: 800;">
         Halo, {{ $recipientName }}
     </h2>
-    <p style="font-size: 13px; color: #526b84; line-height: 1.6; margin: 0 0 18px;">
+    <p style="font-size: 15px; color: #526b84; line-height: 1.6; margin: 0 0 18px;">
         Kami menerima permintaan untuk mengatur ulang kata sandi (reset password) akun Anda pada platform <strong>Sahabat Sekolah</strong>.
     </p>
 
     <div style="text-align: center; margin: 28px 0;">
-        <a href="{{ $resetData['reset_url'] }}" class="btn-primary" style="font-size: 14px; padding: 13px 32px; letter-spacing: 0.02em;">
+        <a href="{{ $resetData['reset_url'] }}" class="btn-primary" style="font-size: 16px; padding: 13px 32px; letter-spacing: 0.02em;">
             Atur Ulang Kata Sandi
         </a>
     </div>
@@ -37,7 +37,7 @@
         Jika Anda tidak pernah meminta pengaturan ulang kata sandi, abaikan email ini. Kata sandi akun Anda tidak akan berubah dan akun Anda tetap aman.
     </div>
 
-    <p style="font-size: 11px; color: #8fa0b3; line-height: 1.5; margin: 22px 0 0; word-break: break-all;">
+    <p style="font-size: 13px; color: #8fa0b3; line-height: 1.5; margin: 22px 0 0; word-break: break-all;">
         Jika tombol di atas tidak berfungsi, salin dan tempel tautan berikut ke peramban (browser) Anda:<br>
         <a href="{{ $resetData['reset_url'] }}" style="color: #1878e3; text-decoration: underline;">{{ $resetData['reset_url'] }}</a>
     </p>

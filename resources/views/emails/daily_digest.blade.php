@@ -1,10 +1,10 @@
 @extends('emails.layout', ['title' => 'Ringkasan Kasus Harian - Sahabat Sekolah'])
 
 @section('content')
-    <h2 style="font-size: 18px; color: #12386a; margin: 0 0 10px; font-weight: 800;">
+    <h2 style="font-size: 20px; color: #12386a; margin: 0 0 10px; font-weight: 800;">
         Selamat Pagi, {{ $recipientName }}
     </h2>
-    <p style="font-size: 13px; color: #526b84; line-height: 1.6; margin: 0 0 18px;">
+    <p style="font-size: 15px; color: #526b84; line-height: 1.6; margin: 0 0 18px;">
         Berikut adalah ikhtisar harian status penanganan laporan perundungan untuk <strong>{{ $digestData['school_name'] }}</strong> per tanggal <strong>{{ $digestData['date'] }}</strong>:
     </p>
 
@@ -12,18 +12,18 @@
     <table width="100%" cellpadding="0" cellspacing="0" role="presentation" style="margin: 16px 0 24px;">
         <tr>
             <td width="32%" style="background: #fef2f2; border: 1px solid #fee2e2; border-radius: 8px; padding: 14px; text-align: center;">
-                <span style="font-size: 24px; font-weight: 800; color: #dc2626; display: block;">{{ count($digestData['overdue_cases']) }}</span>
-                <span style="font-size: 11px; font-weight: 600; color: #991b1b; text-transform: uppercase;">SLA Terlewati</span>
+                <span style="font-size: 26px; font-weight: 800; color: #dc2626; display: block;">{{ count($digestData['overdue_cases']) }}</span>
+                <span style="font-size: 13px; font-weight: 600; color: #991b1b; text-transform: uppercase;">SLA Terlewati</span>
             </td>
             <td width="2%"></td>
             <td width="32%" style="background: #fffbeb; border: 1px solid #fef3c7; border-radius: 8px; padding: 14px; text-align: center;">
-                <span style="font-size: 24px; font-weight: 800; color: #d97706; display: block;">{{ count($digestData['pending_cases']) }}</span>
-                <span style="font-size: 11px; font-weight: 600; color: #92400e; text-transform: uppercase;">Menunggu Respons</span>
+                <span style="font-size: 26px; font-weight: 800; color: #d97706; display: block;">{{ count($digestData['pending_cases']) }}</span>
+                <span style="font-size: 13px; font-weight: 600; color: #92400e; text-transform: uppercase;">Menunggu Respons</span>
             </td>
             <td width="2%"></td>
             <td width="32%" style="background: #eff6ff; border: 1px solid #dbeafe; border-radius: 8px; padding: 14px; text-align: center;">
-                <span style="font-size: 24px; font-weight: 800; color: #2563eb; display: block;">{{ $digestData['in_handling_count'] }}</span>
-                <span style="font-size: 11px; font-weight: 600; color: #1e40af; text-transform: uppercase;">Dalam Penanganan</span>
+                <span style="font-size: 26px; font-weight: 800; color: #2563eb; display: block;">{{ $digestData['in_handling_count'] }}</span>
+                <span style="font-size: 13px; font-weight: 600; color: #1e40af; text-transform: uppercase;">Dalam Penanganan</span>
             </td>
         </tr>
     </table>
@@ -31,10 +31,10 @@
     {{-- Daftar Kasus Butuh Tindakan --}}
     @if (!empty($digestData['overdue_cases']))
         <div style="margin: 20px 0;">
-            <h3 style="font-size: 14px; color: #b91c1c; margin: 0 0 10px; font-weight: 700; display: flex; align-items: center; gap: 6px;">
+            <h3 style="font-size: 16px; color: #b91c1c; margin: 0 0 10px; font-weight: 700; display: flex; align-items: center; gap: 6px;">
                 ⚠️ Kasus Melewati Batas Waktu (SLA Overdue)
             </h3>
-            <table width="100%" cellpadding="8" cellspacing="0" style="font-size: 12px; border: 1px solid #fecaca; border-radius: 6px; border-collapse: collapse;">
+            <table width="100%" cellpadding="8" cellspacing="0" style="font-size: 14px; border: 1px solid #fecaca; border-radius: 6px; border-collapse: collapse;">
                 <tr style="background: #fef2f2; text-align: left; font-weight: 600; color: #991b1b;">
                     <th style="border-bottom: 1px solid #fecaca; padding: 8px;">No. Kasus</th>
                     <th style="border-bottom: 1px solid #fecaca; padding: 8px;">Kategori</th>
@@ -55,10 +55,10 @@
 
     @if (!empty($digestData['pending_cases']))
         <div style="margin: 20px 0;">
-            <h3 style="font-size: 14px; color: #d97706; margin: 0 0 10px; font-weight: 700;">
+            <h3 style="font-size: 16px; color: #d97706; margin: 0 0 10px; font-weight: 700;">
                 ⏳ Kasus Baru Menunggu Respons Awal
             </h3>
-            <table width="100%" cellpadding="8" cellspacing="0" style="font-size: 12px; border: 1px solid #fde68a; border-radius: 6px; border-collapse: collapse;">
+            <table width="100%" cellpadding="8" cellspacing="0" style="font-size: 14px; border: 1px solid #fde68a; border-radius: 6px; border-collapse: collapse;">
                 <tr style="background: #fffbeb; text-align: left; font-weight: 600; color: #92400e;">
                     <th style="border-bottom: 1px solid #fde68a; padding: 8px;">No. Kasus</th>
                     <th style="border-bottom: 1px solid #fde68a; padding: 8px;">Kategori</th>
@@ -85,7 +85,7 @@
     @endif
 
     <div style="text-align: center; margin: 28px 0 20px;">
-        <a href="{{ $digestData['dashboard_url'] }}" class="btn-primary" style="font-size: 14px; padding: 13px 32px;">
+        <a href="{{ $digestData['dashboard_url'] }}" class="btn-primary" style="font-size: 16px; padding: 13px 32px;">
             Buka Dashboard Sahabat Sekolah &rarr;
         </a>
     </div>

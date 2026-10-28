@@ -68,11 +68,11 @@
             <div class="bg-slate-50 border border-slate-200 rounded-2xl p-5 mb-6 relative">
                 <div class="flex items-center justify-between border-b border-slate-200 pb-3 mb-4">
                     <div>
-                        <span class="text-[11px] font-semibold text-slate-400 uppercase tracking-wider block">Nomor Laporan</span>
+                        <span class="text-[13px] font-semibold text-slate-400 uppercase tracking-wider block">Nomor Laporan</span>
                         <strong class="text-sm md:text-base font-bold text-slate-800">{{ $reportNumber }}</strong>
                     </div>
                     <div class="text-right">
-                        <span class="text-[11px] font-semibold text-slate-400 uppercase tracking-wider block">Waktu Lapor</span>
+                        <span class="text-[13px] font-semibold text-slate-400 uppercase tracking-wider block">Waktu Lapor</span>
                         <span class="text-xs font-medium text-slate-600">{{ now()->translatedFormat('d M Y, H:i') }} WIB</span>
                     </div>
                 </div>
@@ -88,13 +88,13 @@
                             <i data-lucide="copy" class="w-3.5 h-3.5"></i>
                             <span id="copy-btn-text">Salin 4 Kata</span>
                         </button>
-                        <span class="text-[11px] text-slate-400">|</span>
-                        <span class="text-[11px] text-slate-500 font-medium">📸 Jangan lupa di-screenshot!</span>
+                        <span class="text-[13px] text-slate-400">|</span>
+                        <span class="text-[13px] text-slate-500 font-medium">📸 Jangan lupa di-screenshot!</span>
                     </div>
                     <div id="copy-message" class="text-xs text-emerald-600 font-medium mt-2 hidden">4 Kata berhasil disalin ke clipboard!</div>
                 </div>
 
-                <p class="text-[11px] text-slate-400 text-center mt-3 leading-relaxed">
+                <p class="text-[13px] text-slate-400 text-center mt-3 leading-relaxed">
                     Catat atau simpan 4 kata rahasia di atas. Kamu dapat memakainya kapan saja untuk melihat status penanganan dan membalas pesan Guru BK tanpa pernah diketahui siapa dirimu.
                 </p>
                 @else

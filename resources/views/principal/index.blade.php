@@ -136,11 +136,11 @@
                     <i data-lucide="trophy" style="width:20px;height:20px;"></i>
                 </div>
                 <div>
-                    <h3 style="margin:0;font-size:16px;font-weight:700;color:#183b68;">Prestasi & Kebanggaan Siswa</h3>
-                    <p style="margin:2px 0 0;font-size:11px;color:#73869e;">Data capaian prestasi siswa pada {{ $selectedSchool?->nama_sekolah ?? 'sekolah Anda' }}</p>
+                    <h3 style="margin:0;font-size:18px;font-weight:700;color:#183b68;">Prestasi & Kebanggaan Siswa</h3>
+                    <p style="margin:2px 0 0;font-size:13px;color:#73869e;">Data capaian prestasi siswa pada {{ $selectedSchool?->nama_sekolah ?? 'sekolah Anda' }}</p>
                 </div>
             </div>
-            <a class="view-button" href="{{ route('achievements.index') }}" style="display:inline-flex;align-items:center;gap:6px;padding:8px 14px;font-size:12px;text-decoration:none;">
+            <a class="view-button" href="{{ route('achievements.index') }}" style="display:inline-flex;align-items:center;gap:6px;padding:8px 14px;font-size:14px;text-decoration:none;">
                 Lihat Seluruh Prestasi ({{ $achievementStats['total'] }}) <i data-lucide="arrow-right" style="width:14px;height:14px;"></i>
             </a>
         </div>
@@ -180,7 +180,7 @@
                                 </td>
                                 <td>{{ $ach->category?->name ?? 'Prestasi' }}</td>
                                 <td>
-                                    <span style="display:inline-block;padding:2px 8px;border-radius:6px;font-size:9px;font-weight:700;letter-spacing:.02em;{{ $badgeStyles }}">
+                                    <span style="display:inline-block;padding:2px 8px;border-radius:6px;font-size:11px;font-weight:700;letter-spacing:.02em;{{ $badgeStyles }}">
                                         {{ $ach->achievement_level }}
                                     </span>
                                 </td>
@@ -200,8 +200,8 @@
                 <div style="width:42px;height:42px;border-radius:10px;background:#fef3c7;color:#b45309;display:grid;place-items:center;margin:0 auto 10px;">
                     <i data-lucide="trophy" style="width:20px;height:20px;"></i>
                 </div>
-                <strong style="display:block;color:#204b77;font-size:13px;margin-bottom:3px;">Belum ada prestasi yang tercatat</strong>
-                <p style="font-size:11px;color:#8093a6;margin:0;">Data prestasi yang diinputkan oleh Guru BK akan otomatis terpantau di halaman ini.</p>
+                <strong style="display:block;color:#204b77;font-size:15px;margin-bottom:3px;">Belum ada prestasi yang tercatat</strong>
+                <p style="font-size:13px;color:#8093a6;margin:0;">Data prestasi yang diinputkan oleh Guru BK akan otomatis terpantau di halaman ini.</p>
             </div>
         @endif
     </section>

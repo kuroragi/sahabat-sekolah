@@ -28,7 +28,7 @@
             <span class="eyebrow">RUANG KERJA TERLINDUNGI</span>
             <h1>Selamat Datang<br><b>Guru BK</b></h1>
             @if (session('success'))
-                <div style="display:flex; gap:9px; align-items:flex-start; color:#187349; background:#e8f9f0; border:1px solid #c2eed5; border-radius:8px; padding:12px 14px; font-size:11px; line-height:1.5; margin-bottom:18px; text-align:left;">
+                <div style="display:flex; gap:9px; align-items:flex-start; color:#187349; background:#e8f9f0; border:1px solid #c2eed5; border-radius:8px; padding:12px 14px; font-size:13px; line-height:1.5; margin-bottom:18px; text-align:left;">
                     <i data-lucide="circle-check-big" style="width:18px; flex:none; color:#187349; margin-top:1px;"></i>
                     <span>{{ session('success') }}</span>
                 </div>

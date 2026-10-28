@@ -43,7 +43,7 @@
                 </div>
                 <div>
                     <strong class="text-sm md:text-base font-extrabold text-slate-900 block leading-tight">Sahabat Sekolah</strong>
-                    <small class="text-[10px] text-slate-500 font-medium block">Pemerintah Kota Bukittinggi</small>
+                    <small class="text-[12px] text-slate-500 font-medium block">Pemerintah Kota Bukittinggi</small>
                 </div>
             </a>
             <div class="flex items-center gap-3">
@@ -95,7 +95,7 @@
                 </button>
             </form>
 
-            <div class="flex flex-wrap items-center justify-center gap-3 mt-3 text-[11px] text-slate-500">
+            <div class="flex flex-wrap items-center justify-center gap-3 mt-3 text-[13px] text-slate-500">
                 <span class="flex items-center gap-1">
                     <i data-lucide="lock" class="w-3 h-3 text-emerald-600"></i>
                     <strong>Laporan Anonim:</strong> Gunakan 4 kata rahasia
@@ -135,7 +135,7 @@
                 </div>
 
                 <div class="mt-8 pt-6 border-t border-slate-100 max-w-md mx-auto text-left">
-                    <span class="text-[11px] font-bold uppercase tracking-wider text-slate-400 block mb-2">Bantuan Darurat Kota Bukittinggi:</span>
+                    <span class="text-[13px] font-bold uppercase tracking-wider text-slate-400 block mb-2">Bantuan Darurat Kota Bukittinggi:</span>
                     <div class="grid grid-cols-2 gap-2 text-xs">
                         <a href="tel:112" class="p-2.5 bg-rose-50 text-rose-700 rounded-lg font-semibold flex items-center justify-between border border-rose-200">
                             <span>Darurat 112</span>
@@ -159,15 +159,15 @@
                         <div class="flex items-center gap-2 mb-1 flex-wrap">
                             <span class="text-xs font-bold text-slate-400 uppercase tracking-wider">Nomor Laporan</span>
                             @if ($report->identity_mode === 'ANONYMOUS')
-                                <span class="text-[11px] font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200 px-2 py-0.5 rounded-full flex items-center gap-1">
+                                <span class="text-[13px] font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200 px-2 py-0.5 rounded-full flex items-center gap-1">
                                     <i data-lucide="shield-check" class="w-3 h-3"></i> Mode Anonim Terlindungi
                                 </span>
                             @elseif ($report->identity_mode === 'CONFIDENTIAL')
-                                <span class="text-[11px] font-semibold bg-blue-50 text-blue-700 border border-blue-200 px-2 py-0.5 rounded-full flex items-center gap-1">
+                                <span class="text-[13px] font-semibold bg-blue-50 text-blue-700 border border-blue-200 px-2 py-0.5 rounded-full flex items-center gap-1">
                                     <i data-lucide="lock" class="w-3 h-3"></i> Kerahasiaan Terjaga (Guru BK)
                                 </span>
                             @else
-                                <span class="text-[11px] font-semibold bg-slate-100 text-slate-700 px-2 py-0.5 rounded-full">
+                                <span class="text-[13px] font-semibold bg-slate-100 text-slate-700 px-2 py-0.5 rounded-full">
                                     Laporan Teridentifikasi
                                 </span>
                             @endif
@@ -190,11 +190,11 @@
 
                 <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4 text-xs">
                     <div class="p-3 bg-slate-50 rounded-xl border border-slate-100">
-                        <span class="text-slate-400 block mb-0.5 font-medium text-[11px]">Sekolah / Madrasah</span>
+                        <span class="text-slate-400 block mb-0.5 font-medium text-[13px]">Sekolah / Madrasah</span>
                         <strong class="text-slate-800 text-sm font-bold block">{{ $schoolName }}</strong>
                     </div>
                     <div class="p-3 bg-slate-50 rounded-xl border border-slate-100">
-                        <span class="text-slate-400 block mb-0.5 font-medium text-[11px]">Kategori Perundungan</span>
+                        <span class="text-slate-400 block mb-0.5 font-medium text-[13px]">Kategori Perundungan</span>
                         <strong class="text-slate-800 text-sm font-bold block">
                             {{ $report->category }}
                             @if (!empty($report->subcategory))
@@ -203,7 +203,7 @@
                         </strong>
                     </div>
                     <div class="p-3 bg-slate-50 rounded-xl border border-slate-100 sm:col-span-2 md:col-span-1">
-                        <span class="text-slate-400 block mb-0.5 font-medium text-[11px]">Penanggung Jawab</span>
+                        <span class="text-slate-400 block mb-0.5 font-medium text-[13px]">Penanggung Jawab</span>
                         <strong class="text-slate-800 text-sm font-bold block flex items-center gap-1.5">
                             <i data-lucide="user-check" class="w-4 h-4 text-blue-600"></i>
                             <span>{{ $case->assigned_to ?: 'Guru Bimbingan Konseling (BK)' }}</span>
@@ -239,7 +239,7 @@
                             <span class="text-xs font-bold mt-2 {{ $activeStep === 1 ? 'text-blue-600' : ($activeStep > 1 ? 'text-slate-800' : 'text-slate-400') }}">
                                 Laporan Masuk
                             </span>
-                            <span class="text-[10px] text-slate-400 mt-0.5">Diterima Guru BK</span>
+                            <span class="text-[12px] text-slate-400 mt-0.5">Diterima Guru BK</span>
                         </div>
 
                         <!-- Stepper Line 1-2 -->
@@ -257,7 +257,7 @@
                             <span class="text-xs font-bold mt-2 {{ $activeStep === 2 ? 'text-blue-600' : ($activeStep > 2 ? 'text-slate-800' : 'text-slate-400') }}">
                                 Verifikasi
                             </span>
-                            <span class="text-[10px] text-slate-400 mt-0.5">Pemeriksaan bukti</span>
+                            <span class="text-[12px] text-slate-400 mt-0.5">Pemeriksaan bukti</span>
                         </div>
 
                         <!-- Stepper Line 2-3 -->
@@ -275,7 +275,7 @@
                             <span class="text-xs font-bold mt-2 {{ $activeStep === 3 ? 'text-blue-600' : ($activeStep > 3 ? 'text-slate-800' : 'text-slate-400') }}">
                                 Penanganan
                             </span>
-                            <span class="text-[10px] text-slate-400 mt-0.5">Konseling & aksi</span>
+                            <span class="text-[12px] text-slate-400 mt-0.5">Konseling & aksi</span>
                         </div>
 
                         <!-- Stepper Line 3-4 -->
@@ -293,7 +293,7 @@
                             <span class="text-xs font-bold mt-2 {{ $activeStep === 4 ? 'text-emerald-700' : ($activeStep > 4 ? 'text-slate-800' : 'text-slate-400') }}">
                                 Selesai
                             </span>
-                            <span class="text-[10px] text-slate-400 mt-0.5">Substansi tuntas</span>
+                            <span class="text-[12px] text-slate-400 mt-0.5">Substansi tuntas</span>
                         </div>
 
                         <!-- Stepper Line 4-5 -->
@@ -307,7 +307,7 @@
                             <span class="text-xs font-bold mt-2 {{ $activeStep === 5 ? 'text-slate-900' : 'text-slate-400' }}">
                                 Ditutup
                             </span>
-                            <span class="text-[10px] text-slate-400 mt-0.5">Arsip aman</span>
+                            <span class="text-[12px] text-slate-400 mt-0.5">Arsip aman</span>
                         </div>
                     </div>
                 </div>
@@ -320,7 +320,7 @@
                         </div>
                         <div>
                             <strong class="text-xs font-bold text-slate-800 block">Laporan Masuk & Diterima</strong>
-                            <span class="text-[11px] text-slate-500">Laporan tersimpan aman dan masuk ke Guru BK</span>
+                            <span class="text-[13px] text-slate-500">Laporan tersimpan aman dan masuk ke Guru BK</span>
                         </div>
                     </div>
 
@@ -330,7 +330,7 @@
                         </div>
                         <div>
                             <strong class="text-xs font-bold text-slate-800 block">Verifikasi & Penilaian Risiko</strong>
-                            <span class="text-[11px] text-slate-500">Guru BK meneliti kronologi dan bukti laporan</span>
+                            <span class="text-[13px] text-slate-500">Guru BK meneliti kronologi dan bukti laporan</span>
                         </div>
                     </div>
 
@@ -340,7 +340,7 @@
                         </div>
                         <div>
                             <strong class="text-xs font-bold text-slate-800 block">Proses Penanganan Kasus</strong>
-                            <span class="text-[11px] text-slate-500">Pendampingan, konseling, mediasi terarah</span>
+                            <span class="text-[13px] text-slate-500">Pendampingan, konseling, mediasi terarah</span>
                         </div>
                     </div>
 
@@ -350,7 +350,7 @@
                         </div>
                         <div>
                             <strong class="text-xs font-bold text-slate-800 block">Penyelesaian Kasus</strong>
-                            <span class="text-[11px] text-slate-500">Penanganan substansi perundungan tuntas</span>
+                            <span class="text-[13px] text-slate-500">Penanganan substansi perundungan tuntas</span>
                         </div>
                     </div>
 
@@ -360,7 +360,7 @@
                         </div>
                         <div>
                             <strong class="text-xs font-bold text-slate-800 block">Kasus Ditutup & Diarsipkan</strong>
-                            <span class="text-[11px] text-slate-500">Dokumen penuntasan lengkap dan resmi diarsipkan</span>
+                            <span class="text-[13px] text-slate-500">Dokumen penuntasan lengkap dan resmi diarsipkan</span>
                         </div>
                     </div>
                 </div>
@@ -415,7 +415,7 @@
 
                     <div class="flex-1">
                         <div class="flex items-center gap-2 mb-1 flex-wrap">
-                            <span class="text-[11px] font-extrabold uppercase tracking-wider
+                            <span class="text-[13px] font-extrabold uppercase tracking-wider
                                 @if ($case->status === 'PENDING_RESPONSE') text-blue-700
                                 @elseif ($case->status === 'UNDER_VERIFICATION') text-amber-700
                                 @elseif ($case->status === 'WAITING_REPORTER_INFO') text-purple-700
@@ -483,7 +483,7 @@
                         <div class="absolute -left-6 top-1 w-4 h-4 rounded-full bg-emerald-500 border-2 border-white shadow-xs"></div>
                         <div>
                             <strong class="text-xs font-bold text-slate-800 block">Laporan Diterima Sistem</strong>
-                            <span class="text-[11px] text-slate-500">
+                            <span class="text-[13px] text-slate-500">
                                 {{ \Carbon\Carbon::parse($case->opened_at ?? $case->created_at)->translatedFormat('d F Y, H:i') }} WIB
                             </span>
                             <p class="text-xs text-slate-600 mt-1">Laporan berhasil dicatat dengan nomor registrasi {{ $report->report_number }}.</p>
@@ -510,7 +510,7 @@
                                         Status: {{ str_replace('_', ' ', $hist->new_status) }}
                                     @endif
                                 </strong>
-                                <span class="text-[11px] text-slate-500">
+                                <span class="text-[13px] text-slate-500">
                                     {{ \Carbon\Carbon::parse($hist->created_at)->translatedFormat('d F Y, H:i') }} WIB
                                 </span>
                                 @if (!empty($hist->reason))
@@ -534,10 +534,10 @@
                             </div>
                             <div>
                                 <h3 class="text-base font-bold text-slate-900">Ruang Obrolan Rahasia dengan Guru BK</h3>
-                                <p class="text-[11px] text-slate-500">Kirim dan terima klarifikasi tambahan tanpa membuka identitasmu</p>
+                                <p class="text-[13px] text-slate-500">Kirim dan terima klarifikasi tambahan tanpa membuka identitasmu</p>
                             </div>
                         </div>
-                        <span class="text-[11px] font-semibold text-emerald-700 bg-emerald-50 px-2.5 py-1 rounded-full border border-emerald-200 hidden sm:inline-flex items-center gap-1">
+                        <span class="text-[13px] font-semibold text-emerald-700 bg-emerald-50 px-2.5 py-1 rounded-full border border-emerald-200 hidden sm:inline-flex items-center gap-1">
                             <i data-lucide="shield-check" class="w-3.5 h-3.5"></i> Identitas Terjaga Penuh
                         </span>
                     </div>
@@ -547,7 +547,7 @@
                         @forelse ($messages as $msg)
                             <div class="flex flex-col {{ $msg->sender_type === 'REPORTER' ? 'items-end' : 'items-start' }}">
                                 <div class="max-w-[85%] sm:max-w-[75%] rounded-2xl px-4 py-2.5 text-xs md:text-sm {{ $msg->sender_type === 'REPORTER' ? 'bg-blue-600 text-white rounded-br-xs shadow-xs' : 'bg-slate-100 text-slate-800 rounded-bl-xs border border-slate-200/70' }}">
-                                    <div class="flex items-center gap-2 mb-1 text-[10px] {{ $msg->sender_type === 'REPORTER' ? 'text-blue-100' : 'text-slate-400 font-semibold' }}">
+                                    <div class="flex items-center gap-2 mb-1 text-[12px] {{ $msg->sender_type === 'REPORTER' ? 'text-blue-100' : 'text-slate-400 font-semibold' }}">
                                         <span>{{ $msg->sender_type === 'REPORTER' ? 'Kamu (Pelapor Anonim)' : 'Guru BK Sekolah' }}</span>
                                         <span>&bull;</span>
                                         <span>{{ \Carbon\Carbon::parse($msg->created_at)->translatedFormat('d M, H:i') }}</span>
@@ -584,7 +584,7 @@
                         ></textarea>
                         
                         <div class="flex items-center justify-between mt-2.5">
-                            <span class="text-[11px] text-slate-400">Pesan langsung masuk ke notifikasi Guru BK</span>
+                            <span class="text-[13px] text-slate-400">Pesan langsung masuk ke notifikasi Guru BK</span>
                             <button type="submit" class="bg-blue-600 hover:bg-blue-700 text-white font-semibold text-xs px-4 py-2 rounded-xl transition-all flex items-center gap-1.5 shadow-sm">
                                 <i data-lucide="send" class="w-3.5 h-3.5"></i>
                                 <span>Kirim Pesan</span>
@@ -620,13 +620,13 @@
                     <div class="p-4 bg-slate-50 rounded-2xl border border-slate-200/70">
                         <div class="w-8 h-8 rounded-xl bg-blue-100 text-blue-600 flex items-center justify-center font-bold text-xs mb-2">1</div>
                         <h4 class="text-xs font-bold text-slate-800 mb-1">Gunakan Kunci 4 Kata Rahasia</h4>
-                        <p class="text-[11px] text-slate-500 leading-relaxed">Khusus bagi pelapor anonim. Masukkan 4 kata seperti <code>kucing-biru-melompat-pagi</code> untuk membuka status dan fitur kirim pesan.</p>
+                        <p class="text-[13px] text-slate-500 leading-relaxed">Khusus bagi pelapor anonim. Masukkan 4 kata seperti <code>kucing-biru-melompat-pagi</code> untuk membuka status dan fitur kirim pesan.</p>
                     </div>
 
                     <div class="p-4 bg-slate-50 rounded-2xl border border-slate-200/70">
                         <div class="w-8 h-8 rounded-xl bg-indigo-100 text-indigo-600 flex items-center justify-center font-bold text-xs mb-2">2</div>
                         <h4 class="text-xs font-bold text-slate-800 mb-1">Gunakan Nomor Laporan</h4>
-                        <p class="text-[11px] text-slate-500 leading-relaxed">Masukkan kode nomor laporan yang tertera pada kartu bukti lapor (contoh: <code>SS-2026-09-0001</code>).</p>
+                        <p class="text-[13px] text-slate-500 leading-relaxed">Masukkan kode nomor laporan yang tertera pada kartu bukti lapor (contoh: <code>SS-2026-09-0001</code>).</p>
                     </div>
                 </div>
 

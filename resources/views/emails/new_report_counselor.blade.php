@@ -1,10 +1,10 @@
 @extends('emails.layout', ['title' => 'Laporan Baru Masuk - Sahabat Sekolah'])
 
 @section('content')
-    <h2 style="font-size: 18px; color: #12386a; margin: 0 0 10px; font-weight: 800;">
+    <h2 style="font-size: 20px; color: #12386a; margin: 0 0 10px; font-weight: 800;">
         Halo, {{ $recipientName }}
     </h2>
-    <p style="font-size: 13px; color: #526b84; line-height: 1.6; margin: 0 0 18px;">
+    <p style="font-size: 15px; color: #526b84; line-height: 1.6; margin: 0 0 18px;">
         Terdapat laporan baru dugaan perundungan yang masuk untuk <strong>{{ $reportData['school_name'] }}</strong>. Sesuai Standar Layanan (SLA), laporan ini memerlukan tindakan atau respons awal maksimal dalam <strong>1 × 24 jam</strong>.
     </p>
 
@@ -18,7 +18,7 @@
             <tr class="info-row">
                 <td class="info-label">Nomor Laporan</td>
                 <td class="info-value">
-                    <span style="font-family: monospace; font-size: 14px; color: #1878e3; background: #eaf3fd; padding: 2px 7px; border-radius: 4px;">
+                    <span style="font-family: monospace; font-size: 16px; color: #1878e3; background: #eaf3fd; padding: 2px 7px; border-radius: 4px;">
                         {{ $reportData['case_number'] }}
                     </span>
                 </td>
@@ -74,7 +74,7 @@
     </div>
 
     <div style="margin: 22px 0 10px;">
-        <span style="font-size: 11px; text-transform: uppercase; letter-spacing: 0.05em; font-weight: 700; color: #64748b;">
+        <span style="font-size: 13px; text-transform: uppercase; letter-spacing: 0.05em; font-weight: 700; color: #64748b;">
             Ringkasan Cerita Kejadian:
         </span>
         <div class="quote-box">
@@ -88,7 +88,7 @@
         </a>
     </div>
 
-    <p style="font-size: 11px; color: #8295a8; text-align: center; margin: 0;">
+    <p style="font-size: 13px; color: #8295a8; text-align: center; margin: 0;">
         Atau buka link: <a href="{{ $reportData['case_url'] }}" style="color: #1878e3; word-break: break-all;">{{ $reportData['case_url'] }}</a>
     </p>
 @endsection

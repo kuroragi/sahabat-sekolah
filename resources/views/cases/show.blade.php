@@ -13,7 +13,7 @@
         </a>
         <div class="case-heading-actions">
             @if (in_array($case->status, ['RESOLVED', 'CLOSED']))
-                <a href="{{ route('cases.print', $case->case_number) }}" target="_blank" class="secondary-button" style="text-decoration: none; padding: 6px 12px; height: auto; display: inline-flex; align-items: center; gap: 6px; font-size: 12px; font-weight: 500; border-radius: 6px;">
+                <a href="{{ route('cases.print', $case->case_number) }}" target="_blank" class="secondary-button" style="text-decoration: none; padding: 6px 12px; height: auto; display: inline-flex; align-items: center; gap: 6px; font-size: 14px; font-weight: 500; border-radius: 6px;">
                     <i data-lucide="printer" style="width: 14px; height: 14px;"></i> Cetak Laporan
                 </a>
             @endif
@@ -54,7 +54,7 @@
                         <div style="display: flex; align-items: center; justify-content: space-between; gap: 8px;">
                             <strong>{{ $case->assigned_to ?: 'Belum ditentukan' }}</strong>
                             @if (in_array(session('user_role'), ['COUNSELOR', 'PRINCIPAL']))
-                                <button type="button" onclick="document.getElementById('reassign-modal').style.display='flex'" style="background: none; border: none; color: #1878e3; cursor: pointer; padding: 2px 6px; font-size: 11px; font-weight: 600; display: inline-flex; align-items: center; gap: 4px; border-radius: 4px;">
+                                <button type="button" onclick="document.getElementById('reassign-modal').style.display='flex'" style="background: none; border: none; color: #1878e3; cursor: pointer; padding: 2px 6px; font-size: 13px; font-weight: 600; display: inline-flex; align-items: center; gap: 4px; border-radius: 4px;">
                                     <i data-lucide="user-cog" style="width: 13px; height: 13px;"></i> Alihkan
                                 </button>
                             @endif
@@ -125,7 +125,7 @@
                         action="{{ route('cases.participants', $case->case_number) }}">
                         @csrf
                         <div style="display: flex; flex-direction: column; gap: 4px;">
-                            <label style="font-size: 10px; color: #64748b; font-weight: 500;">Peran</label>
+                            <label style="font-size: 12px; color: #64748b; font-weight: 500;">Peran</label>
                             <select name="participant_type">
                                 <option value="VICTIM">Korban</option>
                                 <option value="REPORTER">Pelapor</option>
@@ -136,9 +136,9 @@
                         </div>
                         <div style="display: flex; flex-direction: column; gap: 4px; position: relative;">
                             <div style="display: flex; align-items: center; justify-content: space-between;">
-                                <label style="font-size: 10px; color: #64748b; font-weight: 500;">Nama Pihak Terkait</label>
+                                <label style="font-size: 12px; color: #64748b; font-weight: 500;">Nama Pihak Terkait</label>
                                 @if (!empty($students))
-                                    <div style="display: flex; align-items: center; gap: 6px; font-size: 9px;">
+                                    <div style="display: flex; align-items: center; gap: 6px; font-size: 11px;">
                                         <label style="cursor: pointer; display: inline-flex; align-items: center; gap: 2px; color: #2563eb; font-weight: 600;">
                                             <input type="radio" name="participant_mode_toggle" value="STUDENT" checked onchange="switchParticipantMode('STUDENT')" style="margin: 0; width: 10px; height: 10px;"> Siswa
                                         </label>
@@ -161,7 +161,7 @@
                                             </option>
                                         @endforeach
                                     </select>
-                                    <button type="button" class="tw-select-trigger w-full flex items-center justify-between bg-[#fbfdff] border border-[#dfe8f1] rounded-lg px-2.5 py-2 text-[10px] text-left focus:outline-none focus:border-[#4d9ae4] focus:ring-2 focus:ring-[#e7f3ff] transition-colors" style="min-height: 34px;">
+                                    <button type="button" class="tw-select-trigger w-full flex items-center justify-between bg-[#fbfdff] border border-[#dfe8f1] rounded-lg px-2.5 py-2 text-[12px] text-left focus:outline-none focus:border-[#4d9ae4] focus:ring-2 focus:ring-[#e7f3ff] transition-colors" style="min-height: 34px;">
                                         <span class="tw-select-text text-[#7390b4] truncate">Pilih / cari siswa ({{ count($students) }} siswa)...</span>
                                         <svg class="w-3.5 h-3.5 text-[#7390b4] pointer-events-none flex-none ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
                                     </button>
@@ -169,11 +169,11 @@
                                         <div class="p-1.5 border-b border-[#eef4f9]">
                                             <div class="relative">
                                                 <svg class="w-3.5 h-3.5 text-[#7390b4] absolute left-2 top-1/2 -translate-y-1/2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
-                                                <input type="text" class="tw-select-search w-full bg-[#f8fafc] border-none text-[10px] rounded pl-6 pr-2 py-1 focus:outline-none focus:ring-1 focus:ring-[#4d9ae4]" placeholder="Ketik nama atau NISN...">
+                                                <input type="text" class="tw-select-search w-full bg-[#f8fafc] border-none text-[12px] rounded pl-6 pr-2 py-1 focus:outline-none focus:ring-1 focus:ring-[#4d9ae4]" placeholder="Ketik nama atau NISN...">
                                             </div>
                                         </div>
                                         <ul class="tw-select-list max-h-48 overflow-y-auto custom-scrollbar p-1" role="listbox"></ul>
-                                        <div class="tw-select-empty hidden p-2.5 text-center text-[10px] text-[#7390b4]">
+                                        <div class="tw-select-empty hidden p-2.5 text-center text-[12px] text-[#7390b4]">
                                             Siswa tidak ditemukan.<br>
                                             <a href="javascript:void(0)" onclick="switchParticipantMode('MANUAL')" style="color: #2563eb; text-decoration: underline; margin-top: 3px; display: inline-block;">Input manual (bukan siswa)</a>
                                         </div>
@@ -188,7 +188,7 @@
                         </div>
                         <div style="display: flex; flex-direction: column; gap: 4px;">
                             <div style="display: flex; align-items: center; justify-content: space-between;">
-                                <label style="font-size: 10px; color: #64748b; font-weight: 500;">Visibilitas
+                                <label style="font-size: 12px; color: #64748b; font-weight: 500;">Visibilitas
                                     Identitas</label>
                                 <style>
                                     .visibility-popover summary::-webkit-details-marker {
@@ -206,9 +206,9 @@
                                         <i data-lucide="info" style="width: 14px; height: 14px;"></i>
                                     </summary>
                                     <div
-                                        style="position: absolute; right: 0; bottom: calc(100% + 8px); z-index: 50; width: 280px; background: #fff; border: 1px solid #e2e8f0; border-radius: 8px; padding: 12px; font-size: 11px; color: #475569; line-height: 1.5; box-shadow: 0 10px 15px -3px rgba(0,0,0,0.1), 0 4px 6px -2px rgba(0,0,0,0.05); cursor: default; font-weight: normal; text-transform: none;">
+                                        style="position: absolute; right: 0; bottom: calc(100% + 8px); z-index: 50; width: 280px; background: #fff; border: 1px solid #e2e8f0; border-radius: 8px; padding: 12px; font-size: 13px; color: #475569; line-height: 1.5; box-shadow: 0 10px 15px -3px rgba(0,0,0,0.1), 0 4px 6px -2px rgba(0,0,0,0.05); cursor: default; font-weight: normal; text-transform: none;">
                                         <strong
-                                            style="display: block; margin-bottom: 6px; color: #1e293b; font-size: 12px;">Tingkat
+                                            style="display: block; margin-bottom: 6px; color: #1e293b; font-size: 14px;">Tingkat
                                             Visibilitas</strong>
                                         <ul style="margin: 0; padding-left: 18px; display: grid; gap: 4px;">
                                             <li><b>Terbatas:</b> Identitas disamarkan bagi pihak di luar penanganan utama.
@@ -256,9 +256,9 @@
                                     <i data-lucide="info" style="width: 16px; height: 16px;"></i>
                                 </summary>
                                 <div
-                                    style="position: absolute; left: 0; top: calc(100% + 8px); z-index: 50; width: 340px; background: #fff; border: 1px solid #e2e8f0; border-radius: 8px; padding: 14px; font-size: 11px; color: #475569; line-height: 1.5; box-shadow: 0 10px 15px -3px rgba(0,0,0,0.1), 0 4px 6px -2px rgba(0,0,0,0.05); cursor: default; font-weight: normal;">
+                                    style="position: absolute; left: 0; top: calc(100% + 8px); z-index: 50; width: 340px; background: #fff; border: 1px solid #e2e8f0; border-radius: 8px; padding: 14px; font-size: 13px; color: #475569; line-height: 1.5; box-shadow: 0 10px 15px -3px rgba(0,0,0,0.1), 0 4px 6px -2px rgba(0,0,0,0.05); cursor: default; font-weight: normal;">
                                     <strong
-                                        style="display: block; margin-bottom: 8px; color: #1e293b; font-size: 12px;">Panduan
+                                        style="display: block; margin-bottom: 8px; color: #1e293b; font-size: 14px;">Panduan
                                         Penilaian (Total 100 Poin)</strong>
                                     <ul
                                         style="margin: 0; padding-left: 20px; margin-bottom: 12px; display: grid; gap: 4px;">
@@ -510,7 +510,7 @@
                         @csrf
                         <div
                             style="grid-column: 1 / -1; display: flex; align-items: center; gap: 8px; margin-bottom: 2px;">
-                            <span style="font-size: 13px; font-weight: 600; color: #1e293b;">Tambah pelibatan</span>
+                            <span style="font-size: 15px; font-weight: 600; color: #1e293b;">Tambah pelibatan</span>
                             <style>
                                 .parent-popover summary::-webkit-details-marker {
                                     display: none;
@@ -527,14 +527,14 @@
                                     <i data-lucide="info" style="width: 14px; height: 14px;"></i>
                                 </summary>
                                 <div
-                                    style="position: absolute; left: 0; bottom: calc(100% + 8px); z-index: 50; width: 340px; background: #fff; border: 1px solid #e2e8f0; border-radius: 8px; padding: 14px; font-size: 11px; color: #475569; line-height: 1.5; box-shadow: 0 10px 15px -3px rgba(0,0,0,0.1), 0 4px 6px -2px rgba(0,0,0,0.05); cursor: default; font-weight: normal; text-align: left;">
+                                    style="position: absolute; left: 0; bottom: calc(100% + 8px); z-index: 50; width: 340px; background: #fff; border: 1px solid #e2e8f0; border-radius: 8px; padding: 14px; font-size: 13px; color: #475569; line-height: 1.5; box-shadow: 0 10px 15px -3px rgba(0,0,0,0.1), 0 4px 6px -2px rgba(0,0,0,0.05); cursor: default; font-weight: normal; text-align: left;">
                                     <strong
-                                        style="display: block; margin-bottom: 4px; color: #1e293b; font-size: 12px;">Pentingnya
+                                        style="display: block; margin-bottom: 4px; color: #1e293b; font-size: 14px;">Pentingnya
                                         Pelibatan Orang Tua</strong>
                                     <p style="margin: 0 0 10px 0;">Pelibatan diperlukan untuk memastikan transparansi,
                                         memberi dukungan moral, dan menyelaraskan penyelesaian kasus secara holistik.</p>
                                     <strong
-                                        style="display: block; margin-bottom: 4px; color: #1e293b; font-size: 11px;">Penjelasan
+                                        style="display: block; margin-bottom: 4px; color: #1e293b; font-size: 13px;">Penjelasan
                                         Status:</strong>
                                     <ul style="margin: 0; padding-left: 16px; display: grid; gap: 4px;">
                                         <li><b>Tidak diperlukan:</b> Kasus ringan atau butuh privasi tinggi, cukup ditangani
@@ -740,8 +740,8 @@
                     <form method="POST" action="{{ route('cases.escalate', $case->case_number) }}">
                         @csrf
                         <div style="margin-bottom: 8px;">
-                            <label style="font-size: 11px; font-weight: 600; color: #475569; display: block; margin-bottom: 4px;">Tujuan Eskalasi</label>
-                            <select name="escalate_to" style="width: 100%; padding: 6px 10px; border-radius: 6px; border: 1px solid #cbd5e1; font-size: 12px; background: #fff;">
+                            <label style="font-size: 13px; font-weight: 600; color: #475569; display: block; margin-bottom: 4px;">Tujuan Eskalasi</label>
+                            <select name="escalate_to" style="width: 100%; padding: 6px 10px; border-radius: 6px; border: 1px solid #cbd5e1; font-size: 14px; background: #fff;">
                                 <option value="PRINCIPAL">Jenjang 2: Kepala Sekolah</option>
                                 <option value="CITY_DISDIK">Jenjang 3: Dinas Pendidikan Kota Bukittinggi (Manajerial & Pembinaan)</option>
                                 <option value="CITY_PPA">Jenjang 3: UPTD PPA - DP3APPKB (Kekerasan Berat & Pendampingan Korban)</option>
@@ -806,7 +806,7 @@
 
         .action-panel-subtitle {
             margin: 3px 0 0;
-            font-size: 10px;
+            font-size: 12px;
             color: rgba(255, 255, 255, .75);
             line-height: 1.4;
         }
@@ -818,7 +818,7 @@
             padding: 10px 20px;
             background: #f0f7ff;
             border-bottom: 1px solid #dde9f7;
-            font-size: 10px;
+            font-size: 12px;
         }
 
         .action-status-dot {
@@ -889,13 +889,13 @@
 
         .action-step-title {
             color: #1b3f6a;
-            font-size: 11px;
+            font-size: 13px;
             display: block;
         }
 
         .action-step-tag {
             color: #8da5be;
-            font-size: 9px;
+            font-size: 11px;
             display: block;
             margin-top: 1px;
         }
@@ -920,8 +920,8 @@
         }
 
         .action-next-status svg { width: 18px; flex: none; }
-        .action-next-status strong { display: block; font-size: 11px; }
-        .action-next-status small { color: #5f8bb0; font-size: 9px; }
+        .action-next-status strong { display: block; font-size: 13px; }
+        .action-next-status small { color: #5f8bb0; font-size: 11px; }
 
         /* ===== SELECT ===== */
         .action-select-wrap {
@@ -990,7 +990,7 @@
             border: 1px solid #fddcab;
             border-radius: 7px;
             color: #92590d;
-            font-size: 10px;
+            font-size: 12px;
             line-height: 1.5;
         }
 
@@ -1063,15 +1063,15 @@
         }
 
         .action-file-placeholder svg { width: 24px; color: #4d9ae4; }
-        .action-file-placeholder span { font-size: 10px; font-weight: 600; color: #4a7499; }
-        .action-file-placeholder small { font-size: 9px; color: #9ab5c9; }
+        .action-file-placeholder span { font-size: 12px; font-weight: 600; color: #4a7499; }
+        .action-file-placeholder small { font-size: 11px; color: #9ab5c9; }
 
         .action-file-selected {
             display: flex;
             align-items: center;
             gap: 8px;
             color: #1a9a72;
-            font-size: 10px;
+            font-size: 12px;
             font-weight: 600;
         }
 
@@ -1084,7 +1084,7 @@
             gap: 10px;
             padding: 8px 0;
             color: #b0c4d6;
-            font-size: 9px;
+            font-size: 11px;
             letter-spacing: .04em;
         }
 
@@ -1232,7 +1232,7 @@
         <div id="reassign-modal" style="display: none; position: fixed; inset: 0; background: rgba(15, 23, 42, 0.6); backdrop-filter: blur(4px); z-index: 9999; align-items: center; justify-content: center; padding: 16px;">
             <div style="background: #ffffff; border-radius: 12px; max-width: 480px; width: 100%; padding: 24px; box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.2);">
                 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
-                    <h3 style="margin: 0; font-size: 16px; font-weight: 700; color: #1e293b; display: flex; align-items: center; gap: 8px;">
+                    <h3 style="margin: 0; font-size: 18px; font-weight: 700; color: #1e293b; display: flex; align-items: center; gap: 8px;">
                         <i data-lucide="user-check" style="width: 18px; height: 18px; color: #1878e3;"></i>
                         Alihkan Penanggung Jawab Kasus
                     </h3>
@@ -1242,12 +1242,12 @@
                 </div>
                 <form method="POST" action="{{ route('cases.reassign', $case->case_number) }}">
                     @csrf
-                    <p style="font-size: 12px; color: #64748b; margin-top: 0; margin-bottom: 14px;">
+                    <p style="font-size: 14px; color: #64748b; margin-top: 0; margin-bottom: 14px;">
                         Saat ini kasus ditangani oleh: <strong>{{ $case->assigned_to ?: 'Belum ditentukan' }}</strong>. Anda dapat mengalihkan penanganan ke rekan guru/staf lain di sekolah.
                     </p>
                     <div style="margin-bottom: 12px;">
-                        <label style="display: block; font-size: 12px; font-weight: 600; color: #334155; margin-bottom: 4px;">Pilih Staf Sekolah atau Ketik Nama</label>
-                        <input list="staff-options" name="assigned_to" required placeholder="Pilih atau ketik nama penanggung jawab baru" style="width: 100%; padding: 8px 12px; border: 1px solid #cbd5e1; border-radius: 6px; font-size: 13px;">
+                        <label style="display: block; font-size: 14px; font-weight: 600; color: #334155; margin-bottom: 4px;">Pilih Staf Sekolah atau Ketik Nama</label>
+                        <input list="staff-options" name="assigned_to" required placeholder="Pilih atau ketik nama penanggung jawab baru" style="width: 100%; padding: 8px 12px; border: 1px solid #cbd5e1; border-radius: 6px; font-size: 15px;">
                         <datalist id="staff-options">
                             @if (!empty($schoolStaff))
                                 @foreach ($schoolStaff as $staff)
@@ -1257,12 +1257,12 @@
                         </datalist>
                     </div>
                     <div style="margin-bottom: 16px;">
-                        <label style="display: block; font-size: 12px; font-weight: 600; color: #334155; margin-bottom: 4px;">Alasan Pengalihan</label>
-                        <textarea name="reason" rows="3" required minlength="5" placeholder="Contoh: Guru BK berhalangan / Kasus ditangani langsung oleh Wali Kelas." style="width: 100%; padding: 8px 12px; border: 1px solid #cbd5e1; border-radius: 6px; font-size: 13px;"></textarea>
+                        <label style="display: block; font-size: 14px; font-weight: 600; color: #334155; margin-bottom: 4px;">Alasan Pengalihan</label>
+                        <textarea name="reason" rows="3" required minlength="5" placeholder="Contoh: Guru BK berhalangan / Kasus ditangani langsung oleh Wali Kelas." style="width: 100%; padding: 8px 12px; border: 1px solid #cbd5e1; border-radius: 6px; font-size: 15px;"></textarea>
                     </div>
                     <div style="display: flex; justify-content: flex-end; gap: 8px;">
-                        <button type="button" onclick="document.getElementById('reassign-modal').style.display='none'" style="padding: 8px 16px; border-radius: 6px; border: 1px solid #cbd5e1; background: #ffffff; color: #475569; font-size: 13px; font-weight: 500; cursor: pointer;">Batal</button>
-                        <button type="submit" style="padding: 8px 16px; border-radius: 6px; border: none; background: #1878e3; color: #ffffff; font-size: 13px; font-weight: 600; cursor: pointer;">Simpan Pengalihan</button>
+                        <button type="button" onclick="document.getElementById('reassign-modal').style.display='none'" style="padding: 8px 16px; border-radius: 6px; border: 1px solid #cbd5e1; background: #ffffff; color: #475569; font-size: 15px; font-weight: 500; cursor: pointer;">Batal</button>
+                        <button type="submit" style="padding: 8px 16px; border-radius: 6px; border: none; background: #1878e3; color: #ffffff; font-size: 15px; font-weight: 600; cursor: pointer;">Simpan Pengalihan</button>
                     </div>
                 </form>
             </div>

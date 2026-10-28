@@ -30,7 +30,7 @@
             <p class="login-lead">Masukkan alamat email akun Anda. Kami akan mengirimkan tautan untuk mengatur ulang kata sandi melalui email.</p>
 
             @if (session('status'))
-                <div style="display:flex; gap:9px; align-items:flex-start; color:#187349; background:#e8f9f0; border:1px solid #c2eed5; border-radius:8px; padding:12px 14px; font-size:11px; line-height:1.5; margin-bottom:18px; text-align:left;">
+                <div style="display:flex; gap:9px; align-items:flex-start; color:#187349; background:#e8f9f0; border:1px solid #c2eed5; border-radius:8px; padding:12px 14px; font-size:13px; line-height:1.5; margin-bottom:18px; text-align:left;">
                     <i data-lucide="circle-check-big" style="width:18px; flex:none; color:#187349; margin-top:1px;"></i>
                     <span>{{ session('status') }}</span>
                 </div>

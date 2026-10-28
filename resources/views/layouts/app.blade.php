@@ -354,7 +354,7 @@
             <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:18px;">
                 <div>
                     <h2 id="modal-cp-title" style="font:800 17px 'Plus Jakarta Sans', sans-serif; color:#12386a; margin:0;">Ubah Kata Sandi</h2>
-                    <p style="font-size:11px; color:#7e91a7; margin:4px 0 0;">Perbarui kata sandi akun Anda untuk menjaga keamanan.</p>
+                    <p style="font-size:13px; color:#7e91a7; margin:4px 0 0;">Perbarui kata sandi akun Anda untuk menjaga keamanan.</p>
                 </div>
                 <button type="button" id="modal-cp-close" style="width:30px; height:30px; border-radius:50%; border:0; background:#f1f5f9; color:#64748b; display:grid; place-items:center; cursor:pointer;">
                     <i data-lucide="x" style="width:16px;"></i>
@@ -364,32 +364,32 @@
             <form method="POST" action="{{ route('password.change') }}" id="form-change-password" style="display:grid; gap:12px;">
                 @csrf
                 <div>
-                    <label style="display:block; font-size:10px; font-weight:700; color:#496985; margin-bottom:5px;">Kata Sandi Saat Ini <span style="color:#ef4444;">*</span></label>
+                    <label style="display:block; font-size:12px; font-weight:700; color:#496985; margin-bottom:5px;">Kata Sandi Saat Ini <span style="color:#ef4444;">*</span></label>
                     <input type="password" name="current_password" required placeholder="Masukkan kata sandi saat ini"
-                        style="width:100%; border:1px solid #dfe8f1; border-radius:8px; padding:9px 12px; font-size:11px; color:#1e3a58; background:#fbfdff; outline:none;">
+                        style="width:100%; border:1px solid #dfe8f1; border-radius:8px; padding:9px 12px; font-size:13px; color:#1e3a58; background:#fbfdff; outline:none;">
                 </div>
                 <div>
-                    <label style="display:block; font-size:10px; font-weight:700; color:#496985; margin-bottom:5px;">Kata Sandi Baru <span style="color:#ef4444;">*</span> <small style="color:#8ba0b3; font-weight:400;">(Min. 8 karakter)</small></label>
+                    <label style="display:block; font-size:12px; font-weight:700; color:#496985; margin-bottom:5px;">Kata Sandi Baru <span style="color:#ef4444;">*</span> <small style="color:#8ba0b3; font-weight:400;">(Min. 8 karakter)</small></label>
                     <input type="password" name="password" required minlength="8" placeholder="Minimal 8 karakter baru"
-                        style="width:100%; border:1px solid #dfe8f1; border-radius:8px; padding:9px 12px; font-size:11px; color:#1e3a58; background:#fbfdff; outline:none;">
+                        style="width:100%; border:1px solid #dfe8f1; border-radius:8px; padding:9px 12px; font-size:13px; color:#1e3a58; background:#fbfdff; outline:none;">
                 </div>
                 <div>
-                    <label style="display:block; font-size:10px; font-weight:700; color:#496985; margin-bottom:5px;">Konfirmasi Kata Sandi Baru <span style="color:#ef4444;">*</span></label>
+                    <label style="display:block; font-size:12px; font-weight:700; color:#496985; margin-bottom:5px;">Konfirmasi Kata Sandi Baru <span style="color:#ef4444;">*</span></label>
                     <input type="password" name="password_confirmation" required minlength="8" placeholder="Ulangi kata sandi baru"
-                        style="width:100%; border:1px solid #dfe8f1; border-radius:8px; padding:9px 12px; font-size:11px; color:#1e3a58; background:#fbfdff; outline:none;">
+                        style="width:100%; border:1px solid #dfe8f1; border-radius:8px; padding:9px 12px; font-size:13px; color:#1e3a58; background:#fbfdff; outline:none;">
                 </div>
 
-                <div style="background:#f8fafc; border:1px solid #e2e8f0; border-radius:8px; padding:10px 12px; font-size:10px; color:#64748b; line-height:1.5;">
+                <div style="background:#f8fafc; border:1px solid #e2e8f0; border-radius:8px; padding:10px 12px; font-size:12px; color:#64748b; line-height:1.5;">
                     🔒 <strong>Pemberitahuan:</strong> Notifikasi keamanan akan otomatis dikirimkan ke email Anda begitu kata sandi berhasil diperbarui.
                 </div>
 
                 <div style="display:flex; justify-content:flex-end; gap:8px; margin-top:8px;">
                     <button type="button" id="modal-cp-cancel"
-                        style="border:1px solid #dfe8f1; background:#f8fafc; color:#5c7b98; padding:8px 16px; border-radius:8px; font-size:11px; font-weight:600; cursor:pointer;">
+                        style="border:1px solid #dfe8f1; background:#f8fafc; color:#5c7b98; padding:8px 16px; border-radius:8px; font-size:13px; font-weight:600; cursor:pointer;">
                         Batal
                     </button>
                     <button type="submit"
-                        style="border:0; background:#1878e3; color:#ffffff; padding:8px 18px; border-radius:8px; font-size:11px; font-weight:700; display:flex; align-items:center; gap:6px; cursor:pointer; box-shadow:0 4px 12px rgba(24,120,227,0.25);">
+                        style="border:0; background:#1878e3; color:#ffffff; padding:8px 18px; border-radius:8px; font-size:13px; font-weight:700; display:flex; align-items:center; gap:6px; cursor:pointer; box-shadow:0 4px 12px rgba(24,120,227,0.25);">
                         <i data-lucide="check" style="width:14px;"></i> Simpan Kata Sandi
                     </button>
                 </div>

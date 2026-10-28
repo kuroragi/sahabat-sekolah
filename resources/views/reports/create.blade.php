@@ -201,7 +201,7 @@
                 <div class="flex flex-col gap-1 mb-6">
                     <label class="text-sm font-semibold text-gray-700" style="margin-bottom: 4px;">Bukti / Dokumen Pendukung (Opsional)</label>
                     <input type="file" name="evidences[]" multiple accept="image/*,application/pdf"
-                        class="w-full px-4 py-2 bg-white border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all" style="font-size: 14px;">
+                        class="w-full px-4 py-2 bg-white border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all" style="font-size: 16px;">
                     <small class="text-xs text-gray-500 mt-1">Bisa upload hingga 5 file (Foto atau PDF). Metadata lokasi foto HP Anda otomatis dibersihkan demi privasi.</small>
                     @error('evidences')
                         <small class="text-xs text-red-500">{{ $message }}</small>

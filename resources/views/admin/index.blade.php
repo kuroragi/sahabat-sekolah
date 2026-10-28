@@ -16,9 +16,9 @@
             <i data-lucide="users" class="w-5 h-5"></i>
         </div>
         <div>
-            <p class="text-[10px] text-[#73869e] font-semibold uppercase tracking-wide">Total Pengguna</p>
+            <p class="text-[12px] text-[#73869e] font-semibold uppercase tracking-wide">Total Pengguna</p>
             <strong class="block text-2xl font-extrabold text-[#183b68] leading-tight" style="font-family:'Plus Jakarta Sans'">{{ $totalUsers }}</strong>
-            <span class="text-[10px] text-[#73869e]">Terdaftar di platform</span>
+            <span class="text-[12px] text-[#73869e]">Terdaftar di platform</span>
         </div>
     </div>
 
@@ -28,9 +28,9 @@
             <i data-lucide="file-text" class="w-5 h-5"></i>
         </div>
         <div>
-            <p class="text-[10px] text-[#73869e] font-semibold uppercase tracking-wide">Total Pengaduan</p>
+            <p class="text-[12px] text-[#73869e] font-semibold uppercase tracking-wide">Total Pengaduan</p>
             <strong class="block text-2xl font-extrabold text-[#183b68] leading-tight" style="font-family:'Plus Jakarta Sans'">{{ $totalReports }}</strong>
-            <span class="text-[10px] text-[#e69b27] font-bold">{{ $inHandlingCases }} sedang ditangani</span>
+            <span class="text-[12px] text-[#e69b27] font-bold">{{ $inHandlingCases }} sedang ditangani</span>
         </div>
     </div>
 
@@ -40,10 +40,10 @@
             <i data-lucide="circle-check" class="w-5 h-5"></i>
         </div>
         <div>
-            <p class="text-[10px] text-[#73869e] font-semibold uppercase tracking-wide">Kasus Selesai</p>
+            <p class="text-[12px] text-[#73869e] font-semibold uppercase tracking-wide">Kasus Selesai</p>
             <strong class="block text-2xl font-extrabold text-[#183b68] leading-tight" style="font-family:'Plus Jakarta Sans'">{{ $resolvedCases }}</strong>
             @php $resolveRate = $totalCases > 0 ? round(($resolvedCases / $totalCases) * 100) : 0; @endphp
-            <span class="text-[10px] text-[#24906a] font-bold">{{ $resolveRate }}% tingkat resolusi</span>
+            <span class="text-[12px] text-[#24906a] font-bold">{{ $resolveRate }}% tingkat resolusi</span>
         </div>
     </div>
 
@@ -53,9 +53,9 @@
             <i data-lucide="clock-alert" class="w-5 h-5"></i>
         </div>
         <div>
-            <p class="text-[10px] text-[#73869e] font-semibold uppercase tracking-wide">SLA Overdue</p>
+            <p class="text-[12px] text-[#73869e] font-semibold uppercase tracking-wide">SLA Overdue</p>
             <strong class="block text-2xl font-extrabold text-[#183b68] leading-tight" style="font-family:'Plus Jakarta Sans'">{{ $overdueSla }}</strong>
-            <span class="text-[10px] text-[#e6636a] font-bold">{{ $highRiskCases }} risiko tinggi</span>
+            <span class="text-[12px] text-[#e6636a] font-bold">{{ $highRiskCases }} risiko tinggi</span>
         </div>
     </div>
 </div>
@@ -67,9 +67,9 @@
             <i data-lucide="building-2" class="w-5 h-5"></i>
         </div>
         <div>
-            <p class="text-[10px] font-semibold uppercase tracking-wide text-blue-100">Total Sekolah</p>
+            <p class="text-[12px] font-semibold uppercase tracking-wide text-blue-100">Total Sekolah</p>
             <strong class="block text-2xl font-extrabold leading-tight" style="font-family:'Plus Jakarta Sans'">{{ $totalSchools }}</strong>
-            <span class="text-[10px] text-blue-200">Terintegrasi via API</span>
+            <span class="text-[12px] text-blue-200">Terintegrasi via API</span>
         </div>
     </div>
     <div class="bg-white border border-[#e8eef5] rounded-xl p-5 flex items-center gap-4">
@@ -77,9 +77,9 @@
             <i data-lucide="briefcase-business" class="w-5 h-5"></i>
         </div>
         <div>
-            <p class="text-[10px] text-[#73869e] font-semibold uppercase tracking-wide">Kasus Aktif</p>
+            <p class="text-[12px] text-[#73869e] font-semibold uppercase tracking-wide">Kasus Aktif</p>
             <strong class="block text-2xl font-extrabold text-[#183b68] leading-tight" style="font-family:'Plus Jakarta Sans'">{{ $totalCases }}</strong>
-            <span class="text-[10px] text-[#9333ea] font-bold">{{ $inHandlingCases }} dalam penanganan</span>
+            <span class="text-[12px] text-[#9333ea] font-bold">{{ $inHandlingCases }} dalam penanganan</span>
         </div>
     </div>
     <div class="bg-white border border-[#e8eef5] rounded-xl p-5 flex items-center gap-4">
@@ -87,9 +87,9 @@
             <i data-lucide="triangle-alert" class="w-5 h-5"></i>
         </div>
         <div>
-            <p class="text-[10px] text-[#73869e] font-semibold uppercase tracking-wide">Risiko Tinggi</p>
+            <p class="text-[12px] text-[#73869e] font-semibold uppercase tracking-wide">Risiko Tinggi</p>
             <strong class="block text-2xl font-extrabold text-[#183b68] leading-tight" style="font-family:'Plus Jakarta Sans'">{{ $highRiskCases }}</strong>
-            <span class="text-[10px] text-[#e69b27] font-bold">High & Critical</span>
+            <span class="text-[12px] text-[#e69b27] font-bold">High & Critical</span>
         </div>
     </div>
     <a href="{{ route('achievements.index') }}" class="bg-white border border-[#e8eef5] rounded-xl p-5 flex items-center gap-4 hover:border-amber-300 hover:shadow-sm transition-all text-inherit">
@@ -97,9 +97,9 @@
             <i data-lucide="trophy" class="w-5 h-5"></i>
         </div>
         <div>
-            <p class="text-[10px] text-[#73869e] font-semibold uppercase tracking-wide">Prestasi Siswa</p>
+            <p class="text-[12px] text-[#73869e] font-semibold uppercase tracking-wide">Prestasi Siswa</p>
             <strong class="block text-2xl font-extrabold text-[#183b68] leading-tight" style="font-family:'Plus Jakarta Sans'">{{ $totalAchievements }}</strong>
-            <span class="text-[10px] text-[#b45309] font-bold">{{ $totalStudentsWithAchievements }} siswa terdata</span>
+            <span class="text-[12px] text-[#b45309] font-bold">{{ $totalStudentsWithAchievements }} siswa terdata</span>
         </div>
     </a>
 </div>
@@ -111,10 +111,10 @@
     <div class="lg:col-span-3 bg-white border border-[#e8eef5] rounded-xl p-5 flex flex-col justify-between">
         <div class="flex items-start justify-between mb-1">
             <div>
-                <h3 class="font-bold text-[14px] text-[#193d6c]" style="font-family:'Plus Jakarta Sans'">Pengaduan per Bulan</h3>
-                <p class="text-[10px] text-[#8494a9] mt-1">12 bulan terakhir</p>
+                <h3 class="font-bold text-[16px] text-[#193d6c]" style="font-family:'Plus Jakarta Sans'">Pengaduan per Bulan</h3>
+                <p class="text-[12px] text-[#8494a9] mt-1">12 bulan terakhir</p>
             </div>
-            <div class="flex items-center gap-2 text-[10px] text-[#73869e]">
+            <div class="flex items-center gap-2 text-[12px] text-[#73869e]">
                 <span class="w-3 h-3 rounded-sm bg-[#1675e8] inline-block"></span> Kasus baru
             </div>
         </div>
@@ -124,8 +124,8 @@
     {{-- SLA Donut (2/5) --}}
     <div class="lg:col-span-2 bg-white border border-[#e8eef5] rounded-xl p-5 flex flex-col justify-between">
         <div class="mb-1">
-            <h3 class="font-bold text-[14px] text-[#193d6c]" style="font-family:'Plus Jakarta Sans'">Distribusi SLA</h3>
-            <p class="text-[10px] text-[#8494a9] mt-1">Status kepatuhan waktu</p>
+            <h3 class="font-bold text-[16px] text-[#193d6c]" style="font-family:'Plus Jakarta Sans'">Distribusi SLA</h3>
+            <p class="text-[12px] text-[#8494a9] mt-1">Status kepatuhan waktu</p>
         </div>
         @if(($slaChartData['total'] ?? 0) > 0)
             <div id="chart-sla" style="min-height:220px"></div>
@@ -134,8 +134,8 @@
                 <div class="w-10 h-10 rounded-xl bg-gray-50 flex items-center justify-center text-gray-400 mb-2 border border-gray-100">
                     <i data-lucide="pie-chart" class="w-5 h-5"></i>
                 </div>
-                <p class="text-[11px] font-medium text-[#73869e]">Belum ada data SLA</p>
-                <span class="text-[10px] text-[#9aa9ba]">Data kepatuhan akan muncul setelah laporan diproses</span>
+                <p class="text-[13px] font-medium text-[#73869e]">Belum ada data SLA</p>
+                <span class="text-[12px] text-[#9aa9ba]">Data kepatuhan akan muncul setelah laporan diproses</span>
             </div>
         @endif
     </div>
@@ -148,20 +148,20 @@
     <div class="lg:col-span-2 bg-white border border-[#e8eef5] rounded-xl overflow-hidden">
         <div class="flex items-center justify-between px-5 py-4 border-b border-[#edf2f7]">
             <div>
-                <h3 class="font-bold text-[14px] text-[#193d6c]" style="font-family:'Plus Jakarta Sans'">Pengguna Terbaru</h3>
-                <p class="text-[10px] text-[#8494a9] mt-0.5">5 pengguna terakhir ditambahkan</p>
+                <h3 class="font-bold text-[16px] text-[#193d6c]" style="font-family:'Plus Jakarta Sans'">Pengguna Terbaru</h3>
+                <p class="text-[12px] text-[#8494a9] mt-0.5">5 pengguna terakhir ditambahkan</p>
             </div>
-            <a href="{{ route('admin.users') }}" class="text-[10px] text-[#1675e8] flex items-center gap-1 hover:underline">
+            <a href="{{ route('admin.users') }}" class="text-[12px] text-[#1675e8] flex items-center gap-1 hover:underline">
                 Lihat semua <i data-lucide="arrow-right" class="w-3 h-3"></i>
             </a>
         </div>
-        <table class="w-full text-[11px]">
+        <table class="w-full text-[13px]">
             <thead>
                 <tr class="bg-[#f8fafc]">
-                    <th class="text-left text-[9px] font-medium text-[#9aa9ba] px-5 py-3">PENGGUNA</th>
-                    <th class="text-left text-[9px] font-medium text-[#9aa9ba] px-3 py-3">ROLE</th>
-                    <th class="text-left text-[9px] font-medium text-[#9aa9ba] px-3 py-3">SEKOLAH</th>
-                    <th class="text-left text-[9px] font-medium text-[#9aa9ba] px-3 py-3">BERGABUNG</th>
+                    <th class="text-left text-[11px] font-medium text-[#9aa9ba] px-5 py-3">PENGGUNA</th>
+                    <th class="text-left text-[11px] font-medium text-[#9aa9ba] px-3 py-3">ROLE</th>
+                    <th class="text-left text-[11px] font-medium text-[#9aa9ba] px-3 py-3">SEKOLAH</th>
+                    <th class="text-left text-[11px] font-medium text-[#9aa9ba] px-3 py-3">BERGABUNG</th>
                 </tr>
             </thead>
             <tbody>
@@ -169,12 +169,12 @@
                 <tr class="border-t border-[#edf2f7] hover:bg-[#fafcff] transition-colors">
                     <td class="px-5 py-3">
                         <div class="flex items-center gap-3">
-                            <div class="w-7 h-7 rounded-full bg-[#dbeafe] text-[#1d4ed8] flex items-center justify-center text-[10px] font-bold flex-none">
+                            <div class="w-7 h-7 rounded-full bg-[#dbeafe] text-[#1d4ed8] flex items-center justify-center text-[12px] font-bold flex-none">
                                 {{ strtoupper(substr($user->name, 0, 2)) }}
                             </div>
                             <div>
                                 <strong class="block text-[#1d4c7e]">{{ $user->name }}</strong>
-                                <small class="text-[#a1adbb] text-[9px]">{{ $user->email }}</small>
+                                <small class="text-[#a1adbb] text-[11px]">{{ $user->email }}</small>
                             </div>
                         </div>
                     </td>
@@ -183,14 +183,14 @@
                             $roleColors = ['ADMIN' => 'bg-purple-100 text-purple-700', 'PRINCIPAL' => 'bg-blue-100 text-blue-700', 'COUNSELOR' => 'bg-emerald-100 text-emerald-700'];
                             $roleLabels = ['ADMIN' => 'Admin', 'PRINCIPAL' => 'Kepsek', 'COUNSELOR' => 'Guru BK'];
                         @endphp
-                        <span class="px-2 py-0.5 rounded text-[9px] font-semibold {{ $roleColors[$user->role] ?? 'bg-gray-100 text-gray-600' }}">
+                        <span class="px-2 py-0.5 rounded text-[11px] font-semibold {{ $roleColors[$user->role] ?? 'bg-gray-100 text-gray-600' }}">
                             {{ $roleLabels[$user->role] ?? $user->role }}
                         </span>
                     </td>
                     <td class="px-3 py-3 text-[#5f7890] max-w-[160px] truncate">
                         {{ $user->school_name !== '-' ? $user->school_name : '<em class="text-[#a1adbb]">Platform</em>' }}
                     </td>
-                    <td class="px-3 py-3 text-[#9aaaba] text-[9px] whitespace-nowrap">
+                    <td class="px-3 py-3 text-[#9aaaba] text-[11px] whitespace-nowrap">
                         {{ \Carbon\Carbon::parse($user->created_at)->locale('id')->isoFormat('D MMM Y') }}
                     </td>
                 </tr>
@@ -202,8 +202,8 @@
     {{-- Cases by Status Donut (1/3) --}}
     <div class="bg-white border border-[#e8eef5] rounded-xl p-5 flex flex-col justify-between">
         <div class="mb-1">
-            <h3 class="font-bold text-[14px] text-[#193d6c]" style="font-family:'Plus Jakarta Sans'">Status Kasus</h3>
-            <p class="text-[10px] text-[#8494a9] mt-1">Distribusi berdasarkan status</p>
+            <h3 class="font-bold text-[16px] text-[#193d6c]" style="font-family:'Plus Jakarta Sans'">Status Kasus</h3>
+            <p class="text-[12px] text-[#8494a9] mt-1">Distribusi berdasarkan status</p>
         </div>
         @if(($statusChartData['total'] ?? 0) > 0)
             <div id="chart-case-status" style="min-height:220px"></div>
@@ -212,8 +212,8 @@
                 <div class="w-10 h-10 rounded-xl bg-gray-50 flex items-center justify-center text-gray-400 mb-2 border border-gray-100">
                     <i data-lucide="pie-chart" class="w-5 h-5"></i>
                 </div>
-                <p class="text-[11px] font-medium text-[#73869e]">Belum ada data status</p>
-                <span class="text-[10px] text-[#9aa9ba]">Data status akan muncul seiring penanganan kasus</span>
+                <p class="text-[13px] font-medium text-[#73869e]">Belum ada data status</p>
+                <span class="text-[12px] text-[#9aa9ba]">Data status akan muncul seiring penanganan kasus</span>
             </div>
         @endif
     </div>
@@ -227,15 +227,15 @@
                 <i data-lucide="trophy" class="w-4 h-4"></i>
             </div>
             <div>
-                <h3 class="font-bold text-[14px] text-[#193d6c]" style="font-family:'Plus Jakarta Sans'">Prestasi Siswa Terbaru (Lintas Sekolah)</h3>
-                <p class="text-[10px] text-[#8494a9] mt-0.5">Capaian prestasi siswa se-Kota Bukittinggi yang baru dicatat</p>
+                <h3 class="font-bold text-[16px] text-[#193d6c]" style="font-family:'Plus Jakarta Sans'">Prestasi Siswa Terbaru (Lintas Sekolah)</h3>
+                <p class="text-[12px] text-[#8494a9] mt-0.5">Capaian prestasi siswa se-Kota Bukittinggi yang baru dicatat</p>
             </div>
         </div>
         <div class="flex items-center gap-4">
-            <a href="{{ route('admin.master-data') }}" class="text-[10px] font-semibold text-[#73869e] hover:text-[#1675e8] flex items-center gap-1">
+            <a href="{{ route('admin.master-data') }}" class="text-[12px] font-semibold text-[#73869e] hover:text-[#1675e8] flex items-center gap-1">
                 <i data-lucide="settings" class="w-3 h-3"></i> Kelola Kategori
             </a>
-            <a href="{{ route('achievements.index') }}" class="text-[11px] font-bold text-[#1675e8] flex items-center gap-1 hover:underline">
+            <a href="{{ route('achievements.index') }}" class="text-[13px] font-bold text-[#1675e8] flex items-center gap-1 hover:underline">
                 Lihat Semua Prestasi ({{ $totalAchievements }}) <i data-lucide="arrow-right" class="w-3.5 h-3.5"></i>
             </a>
         </div>
@@ -243,16 +243,16 @@
 
     @if ($recentAchievements->isNotEmpty())
         <div class="overflow-x-auto">
-            <table class="w-full text-[11px]">
+            <table class="w-full text-[13px]">
                 <thead>
                     <tr class="bg-[#f8fafc]">
-                        <th class="text-left text-[9px] font-medium text-[#9aa9ba] px-4 py-3">SISWA</th>
-                        <th class="text-left text-[9px] font-medium text-[#9aa9ba] px-3 py-3">SEKOLAH</th>
-                        <th class="text-left text-[9px] font-medium text-[#9aa9ba] px-3 py-3">PRESTASI & JUARA</th>
-                        <th class="text-left text-[9px] font-medium text-[#9aa9ba] px-3 py-3">KATEGORI</th>
-                        <th class="text-left text-[9px] font-medium text-[#9aa9ba] px-3 py-3">TINGKAT</th>
-                        <th class="text-left text-[9px] font-medium text-[#9aa9ba] px-3 py-3">TANGGAL</th>
-                        <th class="text-right text-[9px] font-medium text-[#9aa9ba] px-4 py-3">AKSI</th>
+                        <th class="text-left text-[11px] font-medium text-[#9aa9ba] px-4 py-3">SISWA</th>
+                        <th class="text-left text-[11px] font-medium text-[#9aa9ba] px-3 py-3">SEKOLAH</th>
+                        <th class="text-left text-[11px] font-medium text-[#9aa9ba] px-3 py-3">PRESTASI & JUARA</th>
+                        <th class="text-left text-[11px] font-medium text-[#9aa9ba] px-3 py-3">KATEGORI</th>
+                        <th class="text-left text-[11px] font-medium text-[#9aa9ba] px-3 py-3">TINGKAT</th>
+                        <th class="text-left text-[11px] font-medium text-[#9aa9ba] px-3 py-3">TANGGAL</th>
+                        <th class="text-right text-[11px] font-medium text-[#9aa9ba] px-4 py-3">AKSI</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -269,30 +269,30 @@
                         <tr class="border-t border-[#edf2f7] hover:bg-[#fafcff] transition-colors">
                             <td class="px-4 py-3">
                                 <strong class="block text-[#1d4c7e]">{{ $ach->student_name }}</strong>
-                                <small class="text-[#a1adbb] text-[9px]">Kelas {{ $ach->class_name ?? '-' }} &bull; NISN: {{ $ach->nisn }}</small>
+                                <small class="text-[#a1adbb] text-[11px]">Kelas {{ $ach->class_name ?? '-' }} &bull; NISN: {{ $ach->nisn }}</small>
                             </td>
                             <td class="px-3 py-3 text-[#5f7890] font-medium max-w-[170px] truncate" title="{{ $ach->school_name }}">
                                 {{ $ach->school_name }}
                             </td>
                             <td class="px-3 py-3">
                                 <strong class="block text-[#1675e8]">{{ $ach->ranking }}</strong>
-                                <span class="text-[#475569] text-[10px]">{{ $ach->achievement_name }}</span>
+                                <span class="text-[#475569] text-[12px]">{{ $ach->achievement_name }}</span>
                             </td>
                             <td class="px-3 py-3">
-                                <span class="px-2 py-0.5 rounded bg-slate-100 text-slate-700 text-[9px] font-semibold">
+                                <span class="px-2 py-0.5 rounded bg-slate-100 text-slate-700 text-[11px] font-semibold">
                                     {{ $ach->category?->name ?? 'Prestasi' }}
                                 </span>
                             </td>
                             <td class="px-3 py-3">
-                                <span class="px-2 py-0.5 rounded text-[9px] font-bold border {{ $badgeClass }}">
+                                <span class="px-2 py-0.5 rounded text-[11px] font-bold border {{ $badgeClass }}">
                                     {{ $ach->achievement_level }}
                                 </span>
                             </td>
-                            <td class="px-3 py-3 text-[#9aaaba] text-[9px] whitespace-nowrap">
+                            <td class="px-3 py-3 text-[#9aaaba] text-[11px] whitespace-nowrap">
                                 {{ \Carbon\Carbon::parse($ach->achievement_date)->locale('id')->isoFormat('D MMM Y') }}
                             </td>
                             <td class="px-4 py-3 text-right">
-                                <a href="{{ route('achievements.student', $ach->nisn) }}" class="inline-flex items-center gap-1 text-[10px] font-semibold text-[#1675e8] hover:underline bg-[#eff6ff] px-2.5 py-1 rounded-md">
+                                <a href="{{ route('achievements.student', $ach->nisn) }}" class="inline-flex items-center gap-1 text-[12px] font-semibold text-[#1675e8] hover:underline bg-[#eff6ff] px-2.5 py-1 rounded-md">
                                     Portofolio <i data-lucide="chevron-right" class="w-3 h-3"></i>
                                 </a>
                             </td>
@@ -306,8 +306,8 @@
             <div class="w-10 h-10 rounded-xl bg-amber-50 text-amber-600 flex items-center justify-center mx-auto mb-2">
                 <i data-lucide="trophy" class="w-5 h-5"></i>
             </div>
-            <strong class="block text-[13px] text-[#193d6c] mb-1">Belum Ada Prestasi Siswa Terdata</strong>
-            <p class="text-[11px] text-[#8494a9] max-w-sm mx-auto">Prestasi yang dicatat oleh masing-masing sekolah akan tampil secara terpusat di sini.</p>
+            <strong class="block text-[15px] text-[#193d6c] mb-1">Belum Ada Prestasi Siswa Terdata</strong>
+            <p class="text-[13px] text-[#8494a9] max-w-sm mx-auto">Prestasi yang dicatat oleh masing-masing sekolah akan tampil secara terpusat di sini.</p>
         </div>
     @endif
 </div>
