@@ -134,7 +134,7 @@ class ReportController extends Controller
             'subcategory' => ['nullable', 'string', 'max:255', 'exists:bullying_subcategories,name'],
             'description' => ['required', 'string', 'min:20'],
             'evidences' => ['nullable', 'array', 'max:5'],
-            'evidences.*' => ['file', 'mimes:jpg,jpeg,png,pdf', 'max:2048'],
+            'evidences.*' => ['file', 'mimes:jpg,jpeg,png,pdf', 'max:10240'],
         ], [
             'school_npsn.required' => 'Pilih sekolah terlebih dahulu.',
             'reporter_role.required' => 'Pilih peran pelapor (Saya korban, Saya saksi, atau Saya mengetahui kejadian).',
@@ -143,6 +143,9 @@ class ReportController extends Controller
             'category.required' => 'Pilih kategori kejadian perundungan.',
             'description.required' => 'Ceritakan kronologi kejadian perundungan.',
             'description.min' => 'Cerita kejadian minimal 20 karakter agar informasi laporan cukup jelas.',
+            'evidences.max' => 'Maksimal bukti yang dapat diunggah adalah :max file.',
+            'evidences.*.max' => 'Ukuran masing-masing file bukti maksimal 10 MB.',
+            'evidences.*.mimes' => 'Format file bukti harus berupa foto (JPG, JPEG, PNG) atau dokumen PDF.',
         ]);
 
         $caseNumber = DB::transaction(function () use ($data, $request) {
