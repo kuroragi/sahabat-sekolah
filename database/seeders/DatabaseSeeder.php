@@ -40,22 +40,6 @@ class DatabaseSeeder extends Seeder
                 'school_name' => null,
             ],
             [
-                'email' => 'bk@sahabat.test',
-                'name' => 'Bu Ratna Sari',
-                'password' => Hash::make('GuruBK#SMPN2Bkt2026!'),
-                'role' => 'COUNSELOR',
-                'school_npsn' => $smpn2Npsn,
-                'school_name' => $smpn2Name,
-            ],
-            [
-                'email' => 'kepala@sahabat.test',
-                'name' => 'Kepala Sekolah SMP Negeri 2 Bukittinggi',
-                'password' => Hash::make('Kepsek#SMPN2Bkt2026!'),
-                'role' => 'PRINCIPAL',
-                'school_npsn' => $smpn2Npsn,
-                'school_name' => $smpn2Name,
-            ],
-            [
                 'email' => 'dinas@sahabat.test',
                 'name' => 'Dinas Pendidikan Kota Bukittinggi',
                 'password' => Hash::make('Dinas#Bkt2026!Secure'),
@@ -83,13 +67,13 @@ class DatabaseSeeder extends Seeder
         }
 
         $demoCases = [
-            ['SS-2026-000125', 'Cyberbullying', 'Tinggi', 'PENDING_RESPONSE', 'OVERDUE', $smpn2Name, 'Siswa menerima ancaman perundungan siber berulang di media sosial dan belum direspon Guru BK.'],
-            ['SS-2026-000124', 'Fisik', 'Tinggi', 'PENDING_RESPONSE', 'WARNING', $smpn2Name, 'Terjadi intimidasi fisik saat jam istirahat sekolah yang mendekati batas waktu respons.'],
-            ['SS-2026-000123', 'Cyberbullying', 'Tinggi', 'IN_HANDLING', 'OVERDUE', $smpn2Name, 'Saya melihat pesan intimidatif di grup kelas.'],
-            ['SS-2026-000122', 'Verbal', 'Sedang', 'UNDER_VERIFICATION', 'WARNING', $smpn2Name, 'Teman saya sering diberi julukan yang merendahkan.'],
-            ['SS-2026-000121', 'Sosial', 'Sedang', 'PENDING_RESPONSE', 'ON_TIME', $smpn2Name, 'Saya mengetahui ada pengucilan dalam kelompok belajar.'],
-            ['SS-2026-000120', 'Fisik', 'Tinggi', 'IN_HANDLING', 'ON_TIME', $smpn2Name, 'Terjadi dorongan berulang saat jam istirahat.'],
-            ['SS-2026-000119', 'Diskriminasi', 'Rendah', 'CLOSED', 'COMPLETED', $smpn2Name, 'Komentar yang mempermalukan kondisi pribadi.'],
+            ['SS-2026-000125', 'Cyberbullying(DEMO)', 'Tinggi', 'PENDING_RESPONSE', 'OVERDUE', $smpn2Name, 'Siswa menerima ancaman perundungan siber berulang di media sosial dan belum direspon Guru BK.'],
+            ['SS-2026-000124', 'Fisik(DEMO)', 'Tinggi', 'PENDING_RESPONSE', 'WARNING', $smpn2Name, 'Terjadi intimidasi fisik saat jam istirahat sekolah yang mendekati batas waktu respons.'],
+            ['SS-2026-000123', 'Cyberbullying(DEMO)', 'Tinggi', 'IN_HANDLING', 'OVERDUE', $smpn2Name, 'Saya melihat pesan intimidatif di grup kelas.'],
+            ['SS-2026-000122', 'Verbal(DEMO)', 'Sedang', 'UNDER_VERIFICATION', 'WARNING', $smpn2Name, 'Teman saya sering diberi julukan yang merendahkan.'],
+            ['SS-2026-000121', 'Sosial(DEMO)', 'Sedang', 'PENDING_RESPONSE', 'ON_TIME', $smpn2Name, 'Saya mengetahui ada pengucilan dalam kelompok belajar.'],
+            ['SS-2026-000120', 'Fisik(DEMO)', 'Tinggi', 'IN_HANDLING', 'ON_TIME', $smpn2Name, 'Terjadi dorongan berulang saat jam istirahat.'],
+            ['SS-2026-000119', 'Diskriminasi(DEMO)', 'Rendah', 'CLOSED', 'COMPLETED', $smpn2Name, 'Komentar yang mempermalukan kondisi pribadi.'],
         ];
 
         foreach ($demoCases as [$number, $category, $risk, $status, $sla, $school, $description]) {
@@ -255,5 +239,7 @@ class DatabaseSeeder extends Seeder
                 );
             }
         }
+
+        $this->call(SchoolAccountsSeeder::class);
     }
 }

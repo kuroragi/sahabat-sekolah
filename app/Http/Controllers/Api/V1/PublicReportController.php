@@ -74,7 +74,7 @@ class PublicReportController extends Controller
             'reporter_name' => ['nullable', 'required_unless:identity_mode,ANONYMOUS', 'string', 'max:255'],
             'reporter_contact' => ['nullable', 'string', 'max:100'],
             'category' => ['required', 'string', 'max:80'],
-            'subcategory' => ['nullable', 'string', 'max:120'],
+            'subcategory' => ['required', 'string', 'max:120'],
             'description' => ['required', 'string', 'min:10', 'max:5000'],
             'evidences' => ['nullable', 'array', 'max:5'],
             'evidences.*' => ['file', 'max:10240', 'mimes:jpg,jpeg,png,webp,pdf,doc,docx,mp4,mov'],
@@ -84,6 +84,7 @@ class PublicReportController extends Controller
             'identity_mode.required' => 'Pilih mode identitas laporan.',
             'reporter_name.required_unless' => 'Nama pelapor wajib diisi jika mode identitas Rahasia atau Terbuka.',
             'category.required' => 'Pilih kategori kejadian perundungan.',
+            'subcategory.required' => 'Pilih bentuk spesifik / subkategori perundungan.',
             'description.required' => 'Ceritakan kronologi kejadian perundungan.',
             'description.min' => 'Cerita kejadian minimal 10 karakter agar informasi laporan cukup jelas.',
         ]);

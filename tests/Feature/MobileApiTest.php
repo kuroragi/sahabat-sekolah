@@ -63,6 +63,7 @@ class MobileApiTest extends TestCase
             'reporter_role' => 'VICTIM',
             'identity_mode' => 'ANONYMOUS',
             'category' => 'Cyberbullying',
+            'subcategory' => 'Ancaman digital',
             'description' => 'Ini adalah kronologi pengaduan anonim dari aplikasi mobile.',
         ]);
 
@@ -106,6 +107,7 @@ class MobileApiTest extends TestCase
             'reporter_role' => 'STUDENT',
             'identity_mode' => 'ANONYMOUS',
             'category' => 'Cyberbullying',
+            'subcategory' => 'Ancaman digital',
             'description' => 'Laporan uji pesan anonim pada mobile.',
         ]);
 
@@ -188,6 +190,7 @@ class MobileApiTest extends TestCase
             'identity_mode' => 'CONFIDENTIAL',
             'reporter_name' => 'Budi Siswa',
             'category' => 'Cyberbullying',
+            'subcategory' => 'Ancaman digital',
             'description' => 'Ada pesan mengancam di grup media sosial.',
         ]);
 

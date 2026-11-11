@@ -95,6 +95,7 @@ class NotificationMailTest extends TestCase
             'identity_mode' => 'CONFIDENTIAL',
             'reporter_name' => 'Pelapor Uji',
             'category' => 'Cyberbullying',
+            'subcategory' => 'Ancaman digital',
             'description' => 'Ini kronologi dugaan perundungan yang dilaporkan untuk pengujian email notifikasi.',
         ]);
 

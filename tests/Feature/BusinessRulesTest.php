@@ -70,7 +70,7 @@ class BusinessRulesTest extends TestCase
     {
         $response = $this->post('/reports', [
             'school_npsn' => $this->schoolNpsn, 'reporter_role' => 'WITNESS', 'identity_mode' => 'ANONYMOUS',
-            'category' => 'Cyberbullying', 'description' => 'Laporan anonim untuk pengujian token yang aman.',
+            'category' => 'Cyberbullying', 'subcategory' => 'Ancaman digital', 'description' => 'Laporan anonim untuk pengujian token yang aman.',
         ]);
         $response->assertRedirect(route('reports.receipt'));
         $this->assertDatabaseCount('anonymous_report_tokens', 1);
@@ -84,6 +84,7 @@ class BusinessRulesTest extends TestCase
             'reporter_role' => 'WITNESS',
             'identity_mode' => 'ANONYMOUS',
             'category' => 'Cyberbullying',
+            'subcategory' => 'Ancaman digital',
             'description' => 'Laporan uji anonim untuk pengujian token 4 kata yang ramah anak.',
         ]);
 
@@ -108,6 +109,7 @@ class BusinessRulesTest extends TestCase
             'reporter_role' => 'WITNESS',
             'identity_mode' => 'ANONYMOUS',
             'category' => 'Cyberbullying',
+            'subcategory' => 'Ancaman digital',
             'description' => 'Laporan uji anonim untuk pengujian saluran komunikasi dua arah.',
         ]);
 
@@ -137,6 +139,7 @@ class BusinessRulesTest extends TestCase
             'reporter_role' => 'VICTIM',
             'identity_mode' => 'ANONYMOUS',
             'category' => 'Perundungan Verbal',
+            'subcategory' => 'Ancaman',
             'description' => 'Saya merasa sangat tertekan dan ada ancaman senjata tajam dan ingin mati saja karena tidak tahan.',
         ]);
 
@@ -221,6 +224,7 @@ class BusinessRulesTest extends TestCase
             'identity_mode' => 'CONFIDENTIAL',
             'reporter_name' => 'Siswa Penguji',
             'category' => 'Perundungan Verbal',
+            'subcategory' => 'Hinaan atau julukan merendahkan',
             'description' => 'Laporan uji untuk madrasah tanpa guru BK terdaftar di sistem.',
         ]);
 
@@ -419,6 +423,7 @@ class BusinessRulesTest extends TestCase
             'reporter_role' => 'VICTIM',
             'identity_mode' => 'ANONYMOUS',
             'category' => 'Cyberbullying',
+            'subcategory' => 'Ancaman digital',
             'description' => 'Laporan uji anonim untuk pengujian tracking posisi kasus.',
         ]);
 
@@ -443,6 +448,7 @@ class BusinessRulesTest extends TestCase
             'identity_mode' => 'CONFIDENTIAL',
             'reporter_name' => 'Ahmad Siswa',
             'category' => 'Cyberbullying',
+            'subcategory' => 'Ancaman digital',
             'description' => 'Laporan rahasia untuk pengujian tracking menggunakan nomor laporan.',
         ]);
 
@@ -495,6 +501,7 @@ class BusinessRulesTest extends TestCase
             'reporter_role' => 'VICTIM',
             'identity_mode' => 'ANONYMOUS',
             'category' => 'Cyberbullying',
+            'subcategory' => 'Ancaman digital',
             'description' => 'Laporan uji anonim untuk pengujian kirim pesan via tracking page.',
         ]);
 
@@ -510,5 +517,18 @@ class BusinessRulesTest extends TestCase
         $this->assertDatabaseHas('anonymous_messages', [
             'message' => 'Ini pesan dikirim langsung dari halaman pelacak posisi laporan.',
         ]);
+    }
+
+    public function test_report_submission_fails_without_subcategory(): void
+    {
+        $response = $this->post('/reports', [
+            'school_npsn' => $this->schoolNpsn,
+            'reporter_role' => 'VICTIM',
+            'identity_mode' => 'ANONYMOUS',
+            'category' => 'Cyberbullying',
+            'description' => 'Laporan uji tanpa menyertakan subkategori perundungan wajib.',
+        ]);
+
+        $response->assertSessionHasErrors(['subcategory']);
     }
 }

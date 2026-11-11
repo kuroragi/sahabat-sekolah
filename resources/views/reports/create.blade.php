@@ -197,10 +197,10 @@
                     <!-- Subkategori Kejadian (Tombol Menyesuaikan dengan Kategori yang Dipilih) -->
                     <div id="subcategory-panel" class="hidden mt-3 pt-3 border-t border-slate-100">
                         <div class="flex items-center justify-between mb-2">
-                            <span class="text-xs font-semibold text-slate-600">Pilih bentuk spesifik (<span id="subcategory-for-category-title" class="text-blue-600 font-bold"></span>):</span>
-                            <span class="text-[11px] text-slate-400 font-normal">Opsional (klik untuk memilih/batal)</span>
+                            <span class="text-xs font-semibold text-slate-600">Pilih bentuk spesifik (<span id="subcategory-for-category-title" class="text-blue-600 font-bold"></span>) <span class="text-[#eb6d6f]">*</span>:</span>
+                            <span class="text-[11px] text-red-500 font-semibold">* Wajib dipilih</span>
                         </div>
-                        <input type="hidden" name="subcategory" id="subcategory-input" value="{{ old('subcategory') }}">
+                        <input type="hidden" name="subcategory" id="subcategory-input" value="{{ old('subcategory') }}" required>
                         <input type="hidden" name="subcategory_id" id="subcategory-id-input" value="{{ old('subcategory_id') }}">
 
                         @foreach ($categories as $category)
@@ -223,6 +223,7 @@
                             </div>
                         @endforeach
 
+                        <span id="subcategory-error-msg" class="text-xs text-red-500 hidden mt-1.5 block">Silakan pilih salah satu bentuk spesifik / subkategori di atas.</span>
                         @error('subcategory')
                             <small class="text-xs text-red-500 mt-1 block">{{ $message }}</small>
                         @enderror
@@ -276,6 +277,7 @@
         const catSelectedLabel = document.getElementById('category-selected-label');
         const catErrorMsg = document.getElementById('category-error-msg');
         const catWrapper = document.getElementById('category-selection-wrapper');
+        const subcatErrorMsg = document.getElementById('subcategory-error-msg');
 
         const identityModeSelect = document.getElementById('identity-mode-select');
         const reporterNameAsterisk = document.getElementById('reporter-name-asterisk');
@@ -363,34 +365,43 @@
             });
         });
 
-        // Event listener tombol subkategori (klik lagi untuk toggle / batal pilih)
+        // Event listener tombol subkategori (wajib dipilih, berpindah saat tombol lain diklik)
         subcatButtons.forEach(btn => {
             btn.addEventListener('click', function() {
                 const subcatId = this.dataset.subcatId;
                 const subcatName = this.dataset.subcatName;
 
-                if (subcategoryIdInput && String(subcategoryIdInput.value) === String(subcatId)) {
-                    // Toggle off / batalkan pilihan
-                    subcategoryIdInput.value = '';
-                    if (subcategoryInput) subcategoryInput.value = '';
-                    updateSubcategoryVisual(null);
-                } else {
-                    if (subcategoryIdInput) subcategoryIdInput.value = subcatId;
-                    if (subcategoryInput) subcategoryInput.value = subcatName;
-                    updateSubcategoryVisual(subcatId);
-                }
+                if (subcategoryIdInput) subcategoryIdInput.value = subcatId;
+                if (subcategoryInput) subcategoryInput.value = subcatName;
+                if (subcatErrorMsg) subcatErrorMsg.classList.add('hidden');
+                updateSubcategoryVisual(subcatId);
             });
         });
 
         // Validasi Submit Form
         if (reportForm) {
             reportForm.addEventListener('submit', function(e) {
+                let hasError = false;
+
                 if (!categoryInput.value || !categoryInput.value.trim()) {
-                    e.preventDefault();
+                    hasError = true;
                     if (catErrorMsg) catErrorMsg.classList.remove('hidden');
                     if (catWrapper) {
                         catWrapper.scrollIntoView({ behavior: 'smooth', block: 'center' });
                     }
+                }
+
+                if (!subcategoryInput.value || !subcategoryInput.value.trim()) {
+                    hasError = true;
+                    if (subcatErrorMsg) subcatErrorMsg.classList.remove('hidden');
+                    if (categoryInput.value && categoryInput.value.trim() && subcatPanel) {
+                        subcatPanel.classList.remove('hidden');
+                        subcatPanel.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                    }
+                }
+
+                if (hasError) {
+                    e.preventDefault();
                 }
             });
         }
