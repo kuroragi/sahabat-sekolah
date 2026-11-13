@@ -15,13 +15,6 @@
     </style>
 </head>
 <body class="bg-slate-50 min-h-screen text-slate-800 antialiased flex flex-col justify-between">
-
-    <!-- Tombol Keluar Cepat -->
-    <a href="https://www.google.com" id="panic-exit-btn" class="fixed top-3 right-3 md:top-5 md:right-5 z-50 flex items-center gap-2 bg-rose-600 hover:bg-rose-700 text-white font-medium text-xs md:text-sm px-3.5 py-2 rounded-full shadow-lg transition-all duration-200 cursor-pointer" title="Klik tombol ini untuk segera menutup halaman jika ada orang mendekat">
-        <i data-lucide="shield-alert" class="w-4 h-4"></i>
-        <span>Keluar Cepat</span>
-    </a>
-
     <div class="max-w-2xl mx-auto w-full px-4 py-8 md:py-12 flex-1 flex flex-col justify-center">
 
         @if (!empty($isCrisis))
@@ -147,14 +140,6 @@
                     msg.classList.add('hidden');
                     btnText.textContent = 'Salin 4 Kata';
                 }, 3000);
-            });
-        }
-
-        const panicBtn = document.getElementById('panic-exit-btn');
-        if (panicBtn) {
-            panicBtn.addEventListener('click', function(e) {
-                e.preventDefault();
-                window.location.replace('https://www.google.com');
             });
         }
     </script>

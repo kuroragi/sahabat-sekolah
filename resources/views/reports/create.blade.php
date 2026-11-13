@@ -18,12 +18,6 @@
 </head>
 
 <body>
-    <!-- Tombol Keluar Cepat (Panic Exit) -->
-    <a href="https://www.google.com" id="panic-exit-btn" class="fixed top-3 right-3 md:top-5 md:right-5 z-50 flex items-center gap-2 bg-rose-600 hover:bg-rose-700 text-white font-medium text-xs md:text-sm px-3.5 py-2 rounded-full shadow-lg transition-all duration-200 cursor-pointer" title="Klik tombol ini untuk segera menutup halaman jika ada orang mendekat">
-        <i data-lucide="shield-alert" class="w-4 h-4"></i>
-        <span>Keluar Cepat</span>
-    </a>
-
     <div class="form-shell">
         <a class="back-link" href="{{ url('/') }}"><i data-lucide="arrow-left"></i> Kembali ke beranda</a>
         <div class="form-layout">
@@ -316,7 +310,6 @@
         const reporterNameInput = document.getElementById('reporter-name-input');
         const reporterNameHelp = document.getElementById('reporter-name-help');
         const anonymousBanner = document.getElementById('anonymous-privacy-banner');
-        const panicBtn = document.getElementById('panic-exit-btn');
         const descTextarea = document.getElementById('description-textarea');
 
         function updateCategoryVisual(selectedCategoryId) {
@@ -433,14 +426,6 @@
                 if (hasError) {
                     e.preventDefault();
                 }
-            });
-        }
-
-        // Panic Exit
-        if (panicBtn) {
-            panicBtn.addEventListener('click', function(e) {
-                e.preventDefault();
-                window.location.replace('https://www.google.com');
             });
         }
 
