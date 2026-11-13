@@ -176,6 +176,24 @@ class SimulateCasesCommand extends Command
             'updated_at' => $case1ResolvedAt,
         ]);
 
+        // File Bukti Kasus 1 (Chat Ejekan)
+        $dummyEvPath1 = "case-documents/{$case1Number}/Bukti_Tangkapan_Layar_Chat_Ejekan.png";
+        try {
+            Storage::disk('s3-private')->put($dummyEvPath1, "BUKTI TANGKAPAN LAYAR CHAT EJEKAN VERBAL {$case1Number}");
+        } catch (\Throwable $e) {
+            Storage::disk('local')->put($dummyEvPath1, "BUKTI TANGKAPAN LAYAR CHAT EJEKAN VERBAL {$case1Number}");
+        }
+        DB::table('case_evidences')->insert([
+            'case_id' => $case1Id,
+            'file_name' => 'Bukti_Tangkapan_Layar_Chat_Ejekan.png',
+            'file_path' => $dummyEvPath1,
+            'mime_type' => 'image/png',
+            'file_size' => 345600,
+            'uploaded_by' => 'M. Fauzan (Korban)',
+            'created_at' => $case1OpenedAt,
+            'updated_at' => $case1OpenedAt,
+        ]);
+
         $this->info(" [OK] Kasus 1 Berhasil Dibuat: {$case1Number} (Status: CLOSED - Selesai di Sekolah)");
 
         // -------------------------------------------------------------
@@ -329,6 +347,53 @@ class SimulateCasesCommand extends Command
                 'created_by' => 'UPTD PPA Kota Bukittinggi',
                 'created_at' => $escalateTime2->copy()->addHours(4),
                 'updated_at' => $escalateTime2->copy()->addHours(4),
+            ],
+        ]);
+
+        // File Bukti Kasus 2 (Visum, CCTV, Surat Permohonan Eskalasi)
+        $evPath2A = "case-documents/{$case2Number}/Foto_Visum_Luka_Lebam_Korban.jpg";
+        $evPath2B = "case-documents/{$case2Number}/Rekaman_CCTV_Kejadian_Gerbang.mp4";
+        $evPath2C = "case-documents/{$case2Number}/Surat_Permohonan_Eskalasi_Kasus_PPKSP.pdf";
+        try {
+            Storage::disk('s3-private')->put($evPath2A, "BUKTI FOTO VISUM LUKA {$case2Number}");
+            Storage::disk('s3-private')->put($evPath2B, "BUKTI REKAMAN CCTV KEJADIAN {$case2Number}");
+            Storage::disk('s3-private')->put($evPath2C, "BUKTI SURAT PERMOHONAN ESKALASI KEPSEK {$case2Number}");
+        } catch (\Throwable $e) {
+            Storage::disk('local')->put($evPath2A, "BUKTI FOTO VISUM LUKA {$case2Number}");
+            Storage::disk('local')->put($evPath2B, "BUKTI REKAMAN CCTV KEJADIAN {$case2Number}");
+            Storage::disk('local')->put($evPath2C, "BUKTI SURAT PERMOHONAN ESKALASI KEPSEK {$case2Number}");
+        }
+
+        DB::table('case_evidences')->insert([
+            [
+                'case_id' => $case2Id,
+                'file_name' => 'Foto_Visum_Luka_Lebam_Korban.jpg',
+                'file_path' => $evPath2A,
+                'mime_type' => 'image/jpeg',
+                'file_size' => 1245000,
+                'uploaded_by' => 'Bu Ratna Sari (Guru BK)',
+                'created_at' => $case2OpenedAt->copy()->addHours(2),
+                'updated_at' => $case2OpenedAt->copy()->addHours(2),
+            ],
+            [
+                'case_id' => $case2Id,
+                'file_name' => 'Rekaman_CCTV_Kejadian_Gerbang.mp4',
+                'file_path' => $evPath2B,
+                'mime_type' => 'video/mp4',
+                'file_size' => 8420000,
+                'uploaded_by' => 'Satpam Sekolah',
+                'created_at' => $case2OpenedAt->copy()->addHours(3),
+                'updated_at' => $case2OpenedAt->copy()->addHours(3),
+            ],
+            [
+                'case_id' => $case2Id,
+                'file_name' => 'Surat_Permohonan_Eskalasi_Kasus_PPKSP.pdf',
+                'file_path' => $evPath2C,
+                'mime_type' => 'application/pdf',
+                'file_size' => 520000,
+                'uploaded_by' => 'Kepala Sekolah SMPN 2 Bukittinggi',
+                'created_at' => $escalateTime2,
+                'updated_at' => $escalateTime2,
             ],
         ]);
 
