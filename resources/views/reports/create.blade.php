@@ -233,13 +233,45 @@
                 <label>
                     <div class="flex items-center justify-between mb-1">
                         <span>Ceritakan kejadian <span>*</span></span>
-                        <button type="button" id="voice-input-btn" class="inline-flex items-center gap-1.5 text-xs font-medium text-blue-600 hover:text-blue-700 bg-blue-50 hover:bg-blue-100 px-2.5 py-1 rounded-md transition-colors">
-                            <i data-lucide="mic" class="w-3.5 h-3.5"></i>
-                            <span id="voice-btn-label">Bicara / Dikte Suara</span>
-                        </button>
+                        <div class="flex items-center gap-1.5">
+                            <button type="button" id="voice-input-btn" class="inline-flex items-center gap-1.5 text-xs font-semibold text-blue-700 bg-blue-50 hover:bg-blue-100 border border-blue-200 px-2.5 py-1 rounded-md transition-all shadow-sm">
+                                <i data-lucide="mic" class="w-3.5 h-3.5 text-blue-600"></i>
+                                <span id="voice-btn-label">Bicara / Dikte Suara</span>
+                            </button>
+                            <button type="button" id="voice-info-toggle" title="Persyaratan & Petunjuk Dikte Suara" class="text-gray-400 hover:text-blue-600 p-1 rounded-full transition-colors">
+                                <i data-lucide="info" class="w-4 h-4"></i>
+                            </button>
+                        </div>
                     </div>
+
+                    <!-- Kotak Notifikasi / Syarat Penggunaan Dikte Suara -->
+                    <div id="voice-info-box" class="hidden mb-2 p-3 bg-blue-50/70 border border-blue-100 rounded-lg text-xs text-blue-900 leading-relaxed transition-all">
+                        <div class="flex items-start justify-between gap-2">
+                            <div class="flex items-start gap-2">
+                                <i data-lucide="sparkles" class="w-4 h-4 text-blue-600 mt-0.5 flex-shrink-0"></i>
+                                <div>
+                                    <strong class="font-bold text-blue-950">Fitur Dikte Suara (Speech to Text):</strong>
+                                    <ul class="list-disc list-inside mt-1 space-y-0.5 text-blue-800">
+                                        <li>Didukung di browser <strong>Google Chrome</strong> / <strong>Microsoft Edge</strong> (desktop & ponsel).</li>
+                                        <li>Pastikan Anda menekan tombol <strong>"Izinkan / Allow"</strong> saat browser meminta izin mikrofon.</li>
+                                        <li>Bicara dengan jelas dalam <strong>Bahasa Indonesia</strong> di lingkungan yang tenang.</li>
+                                    </ul>
+                                </div>
+                            </div>
+                            <button type="button" id="voice-info-close" class="text-blue-400 hover:text-blue-700 p-0.5">
+                                <i data-lucide="x" class="w-3.5 h-3.5"></i>
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Alert feedback interaktif jika browser tidak mendukung atau mikrofon ditolak -->
+                    <div id="voice-status-alert" class="hidden mb-2 p-2.5 rounded-lg text-xs flex items-center gap-2">
+                        <i data-lucide="alert-circle" class="w-4 h-4 flex-shrink-0"></i>
+                        <span id="voice-status-text"></span>
+                    </div>
+
                     <textarea name="description" id="description-textarea" rows="6" minlength="20" required
-                        placeholder="Tuliskan apa yang terjadi, kapan, dan di mana. Ceritakan fakta yang Anda lihat atau alami. Jika sulit mengetik, klik tombol 'Bicara / Dikte Suara' di atas.">{{ old('description') }}</textarea>
+                        placeholder="Tuliskan apa yang terjadi, kapan, dan di mana. Ceritakan fakta yang Anda lihat atau alami. (Bisa mengetik langsung atau gunakan tombol 'Bicara / Dikte Suara').">{{ old('description') }}</textarea>
                     <small>Minimal 20 karakter. Ceritakan fakta yang Anda lihat atau alami secara jujur dan tenang.</small>
                 </label>
 
@@ -286,8 +318,6 @@
         const anonymousBanner = document.getElementById('anonymous-privacy-banner');
         const panicBtn = document.getElementById('panic-exit-btn');
         const descTextarea = document.getElementById('description-textarea');
-        const voiceBtn = document.getElementById('voice-input-btn');
-        const voiceLabel = document.getElementById('voice-btn-label');
 
         function updateCategoryVisual(selectedCategoryId) {
             categoryButtons.forEach(btn => {
@@ -414,61 +444,116 @@
             });
         }
 
-        // Voice Input (Speech to Text in Indonesian)
+        // Voice Input & Syarat Penggunaan
+        const voiceBtn = document.getElementById('voice-input-btn');
+        const voiceLabel = document.getElementById('voice-btn-label');
+        const voiceInfoToggle = document.getElementById('voice-info-toggle');
+        const voiceInfoBox = document.getElementById('voice-info-box');
+        const voiceInfoClose = document.getElementById('voice-info-close');
+        const voiceStatusAlert = document.getElementById('voice-status-alert');
+        const voiceStatusText = document.getElementById('voice-status-text');
+
+        // Toggle petunjuk syarat penggunaan
+        if (voiceInfoToggle && voiceInfoBox) {
+            voiceInfoToggle.addEventListener('click', function() {
+                voiceInfoBox.classList.toggle('hidden');
+                if (window.lucide) lucide.createIcons();
+            });
+        }
+        if (voiceInfoClose && voiceInfoBox) {
+            voiceInfoClose.addEventListener('click', function() {
+                voiceInfoBox.classList.add('hidden');
+            });
+        }
+
+        function showVoiceAlert(message, isError = true) {
+            if (!voiceStatusAlert || !voiceStatusText) return;
+            voiceStatusText.textContent = message;
+            voiceStatusAlert.className = isError
+                ? 'mb-2 p-2.5 rounded-lg text-xs flex items-center gap-2 bg-amber-50 border border-amber-200 text-amber-900'
+                : 'mb-2 p-2.5 rounded-lg text-xs flex items-center gap-2 bg-blue-50 border border-blue-200 text-blue-900';
+            voiceStatusAlert.classList.remove('hidden');
+            if (window.lucide) lucide.createIcons();
+        }
+
+        function hideVoiceAlert() {
+            if (voiceStatusAlert) voiceStatusAlert.classList.add('hidden');
+        }
+
         const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-        if (SpeechRecognition && voiceBtn) {
-            const recognition = new SpeechRecognition();
-            recognition.lang = 'id-ID';
-            recognition.continuous = false;
-            recognition.interimResults = false;
 
-            let isRecording = false;
+        if (voiceBtn) {
+            if (!SpeechRecognition) {
+                // Browser tidak mendukung Web Speech API (misal Firefox atau browser lama)
+                voiceBtn.addEventListener('click', function() {
+                    showVoiceAlert('Browser Anda belum mendukung fitur Dikte Suara. Silakan gunakan Google Chrome atau ketik laporan secara manual.');
+                    if (voiceInfoBox) voiceInfoBox.classList.remove('hidden');
+                });
+            } else {
+                const recognition = new SpeechRecognition();
+                recognition.lang = 'id-ID';
+                recognition.continuous = false;
+                recognition.interimResults = false;
 
-            voiceBtn.addEventListener('click', function() {
-                if (!isRecording) {
-                    try {
-                        recognition.start();
-                        isRecording = true;
-                        voiceBtn.classList.remove('bg-blue-50', 'text-blue-600');
-                        voiceBtn.classList.add('bg-red-500', 'text-white', 'animate-pulse');
-                        voiceLabel.textContent = 'Mendengarkan... Bicara sekarang';
-                    } catch (err) {
-                        console.log(err);
+                let isRecording = false;
+
+                function resetVoiceBtn() {
+                    voiceBtn.classList.remove('bg-red-500', 'text-white', 'animate-pulse', 'border-red-600');
+                    voiceBtn.classList.add('bg-blue-50', 'text-blue-700', 'border-blue-200');
+                    if (voiceLabel) voiceLabel.textContent = 'Bicara / Dikte Suara';
+                }
+
+                voiceBtn.addEventListener('click', function() {
+                    hideVoiceAlert();
+                    if (!isRecording) {
+                        try {
+                            recognition.start();
+                            isRecording = true;
+                            voiceBtn.classList.remove('bg-blue-50', 'text-blue-700', 'border-blue-200');
+                            voiceBtn.classList.add('bg-red-500', 'text-white', 'animate-pulse', 'border-red-600');
+                            if (voiceLabel) voiceLabel.textContent = 'Mendengarkan... Silakan Bicara';
+                        } catch (err) {
+                            console.warn('SpeechRecognition error:', err);
+                            isRecording = false;
+                            resetVoiceBtn();
+                        }
+                    } else {
+                        recognition.stop();
+                        isRecording = false;
+                        resetVoiceBtn();
                     }
-                } else {
+                });
+
+                recognition.onresult = function(event) {
+                    const transcript = event.results[0][0].transcript;
+                    if (descTextarea) {
+                        if (descTextarea.value.trim().length > 0) {
+                            descTextarea.value += ' ' + transcript;
+                        } else {
+                            descTextarea.value = transcript;
+                        }
+                    }
+                    hideVoiceAlert();
+                };
+
+                recognition.onspeechend = function() {
                     recognition.stop();
                     isRecording = false;
                     resetVoiceBtn();
-                }
-            });
+                };
 
-            recognition.onresult = function(event) {
-                const transcript = event.results[0][0].transcript;
-                if (descTextarea.value.trim().length > 0) {
-                    descTextarea.value += ' ' + transcript;
-                } else {
-                    descTextarea.value = transcript;
-                }
-            };
-
-            recognition.onspeechend = function() {
-                recognition.stop();
-                isRecording = false;
-                resetVoiceBtn();
-            };
-
-            recognition.onerror = function() {
-                isRecording = false;
-                resetVoiceBtn();
-            };
-
-            function resetVoiceBtn() {
-                voiceBtn.classList.remove('bg-red-500', 'text-white', 'animate-pulse');
-                voiceBtn.classList.add('bg-blue-50', 'text-blue-600');
-                voiceLabel.textContent = 'Bicara / Dikte Suara';
+                recognition.onerror = function(event) {
+                    isRecording = false;
+                    resetVoiceBtn();
+                    if (event.error === 'not-allowed') {
+                        showVoiceAlert('Akses mikrofon ditolak. Klik ikon gembok/pengaturan di baris URL browser Anda lalu pilih "Izinkan Mikrofon".');
+                    } else if (event.error === 'no-speech') {
+                        showVoiceAlert('Tidak ada suara terdeteksi. Silakan coba klik tombol kembali dan bicara lebih dekat ke mikrofon.');
+                    } else if (event.error === 'network') {
+                        showVoiceAlert('Koneksi internet bermasalah saat memproses pengenalan suara.');
+                    }
+                };
             }
-        } else if (voiceBtn) {
-            voiceBtn.style.display = 'none';
         }
 
         function updateIdentityFields() {
