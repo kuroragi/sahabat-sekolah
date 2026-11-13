@@ -240,6 +240,9 @@ class DatabaseSeeder extends Seeder
             }
         }
 
-        $this->call(SchoolAccountsSeeder::class);
+        $this->call([
+            BullyingCategorySeeder::class,
+            SchoolAccountsSeeder::class,
+        ]);
     }
 }

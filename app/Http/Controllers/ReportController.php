@@ -173,10 +173,19 @@ class ReportController extends Controller
 
             if ($isCrisis) {
                 $risk = 'CRITICAL';
-            } elseif (in_array($data['category'], ['Cyberbullying', 'Fisik', 'Perundungan Bernuansa Seksual', 'Kekerasan Serius', 'Pemerasan'], true)) {
-                $risk = 'HIGH';
             } else {
-                $risk = 'MEDIUM';
+                // Ambil default_risk_level langsung dari master subkategori jika tersedia
+                $subcatRisk = DB::table('bullying_subcategories')
+                    ->where('name', $data['subcategory'])
+                    ->value('default_risk_level');
+
+                if ($subcatRisk && in_array($subcatRisk, ['LOW', 'MEDIUM', 'HIGH', 'CRITICAL'], true)) {
+                    $risk = $subcatRisk;
+                } elseif (in_array($data['category'], ['Cyberbullying', 'Cyberbullying (Perundungan Daring)', 'Perundungan Fisik', 'Fisik', 'Perundungan Bernuansa Seksual', 'Pemalakan & Pengompasan', 'Kekerasan Serius', 'Pemerasan'], true)) {
+                    $risk = 'HIGH';
+                } else {
+                    $risk = 'MEDIUM';
+                }
             }
 
             $caseId = DB::table('cases')->insertGetId([

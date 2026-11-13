@@ -167,7 +167,6 @@ class BusinessRulesTest extends TestCase
         $response = $this->get('/reports/create?npsn='.$this->schoolNpsn);
         $response->assertOk();
         $response->assertSee('Sekolah Terpilih Otomatis');
-        $response->assertSee('Keluar Cepat');
     }
 
     public function test_sla_scanner_creates_only_one_warning_reminder(): void

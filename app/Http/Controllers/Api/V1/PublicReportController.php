@@ -108,7 +108,17 @@ class PublicReportController extends Controller
 
             $reportId = DB::table('reports')->insertGetId($reportData);
 
-            $risk = in_array($data['category'], ['Cyberbullying', 'Fisik', 'Perundungan Bernuansa Seksual'], true) ? 'HIGH' : 'MEDIUM';
+            $subcatRisk = ! empty($data['subcategory'])
+                ? DB::table('bullying_subcategories')->where('name', $data['subcategory'])->value('default_risk_level')
+                : null;
+
+            if ($subcatRisk && in_array($subcatRisk, ['LOW', 'MEDIUM', 'HIGH', 'CRITICAL'], true)) {
+                $risk = $subcatRisk;
+            } elseif (in_array($data['category'], ['Cyberbullying', 'Cyberbullying (Perundungan Daring)', 'Perundungan Fisik', 'Fisik', 'Perundungan Bernuansa Seksual', 'Pemalakan & Pengompasan'], true)) {
+                $risk = 'HIGH';
+            } else {
+                $risk = 'MEDIUM';
+            }
 
             $caseId = DB::table('cases')->insertGetId([
                 'school_npsn' => $data['school_npsn'],
