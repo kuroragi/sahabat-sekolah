@@ -5,6 +5,7 @@ use App\Http\Controllers\AdminController;
 use App\Http\Controllers\AnonymousController;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\CaseController;
+use App\Http\Controllers\ManualController;
 use App\Http\Controllers\NotificationController;
 use App\Http\Controllers\PageController;
 use App\Http\Controllers\ReportController;
@@ -401,5 +402,14 @@ Route::middleware('auth.session')->group(function () {
             ->whereNumber('id')
             ->middleware(['role:COUNSELOR,PRINCIPAL,ADMIN', 'permission:ACHIEVEMENT_VIEW'])
             ->name('achievements.certificate');
+    });
+
+    // ==========================================
+    // Panduan Penggunaan Sistem (Role-Based)
+    // ==========================================
+    Route::middleware(['role:COUNSELOR,PRINCIPAL,ADMIN,CITY_ADMIN'])->group(function () {
+        Route::get('/manuals', [ManualController::class, 'index'])->name('manuals.index');
+        Route::get('/manuals/stream/{key}', [ManualController::class, 'streamPdf'])->name('manuals.stream');
+        Route::get('/manuals/download/{key}', [ManualController::class, 'downloadDocx'])->name('manuals.docx');
     });
 });

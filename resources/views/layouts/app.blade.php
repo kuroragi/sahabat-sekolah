@@ -100,6 +100,10 @@
                         href="{{ route('admin.sla-configurations') }}">
                         <i data-lucide="clock-4"></i> SLA & Risiko
                     </a>
+                    <a class="nav-item {{ ($activeNav ?? '') === 'manuals' ? 'active' : '' }}"
+                        href="{{ route('manuals.index') }}">
+                        <i data-lucide="book-open"></i> Panduan Penggunaan
+                    </a>
                 @elseif(session('user_role') === 'PRINCIPAL')
                     <a class="nav-item {{ ($activeNav ?? '') === 'principal' ? 'active' : '' }}"
                         href="{{ route('principal.index') }}">
@@ -149,6 +153,10 @@
                             <b>{{ $unreadNotifsCount }}</b>
                         @endif
                     </a>
+                    <a class="nav-item {{ ($activeNav ?? '') === 'manuals' ? 'active' : '' }}"
+                        href="{{ route('manuals.index') }}">
+                        <i data-lucide="book-open"></i> Panduan Penggunaan
+                    </a>
                 @else
                     <a class="nav-item {{ ($activeNav ?? '') === 'dashboard' ? 'active' : '' }}"
                         href="{{ route('dashboard') }}">
@@ -197,6 +205,10 @@
                         @if ($unreadNotifsCount > 0)
                             <b>{{ $unreadNotifsCount }}</b>
                         @endif
+                    </a>
+                    <a class="nav-item {{ ($activeNav ?? '') === 'manuals' ? 'active' : '' }}"
+                        href="{{ route('manuals.index') }}">
+                        <i data-lucide="book-open"></i> Panduan Penggunaan
                     </a>
                 @endif
             </nav>
