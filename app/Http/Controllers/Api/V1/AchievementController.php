@@ -6,10 +6,12 @@ use App\Helpers\AConnect;
 use App\Helpers\AppStorage;
 use App\Http\Controllers\Controller;
 use App\Models\AcademicPeriod;
+use App\Models\AchievementCategory;
 use App\Models\StudentAchievement;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Symfony\Component\HttpFoundation\Response;
 
 class AchievementController extends Controller
 {
@@ -205,5 +207,157 @@ class AchievementController extends Controller
             'success' => true,
             'data' => $students,
         ]);
+    }
+
+    /**
+     * Get active achievement categories for dropdown selection.
+     */
+    public function categories(): JsonResponse
+    {
+        $categories = AchievementCategory::active()->orderBy('name')->get(['id', 'name', 'description']);
+
+        return response()->json([
+            'success' => true,
+            'data' => $categories,
+        ]);
+    }
+
+    /**
+     * Update existing student achievement.
+     */
+    public function update(Request $request, int $id): JsonResponse
+    {
+        $user = $request->attributes->get('api_user');
+        $achievement = StudentAchievement::where('id', $id)
+            ->where('school_npsn', $user->school_npsn)
+            ->first();
+
+        if (! $achievement) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Prestasi siswa tidak ditemukan.',
+            ], 404);
+        }
+
+        $data = $request->validate([
+            'nisn' => ['sometimes', 'required', 'string', 'max:20'],
+            'student_name' => ['sometimes', 'required', 'string', 'max:255'],
+            'class_name' => ['nullable', 'string', 'max:50'],
+            'semester_id' => ['nullable', 'string', 'max:10'],
+            'category_id' => ['required', 'integer', 'exists:achievement_categories,id'],
+            'achievement_name' => ['required', 'string', 'max:255'],
+            'achievement_level' => ['required', 'in:SEKOLAH,KECAMATAN,KOTA,PROVINSI,NASIONAL,INTERNASIONAL'],
+            'ranking' => ['required', 'string', 'max:100'],
+            'organizer' => ['nullable', 'string', 'max:255'],
+            'achievement_date' => ['required', 'date'],
+            'points' => ['nullable', 'integer', 'min:0'],
+            'certificate_file' => ['nullable', 'file', 'max:5120', 'mimes:pdf,jpg,jpeg,png'],
+            'photo_file' => ['nullable', 'file', 'max:5120', 'mimes:jpg,jpeg,png'],
+        ]);
+
+        if ($request->hasFile('certificate_file')) {
+            if ($achievement->certificate_path) {
+                AppStorage::delete($achievement->certificate_path, 'private');
+            }
+            $data['certificate_path'] = AppStorage::store($request->file('certificate_file'), 'achievements/certificates', 'private');
+        }
+
+        if ($request->hasFile('photo_file')) {
+            if ($achievement->photo_path) {
+                AppStorage::delete($achievement->photo_path, 'public');
+            }
+            $data['photo_path'] = AppStorage::store($request->file('photo_file'), 'achievements/photos', 'public');
+        }
+
+        $defaultPoints = [
+            'SEKOLAH' => 5,
+            'KECAMATAN' => 10,
+            'KOTA' => 20,
+            'PROVINSI' => 35,
+            'NASIONAL' => 50,
+            'INTERNASIONAL' => 75,
+        ];
+
+        if (! isset($data['points']) || $data['points'] === null) {
+            $data['points'] = $defaultPoints[$data['achievement_level']] ?? 10;
+        }
+
+        unset($data['certificate_file'], $data['photo_file']);
+
+        $achievement->update($data);
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Prestasi siswa berhasil diperbarui.',
+            'data' => $achievement->fresh(['category:id,name']),
+        ]);
+    }
+
+    /**
+     * Get full achievement portfolio of a specific student by NISN.
+     */
+    public function studentProfile(Request $request, string $nisn): JsonResponse
+    {
+        $user = $request->attributes->get('api_user');
+        $schoolNpsn = $user->school_npsn;
+
+        $achievements = StudentAchievement::with('category:id,name')
+            ->where('school_npsn', $schoolNpsn)
+            ->where('nisn', $nisn)
+            ->orderByDesc('achievement_date')
+            ->get();
+
+        if ($achievements->isEmpty()) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Data prestasi siswa tidak ditemukan.',
+            ], 404);
+        }
+
+        $levelWeights = [
+            'INTERNASIONAL' => 6,
+            'NASIONAL' => 5,
+            'PROVINSI' => 4,
+            'KOTA' => 3,
+            'KECAMATAN' => 2,
+            'SEKOLAH' => 1,
+        ];
+
+        $highest = $achievements->sortByDesc(fn ($a) => $levelWeights[$a->achievement_level] ?? 0)->first();
+        $first = $achievements->first();
+
+        return response()->json([
+            'success' => true,
+            'data' => [
+                'nisn' => $nisn,
+                'student_name' => $first->student_name,
+                'class_name' => $first->class_name,
+                'total_achievements' => $achievements->count(),
+                'total_points' => (int) $achievements->sum('points'),
+                'highest_level' => $highest?->achievement_level ?? 'SEKOLAH',
+                'highest_ranking' => $highest?->ranking ?? '',
+                'achievements' => $achievements,
+            ],
+        ]);
+    }
+
+    /**
+     * Download or stream student achievement certificate file.
+     */
+    public function downloadCertificate(Request $request, int $id): Response
+    {
+        $user = $request->attributes->get('api_user');
+        $achievement = StudentAchievement::where('id', $id)
+            ->where('school_npsn', $user->school_npsn)
+            ->first();
+
+        if (! $achievement || ! $achievement->certificate_path) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Berkas sertifikat tidak ditemukan.',
+            ], 404);
+        }
+
+        return AppStorage::response($achievement->certificate_path, basename($achievement->certificate_path));
     }
 }

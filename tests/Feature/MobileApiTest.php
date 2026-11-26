@@ -275,4 +275,196 @@ class MobileApiTest extends TestCase
             ->getJson('/api/v1/notifications');
         $this->assertEquals(0, $listAfter->json('meta.unread_count'));
     }
+
+    public function test_counselor_change_password_and_logout_all(): void
+    {
+        $token = $this->getBearerToken();
+
+        // Failed change password: wrong current password
+        $failResponse = $this->withHeader('Authorization', "Bearer {$token}")
+            ->postJson('/api/v1/auth/change-password', [
+                'current_password' => 'wrong-pass',
+                'new_password' => 'newpassword123',
+                'new_password_confirmation' => 'newpassword123',
+            ]);
+        $failResponse->assertStatus(422);
+
+        // Success change password
+        $successResponse = $this->withHeader('Authorization', "Bearer {$token}")
+            ->postJson('/api/v1/auth/change-password', [
+                'current_password' => 'password123',
+                'new_password' => 'newpassword123',
+                'new_password_confirmation' => 'newpassword123',
+            ]);
+        $successResponse->assertOk();
+
+        // Old password can no longer login
+        $oldLogin = $this->postJson('/api/v1/auth/login', [
+            'email' => 'bk-mobile@school.test',
+            'password' => 'password123',
+        ]);
+        $oldLogin->assertStatus(422);
+
+        // New password can login
+        $newLogin = $this->postJson('/api/v1/auth/login', [
+            'email' => 'bk-mobile@school.test',
+            'password' => 'newpassword123',
+        ]);
+        $newLogin->assertOk();
+        $newToken = $newLogin->json('data.token');
+
+        // Logout All
+        $logoutAll = $this->withHeader('Authorization', "Bearer {$newToken}")
+            ->postJson('/api/v1/auth/logout-all');
+        $logoutAll->assertOk();
+
+        // Both tokens now invalid
+        $afterLogout1 = $this->withHeader('Authorization', "Bearer {$token}")
+            ->getJson('/api/v1/me');
+        $afterLogout1->assertStatus(401);
+
+        $afterLogout2 = $this->withHeader('Authorization', "Bearer {$newToken}")
+            ->getJson('/api/v1/me');
+        $afterLogout2->assertStatus(401);
+    }
+
+    public function test_achievements_api_categories_update_and_portfolio(): void
+    {
+        $token = $this->getBearerToken();
+
+        $categoryId = DB::table('achievement_categories')->insertGetId([
+            'code' => 'ROBOTIK',
+            'name' => 'Sains & Robotik',
+            'status' => true,
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
+
+        // Categories dropdown API
+        $catResponse = $this->withHeader('Authorization', "Bearer {$token}")
+            ->getJson('/api/v1/achievements/categories');
+        $catResponse->assertOk();
+        $catResponse->assertJsonFragment(['name' => 'Sains & Robotik']);
+
+        // Store Achievement
+        $storeResponse = $this->withHeader('Authorization', "Bearer {$token}")
+            ->postJson('/api/v1/achievements', [
+                'nisn' => '0098765432',
+                'student_name' => 'Ahmad Rabbani',
+                'class_name' => '8A',
+                'category_id' => $categoryId,
+                'achievement_name' => 'Juara 1 Olimpiade Fisika',
+                'achievement_level' => 'KOTA',
+                'ranking' => 'Juara 1',
+                'achievement_date' => '2026-05-10',
+            ]);
+        $storeResponse->assertStatus(201);
+        $achievementId = $storeResponse->json('data.id');
+
+        // Update Achievement
+        $updateResponse = $this->withHeader('Authorization', "Bearer {$token}")
+            ->putJson("/api/v1/achievements/{$achievementId}", [
+                'category_id' => $categoryId,
+                'achievement_name' => 'Juara 1 Olimpiade Fisika Tingkat Kota Bukittinggi',
+                'achievement_level' => 'KOTA',
+                'ranking' => 'Juara 1 Emas',
+                'achievement_date' => '2026-05-10',
+            ]);
+        $updateResponse->assertOk();
+        $updateResponse->assertJsonPath('data.ranking', 'Juara 1 Emas');
+
+        // Student Profile Portfolio
+        $profileResponse = $this->withHeader('Authorization', "Bearer {$token}")
+            ->getJson('/api/v1/achievements/student/0098765432');
+        $profileResponse->assertOk();
+        $profileResponse->assertJsonPath('data.student_name', 'Ahmad Rabbani');
+        $profileResponse->assertJsonPath('data.total_achievements', 1);
+    }
+
+    public function test_case_risk_assessment_reassign_and_multi_target_escalate(): void
+    {
+        $token = $this->getBearerToken();
+
+        // 1. Create case
+        $reportResponse = $this->postJson('/api/v1/public/reports', [
+            'school_npsn' => $this->schoolNpsn,
+            'reporter_role' => 'VICTIM',
+            'identity_mode' => 'CONFIDENTIAL',
+            'reporter_name' => 'Siswa Korban',
+            'category' => 'Cyberbullying',
+            'subcategory' => 'Ancaman digital',
+            'description' => 'Kasus ancaman siber yang butuh asesmen risiko dan eskalasi.',
+        ]);
+        $caseNumber = $reportResponse->json('data.case_number');
+
+        // 2. Risk Assessment (Score: 20 + 20 + 20 + 20 = 80 => CRITICAL)
+        $riskResponse = $this->withHeader('Authorization', "Bearer {$token}")
+            ->postJson("/api/v1/cases/{$caseNumber}/risk", [
+                'category_score' => 20,
+                'safety_score' => 20,
+                'repetition_score' => 20,
+                'impact_score' => 20,
+                'reason' => 'Ancaman menyangkut keselamatan fisik korban',
+            ]);
+        $riskResponse->assertOk();
+        $riskResponse->assertJsonPath('data.final_score', 80);
+        $riskResponse->assertJsonPath('data.risk_level', 'CRITICAL');
+
+        // 3. Reassign Case to another counselor in same school
+        $counselor2Id = DB::table('users')->insertGetId([
+            'name' => 'Guru BK Dua',
+            'email' => 'bk-dua@school.test',
+            'password' => Hash::make('password123'),
+            'role' => 'COUNSELOR',
+            'school_npsn' => $this->schoolNpsn,
+            'school_name' => 'SMP Negeri Uji Bukittinggi',
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
+
+        $reassignResponse = $this->withHeader('Authorization', "Bearer {$token}")
+            ->postJson("/api/v1/cases/{$caseNumber}/reassign", [
+                'counselor_id' => $counselor2Id,
+                'reason' => 'Beban kasus dialihkan ke Guru BK 2',
+            ]);
+        $reassignResponse->assertOk();
+        $reassignResponse->assertJsonPath('data.assigned_to', 'Guru BK Dua');
+
+        // 4. Multi-target Escalate (e.g. to UPTD PPA)
+        $escalateResponse = $this->withHeader('Authorization', "Bearer {$token}")
+            ->postJson("/api/v1/cases/{$caseNumber}/escalate", [
+                'escalate_to' => 'CITY_PPA',
+                'reason' => 'Kasus butuh pendampingan hukum dan psikologis UPTD PPA',
+            ]);
+        $escalateResponse->assertOk();
+        $escalateResponse->assertJsonPath('data.escalated_to', 'CITY_PPA');
+        $escalateResponse->assertJsonPath('data.notified_to', 'UPTD PPA Kota Bukittinggi');
+    }
+
+    public function test_principal_monitoring_api(): void
+    {
+        $token = $this->getBearerToken();
+
+        $response = $this->withHeader('Authorization', "Bearer {$token}")
+            ->getJson('/api/v1/dashboard/principal');
+
+        $response->assertOk();
+        $response->assertJsonStructure([
+            'success',
+            'data' => [
+                'overview' => [
+                    'total_cases',
+                    'active_cases',
+                    'resolved_cases',
+                    'high_risk_cases',
+                    'escalated_cases',
+                    'sla_overdue_cases',
+                    'sla_warning_cases',
+                ],
+                'counselor_workload',
+                'recent_escalations',
+                'sla_alerts',
+            ],
+        ]);
+    }
 }

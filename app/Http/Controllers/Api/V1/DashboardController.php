@@ -149,4 +149,117 @@ class DashboardController extends Controller
             ],
         ]);
     }
+
+    /**
+     * Dedicated monitoring summary for School Principal.
+     */
+    public function principalMonitoring(Request $request): JsonResponse
+    {
+        $user = $request->attributes->get('api_user');
+        $schoolNpsn = $user->school_npsn;
+
+        $casesQuery = DB::table('cases')->where('school_npsn', $schoolNpsn);
+
+        $totalCases = (clone $casesQuery)->count();
+        $activeCases = (clone $casesQuery)->whereNotIn('status', ['RESOLVED', 'CLOSED'])->count();
+        $resolvedCases = (clone $casesQuery)->whereIn('status', ['RESOLVED', 'CLOSED'])->count();
+        $highRiskCases = (clone $casesQuery)->whereIn('risk_level', ['HIGH', 'CRITICAL'])->count();
+
+        $escalatedCount = DB::table('cases')
+            ->join('case_escalations', 'cases.id', '=', 'case_escalations.case_id')
+            ->where('cases.school_npsn', $schoolNpsn)
+            ->whereNotIn('cases.status', ['RESOLVED', 'CLOSED'])
+            ->distinct('cases.id')
+            ->count('cases.id');
+
+        $overdueCount = DB::table('cases')
+            ->join('case_slas', 'cases.id', '=', 'case_slas.case_id')
+            ->where('cases.school_npsn', $schoolNpsn)
+            ->where(function ($q) {
+                $q->where('case_slas.status', 'OVERDUE')
+                    ->orWhere(function ($sub) {
+                        $sub->where('cases.status', 'PENDING_RESPONSE')
+                            ->where('case_slas.response_deadline', '<', now());
+                    });
+            })
+            ->count();
+
+        $warningCount = DB::table('cases')
+            ->join('case_slas', 'cases.id', '=', 'case_slas.case_id')
+            ->where('cases.school_npsn', $schoolNpsn)
+            ->where('cases.status', 'PENDING_RESPONSE')
+            ->where('case_slas.status', '!=', 'OVERDUE')
+            ->whereBetween('case_slas.response_deadline', [now(), now()->addHours(6)])
+            ->count();
+
+        $workload = DB::table('cases')
+            ->where('school_npsn', $schoolNpsn)
+            ->whereNotIn('status', ['RESOLVED', 'CLOSED'])
+            ->select('assigned_to', DB::raw('count(*) as active_cases'))
+            ->groupBy('assigned_to')
+            ->orderByDesc('active_cases')
+            ->get()
+            ->map(fn ($row) => [
+                'counselor_name' => $row->assigned_to ?: 'Belum Ditugaskan',
+                'active_cases' => (int) $row->active_cases,
+            ]);
+
+        $recentEscalations = DB::table('case_escalations')
+            ->join('cases', 'case_escalations.case_id', '=', 'cases.id')
+            ->where('cases.school_npsn', $schoolNpsn)
+            ->select(
+                'cases.case_number',
+                'cases.category',
+                'cases.risk_level',
+                'cases.status',
+                'case_escalations.escalation_type',
+                'case_escalations.reason',
+                'case_escalations.escalated_by',
+                'case_escalations.created_at'
+            )
+            ->orderByDesc('case_escalations.created_at')
+            ->limit(10)
+            ->get();
+
+        $slaAlerts = DB::table('cases')
+            ->join('case_slas', 'cases.id', '=', 'case_slas.case_id')
+            ->where('cases.school_npsn', $schoolNpsn)
+            ->where(function ($q) {
+                $q->where('case_slas.status', 'OVERDUE')
+                    ->orWhere(function ($sub) {
+                        $sub->where('cases.status', 'PENDING_RESPONSE')
+                            ->where('case_slas.response_deadline', '<=', now()->addHours(6));
+                    });
+            })
+            ->select(
+                'cases.case_number',
+                'cases.category',
+                'cases.risk_level',
+                'cases.status',
+                'cases.assigned_to',
+                'case_slas.status as sla_status',
+                'case_slas.response_deadline'
+            )
+            ->orderByDesc('case_slas.response_deadline')
+            ->limit(10)
+            ->get();
+
+        return response()->json([
+            'success' => true,
+            'data' => [
+                'overview' => [
+                    'total_cases' => $totalCases,
+                    'active_cases' => $activeCases,
+                    'resolved_cases' => $resolvedCases,
+                    'high_risk_cases' => $highRiskCases,
+                    'escalated_cases' => $escalatedCount,
+                    'sla_overdue_cases' => $overdueCount,
+                    'sla_warning_cases' => $warningCount,
+                ],
+                'counselor_workload' => $workload,
+                'recent_escalations' => $recentEscalations,
+                'sla_alerts' => $slaAlerts,
+            ],
+        ]);
+    }
 }

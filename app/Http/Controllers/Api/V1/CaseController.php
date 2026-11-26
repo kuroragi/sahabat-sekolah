@@ -11,6 +11,7 @@ use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Mail;
+use Symfony\Component\HttpFoundation\Response;
 
 class CaseController extends Controller
 {
@@ -374,7 +375,7 @@ class CaseController extends Controller
     }
 
     /**
-     * Escalate case to Principal.
+     * Escalate case to Principal, UPTD PPA, Disdik, or Satgas PPKSP.
      */
     public function escalate(Request $request, string $caseNumber): JsonResponse
     {
@@ -387,7 +388,17 @@ class CaseController extends Controller
 
         $data = $request->validate([
             'reason' => ['required', 'string', 'min:5', 'max:1000'],
+            'escalate_to' => ['nullable', 'in:PRINCIPAL,CITY_PPA,CITY_DISDIK,CITY_ADMIN,CITY_SATGAS'],
         ]);
+
+        $target = $data['escalate_to'] ?? 'PRINCIPAL';
+        $notifiedTo = match ($target) {
+            'CITY_PPA' => 'UPTD PPA Kota Bukittinggi',
+            'CITY_DISDIK' => 'Dinas Pendidikan Kota Bukittinggi',
+            'CITY_SATGAS' => 'Satgas PPKSP Kota Bukittinggi',
+            'CITY_ADMIN' => 'Admin Kota Bukittinggi',
+            default => 'Kepala Sekolah',
+        };
 
         $now = now();
         $userName = $user->name ?? 'Guru BK';
@@ -402,26 +413,79 @@ class CaseController extends Controller
         ]);
 
         DB::table('notifications')->insert([
-            'recipient_name' => 'Kepala Sekolah',
+            'recipient_name' => $notifiedTo,
             'type' => 'MANUAL_ESCALATION',
-            'title' => 'Kasus dieskalasikan',
-            'message' => $case->case_number.' membutuhkan perhatian Kepala Sekolah: '.$data['reason'],
+            'title' => 'Kasus dieskalasikan ke '.$notifiedTo,
+            'message' => $case->case_number.' membutuhkan perhatian '.$notifiedTo.': '.$data['reason'],
             'priority' => 'URGENT',
             'case_number' => $case->case_number,
             'created_at' => $now,
             'updated_at' => $now,
         ]);
 
-        // Send email to principals if configured
+        // Send email to target recipients if configured
         try {
-            $principals = DB::table('users')
-                ->where('school_npsn', $case->school_npsn)
-                ->where('role', 'PRINCIPAL')
-                ->whereNotNull('email')
-                ->where('email', '!=', '')
-                ->get();
+            if ($target === 'CITY_PPA') {
+                $recipients = DB::table('users')
+                    ->where('role', 'CITY_ADMIN')
+                    ->where(function ($query) {
+                        $query->where('school_name', 'LIKE', '%PPA%')
+                            ->orWhere('school_name', 'LIKE', '%DP3APPKB%')
+                            ->orWhere('email', 'LIKE', '%ppa%');
+                    })
+                    ->whereNotNull('email')
+                    ->where('email', '!=', '')
+                    ->get();
 
-            if ($principals->isNotEmpty()) {
+                if ($recipients->isEmpty()) {
+                    $recipients = DB::table('users')
+                        ->where('role', 'CITY_ADMIN')
+                        ->whereNotNull('email')
+                        ->where('email', '!=', '')
+                        ->get();
+                }
+            } elseif ($target === 'CITY_DISDIK' || $target === 'CITY_ADMIN') {
+                $recipients = DB::table('users')
+                    ->where('role', 'CITY_ADMIN')
+                    ->where(function ($query) {
+                        $query->where('school_name', 'LIKE', '%Pendidikan%')
+                            ->orWhere('email', 'LIKE', '%dinas%');
+                    })
+                    ->whereNotNull('email')
+                    ->where('email', '!=', '')
+                    ->get();
+
+                if ($recipients->isEmpty()) {
+                    $recipients = DB::table('users')
+                        ->where('role', 'CITY_ADMIN')
+                        ->whereNotNull('email')
+                        ->where('email', '!=', '')
+                        ->get();
+                }
+            } elseif ($target === 'CITY_SATGAS') {
+                $recipients = DB::table('users')
+                    ->where('role', 'CITY_ADMIN')
+                    ->whereNotNull('email')
+                    ->where('email', '!=', '')
+                    ->get();
+            } else {
+                $recipients = DB::table('users')
+                    ->where('school_npsn', $case->school_npsn)
+                    ->where('role', 'PRINCIPAL')
+                    ->whereNotNull('email')
+                    ->where('email', '!=', '')
+                    ->get();
+            }
+
+            if ($recipients->isEmpty()) {
+                $recipients = DB::table('users')
+                    ->where('role', 'ADMIN')
+                    ->whereNotNull('email')
+                    ->where('email', '!=', '')
+                    ->get();
+            }
+
+            if ($recipients->isNotEmpty()) {
                 $schoolName = DB::table('users')->where('school_npsn', $case->school_npsn)->value('school_name') ?? $case->school_npsn;
                 $escalationPayload = [
                     'case_number' => $case->case_number,
@@ -434,8 +498,8 @@ class CaseController extends Controller
                     'escalated_at' => $now->toDateTimeString(),
                 ];
 
-                foreach ($principals as $principal) {
-                    Mail::to($principal->email)->queue(new CaseEscalatedPrincipalMail($escalationPayload, $principal->name));
+                foreach ($recipients as $recipient) {
+                    Mail::to($recipient->email)->queue(new CaseEscalatedPrincipalMail($escalationPayload, $recipient->name ?? $notifiedTo));
                 }
             }
         } catch (\Throwable $e) {
@@ -444,7 +508,13 @@ class CaseController extends Controller
 
         return response()->json([
             'success' => true,
-            'message' => 'Kasus berhasil dieskalasikan ke Kepala Sekolah.',
+            'message' => "Kasus berhasil dieskalasikan kepada {$notifiedTo}.",
+            'data' => [
+                'case_number' => $case->case_number,
+                'escalated_to' => $target,
+                'notified_to' => $notifiedTo,
+                'escalated_at' => $now->toIso8601String(),
+            ],
         ]);
     }
 
@@ -592,5 +662,196 @@ class CaseController extends Controller
                 'created_at' => $now->toIso8601String(),
             ],
         ], 201);
+    }
+
+    /**
+     * Assess case risk using matrix scores (category, safety, repetition, impact).
+     */
+    public function assessRisk(Request $request, string $caseNumber): JsonResponse
+    {
+        $user = $request->attributes->get('api_user');
+        $case = DB::table('cases')
+            ->where('case_number', $caseNumber)
+            ->where('school_npsn', $user->school_npsn)
+            ->first();
+
+        if (! $case) {
+            return response()->json(['success' => false, 'message' => 'Kasus tidak ditemukan.'], 404);
+        }
+
+        $data = $request->validate([
+            'category_score' => ['required', 'integer', 'min:0', 'max:25'],
+            'safety_score' => ['required', 'integer', 'min:0', 'max:25'],
+            'repetition_score' => ['required', 'integer', 'min:0', 'max:25'],
+            'impact_score' => ['required', 'integer', 'min:0', 'max:25'],
+            'reason' => ['nullable', 'string', 'max:500'],
+        ]);
+
+        $score = $data['category_score'] + $data['safety_score'] + $data['repetition_score'] + $data['impact_score'];
+        $risk = $score >= 76 ? 'CRITICAL' : ($score >= 51 ? 'HIGH' : ($score >= 26 ? 'MEDIUM' : 'LOW'));
+        $now = now();
+        $userName = $user->name ?? 'Guru BK';
+
+        DB::transaction(function () use ($case, $data, $score, $risk, $now, $userName) {
+            DB::table('case_risk_assessments')->insert([
+                'case_id' => $case->id,
+                'category_score' => $data['category_score'],
+                'safety_score' => $data['safety_score'],
+                'repetition_score' => $data['repetition_score'],
+                'impact_score' => $data['impact_score'],
+                'final_score' => $score,
+                'risk_level' => $risk,
+                'assessed_by' => $userName,
+                'created_at' => $now,
+                'updated_at' => $now,
+            ]);
+
+            DB::table('case_risk_histories')->insert([
+                'case_id' => $case->id,
+                'old_risk_level' => $case->risk_level,
+                'new_risk_level' => $risk,
+                'score' => $score,
+                'reason' => $data['reason'] ?? null,
+                'changed_by' => $userName,
+                'created_at' => $now,
+                'updated_at' => $now,
+            ]);
+
+            DB::table('cases')->where('id', $case->id)->update([
+                'risk_level' => $risk,
+                'updated_at' => $now,
+            ]);
+
+            if ($case->risk_level !== $risk) {
+                $config = DB::table('sla_configurations')->where('risk_level', $risk)->first();
+                $responseHours = $config ? $config->response_time_hours : 24;
+                $resolutionDays = $config ? $config->resolution_time_days : 14;
+
+                $slaUpdate = ['updated_at' => $now];
+                if ($case->status === 'PENDING_RESPONSE') {
+                    $slaUpdate['response_deadline'] = Carbon::parse($case->opened_at)->addHours($responseHours);
+                } else {
+                    $initialResponse = DB::table('case_slas')->where('case_id', $case->id)->value('initial_response_at') ?? $now;
+                    $slaUpdate['resolution_deadline'] = Carbon::parse($initialResponse)->addDays($resolutionDays);
+                }
+                DB::table('case_slas')->where('case_id', $case->id)->update($slaUpdate);
+            }
+
+            if (function_exists('notifyCounselor')) {
+                notifyCounselor('RISK_ASSESSED', 'Penilaian risiko tersimpan', $case->case_number.' memiliki level risiko '.$risk.' dengan skor '.$score.'.', $case->case_number, in_array($risk, ['HIGH', 'CRITICAL'], true) ? 'URGENT' : 'NORMAL');
+            }
+        });
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Penilaian risiko berhasil disimpan.',
+            'data' => [
+                'case_number' => $case->case_number,
+                'final_score' => $score,
+                'risk_level' => $risk,
+                'assessed_at' => $now->toIso8601String(),
+            ],
+        ]);
+    }
+
+    /**
+     * Reassign case to another counselor/principal in the same school.
+     */
+    public function reassign(Request $request, string $caseNumber): JsonResponse
+    {
+        $user = $request->attributes->get('api_user');
+        $case = DB::table('cases')
+            ->where('case_number', $caseNumber)
+            ->where('school_npsn', $user->school_npsn)
+            ->first();
+
+        if (! $case) {
+            return response()->json(['success' => false, 'message' => 'Kasus tidak ditemukan.'], 404);
+        }
+
+        $data = $request->validate([
+            'counselor_id' => ['required', 'integer', 'exists:users,id'],
+            'reason' => ['nullable', 'string', 'max:500'],
+        ]);
+
+        $targetCounselor = DB::table('users')
+            ->where('id', $data['counselor_id'])
+            ->where('school_npsn', $user->school_npsn)
+            ->whereIn('role', ['COUNSELOR', 'PRINCIPAL'])
+            ->first();
+
+        if (! $targetCounselor) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Petugas yang dipilih tidak terdaftar di sekolah Anda.',
+            ], 422);
+        }
+
+        $now = now();
+        $oldAssignee = $case->assigned_to ?: 'Belum Ditugaskan';
+
+        DB::table('cases')->where('id', $case->id)->update([
+            'assigned_to' => $targetCounselor->name,
+            'updated_at' => $now,
+        ]);
+
+        DB::table('case_actions')->insert([
+            'case_id' => $case->id,
+            'action_type' => 'HANDLING',
+            'description' => "Kasus dialihkan dari {$oldAssignee} ke {$targetCounselor->name}.".($data['reason'] ? " Alasan: {$data['reason']}" : ''),
+            'performed_by' => $user->name ?? 'Guru BK',
+            'created_at' => $now,
+            'updated_at' => $now,
+        ]);
+
+        DB::table('notifications')->insert([
+            'recipient_name' => $targetCounselor->name,
+            'type' => 'CASE_ASSIGNED',
+            'title' => 'Penugasan kasus baru',
+            'message' => "Anda ditugaskan menangani kasus {$case->case_number}.",
+            'priority' => 'HIGH',
+            'case_number' => $case->case_number,
+            'created_at' => $now,
+            'updated_at' => $now,
+        ]);
+
+        return response()->json([
+            'success' => true,
+            'message' => "Penanganan kasus dialihkan ke {$targetCounselor->name}.",
+            'data' => [
+                'case_number' => $case->case_number,
+                'assigned_to' => $targetCounselor->name,
+            ],
+        ]);
+    }
+
+    /**
+     * Download or stream case document or evidence file.
+     */
+    public function downloadDocument(Request $request, string $caseNumber, string $documentType, int $id): Response
+    {
+        $user = $request->attributes->get('api_user');
+        $case = DB::table('cases')
+            ->where('case_number', $caseNumber)
+            ->where('school_npsn', $user->school_npsn)
+            ->first();
+
+        if (! $case) {
+            return response()->json(['success' => false, 'message' => 'Kasus tidak ditemukan.'], 404);
+        }
+
+        $type = strtolower($documentType);
+        if (! in_array($type, ['evidence', 'resolution'], true)) {
+            return response()->json(['success' => false, 'message' => 'Tipe dokumen tidak valid.'], 404);
+        }
+
+        $table = $type === 'evidence' ? 'case_evidences' : 'case_resolution_documents';
+        $document = DB::table($table)->where('id', $id)->where('case_id', $case->id)->first();
+
+        if (! $document) {
+            return response()->json(['success' => false, 'message' => 'Dokumen tidak ditemukan.'], 404);
+        }
+
+        return AppStorage::response($document->file_path, $document->file_name);
     }
 }

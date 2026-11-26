@@ -217,4 +217,67 @@ class AuthController extends Controller
             'message' => 'Kata sandi berhasil diperbarui. Silakan login kembali dengan kata sandi baru Anda.',
         ]);
     }
+
+    /**
+     * Change password for authenticated user.
+     */
+    public function changePassword(Request $request): JsonResponse
+    {
+        $user = $request->attributes->get('api_user');
+
+        if (! $user) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Unauthenticated.',
+            ], 401);
+        }
+
+        $data = $request->validate([
+            'current_password' => ['required', 'string'],
+            'new_password' => ['required', 'string', 'min:8', 'confirmed'],
+        ]);
+
+        $currentUser = DB::table('users')->where('id', $user->id)->first();
+
+        if (! $currentUser || ! Hash::check($data['current_password'], $currentUser->password)) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Kata sandi saat ini tidak sesuai.',
+            ], 422);
+        }
+
+        if (Hash::check($data['new_password'], $currentUser->password)) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Kata sandi baru tidak boleh sama dengan kata sandi saat ini.',
+            ], 422);
+        }
+
+        DB::table('users')->where('id', $user->id)->update([
+            'password' => Hash::make($data['new_password']),
+            'updated_at' => now(),
+        ]);
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Kata sandi berhasil diperbarui.',
+        ]);
+    }
+
+    /**
+     * Invalidate all Bearer tokens for authenticated user across all devices.
+     */
+    public function logoutAll(Request $request): JsonResponse
+    {
+        $user = $request->attributes->get('api_user');
+
+        if ($user) {
+            DB::table('api_tokens')->where('user_id', $user->id)->delete();
+        }
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Berhasil logout dari semua perangkat.',
+        ]);
+    }
 }

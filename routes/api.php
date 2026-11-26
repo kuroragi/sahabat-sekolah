@@ -27,6 +27,8 @@ Route::prefix('v1')->group(function () {
     Route::prefix('auth')->group(function () {
         Route::post('/login', [AuthController::class, 'login'])->middleware('throttle:5,1');
         Route::post('/logout', [AuthController::class, 'logout'])->middleware('api.token');
+        Route::post('/logout-all', [AuthController::class, 'logoutAll'])->middleware('api.token');
+        Route::post('/change-password', [AuthController::class, 'changePassword'])->middleware(['api.token', 'throttle:5,1']);
         Route::post('/forgot-password', [AuthController::class, 'forgotPassword'])->middleware('throttle:5,1');
         Route::post('/reset-password', [AuthController::class, 'resetPassword'])->middleware('throttle:5,1');
     });
@@ -40,6 +42,7 @@ Route::prefix('v1')->group(function () {
 
         // Dashboard & Analytics
         Route::get('/dashboard', [DashboardController::class, 'overview']);
+        Route::get('/dashboard/principal', [DashboardController::class, 'principalMonitoring']);
         Route::get('/statistics', [DashboardController::class, 'statistics']);
 
         // Case Management
@@ -48,10 +51,13 @@ Route::prefix('v1')->group(function () {
             Route::get('/{caseNumber}', [CaseController::class, 'show']);
             Route::post('/{caseNumber}/actions', [CaseController::class, 'processAction']);
             Route::post('/{caseNumber}/notes', [CaseController::class, 'addNote']);
+            Route::post('/{caseNumber}/risk', [CaseController::class, 'assessRisk']);
             Route::post('/{caseNumber}/escalate', [CaseController::class, 'escalate']);
+            Route::post('/{caseNumber}/reassign', [CaseController::class, 'reassign']);
             Route::post('/{caseNumber}/parent-involvement', [CaseController::class, 'updateParentInvolvement']);
             Route::post('/{caseNumber}/participants', [CaseController::class, 'addParticipant']);
             Route::post('/{caseNumber}/anonymous-reply', [CaseController::class, 'replyAnonymous']);
+            Route::get('/{caseNumber}/documents/{documentType}/{id}', [CaseController::class, 'downloadDocument'])->whereNumber('id');
         });
 
         // Notifications
@@ -64,9 +70,13 @@ Route::prefix('v1')->group(function () {
 
         // Student Achievements & Search
         Route::prefix('achievements')->group(function () {
+            Route::get('/categories', [AchievementController::class, 'categories']);
+            Route::get('/student/{nisn}', [AchievementController::class, 'studentProfile']);
             Route::get('/', [AchievementController::class, 'index']);
-            Route::get('/{id}', [AchievementController::class, 'show']);
             Route::post('/', [AchievementController::class, 'store']);
+            Route::get('/{id}', [AchievementController::class, 'show'])->whereNumber('id');
+            Route::match(['put', 'patch', 'post'], '/{id}', [AchievementController::class, 'update'])->whereNumber('id');
+            Route::get('/{id}/certificate', [AchievementController::class, 'downloadCertificate'])->whereNumber('id');
         });
         Route::get('/students/search', [AchievementController::class, 'searchStudents']);
     });
